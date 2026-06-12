@@ -93,6 +93,7 @@ function resetVerify() {
 
 // التحقق من اسم اللاعب (ببجي / فري فاير)
 async function verifyName() {
+  const modal = document.getElementById('buyModal');
   const btn = document.getElementById('mBuyBtn');
   const vb = document.getElementById('mVerify');
   const player = document.getElementById('mPlayer').value.trim();
@@ -102,7 +103,7 @@ async function verifyName() {
   msg.className = 'm-msg'; msg.textContent = '';
   vb.style.display = ''; vb.className = 'verify-box'; vb.textContent = 'جارٍ التحقق من الاسم... ⏳';
   try {
-    const res = await fetch('/check_name.php?player=' + encodeURIComponent(player));
+    const res = await fetch('/check_name.php?player=' + encodeURIComponent(player) + '&product=' + encodeURIComponent(modal.dataset.pid));
     const d = await res.json();
     if (d.ok) {
       verified = true;

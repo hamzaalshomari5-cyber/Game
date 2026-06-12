@@ -42,3 +42,12 @@ session_start();
 
 // رابط التحقق من اسم اللاعب (نفس اللي بيستخدمه موقع FastCard)
 define('CHECK_PLAYER_URL', 'https://fastcard1.store/redeemtech_check_player.php');
+
+// حساب موقع FastCard (للتحقق من اسم اللاعب — نفس بيانات دخولك للموقع)
+define('FASTCARD_WEB_BASE', 'https://fastcard1.store');
+define('FASTCARD_WEB_USERNAME', ''); // أو متغير بيئة FASTCARD_WEB_USERNAME
+define('FASTCARD_WEB_PASSWORD', ''); // أو متغير بيئة FASTCARD_WEB_PASSWORD
+define('FASTCARD_2FA_SECRET', '');   // أو متغير بيئة FASTCARD_2FA_SECRET (إذا حسابك عليه مصادقة ثنائية)
+function fcw_user()   { return env_or('FASTCARD_WEB_USERNAME', FASTCARD_WEB_USERNAME); }
+function fcw_pass()   { return env_or('FASTCARD_WEB_PASSWORD', FASTCARD_WEB_PASSWORD); }
+function fcw_2fa()    { return env_or('FASTCARD_2FA_SECRET', FASTCARD_2FA_SECRET); }
