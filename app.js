@@ -80,3 +80,15 @@ async function submitBuy() {
   }
   btn.disabled = false;
 }
+
+// المفضلة ❤
+async function toggleFav(ev, pid, btn) {
+  ev.stopPropagation();
+  if (typeof IS_LOGGED !== 'undefined' && !IS_LOGGED) { location.href = '/auth.php'; return; }
+  try {
+    const res = await fetch('/index.php?action=fav&pid=' + encodeURIComponent(pid));
+    const d = await res.json();
+    if (d.login) { location.href = '/auth.php'; return; }
+    if (d.ok) btn.classList.toggle('on', d.fav);
+  } catch (e) {}
+}

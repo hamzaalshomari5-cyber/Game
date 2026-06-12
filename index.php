@@ -3,6 +3,48 @@ require_once __DIR__ . '/fastcard_api.php';
 $page = $_GET['page'] ?? 'home';
 $U = current_user();
 
+/* ===== المفضلة (toggle عبر AJAX) ===== */
+if (($_GET['action'] ?? '') === 'fav') {
+    header('Content-Type: application/json; charset=utf-8');
+    if (!$U) { echo json_encode(['ok' => false, 'login' => true]); exit; }
+    $pid = (string)($_GET['pid'] ?? '');
+    db()->exec("CREATE TABLE IF NOT EXISTS favorites (user_id INTEGER, product_id TEXT, PRIMARY KEY(user_id, product_id))");
+    $st = db()->prepare("SELECT COUNT(*) FROM favorites WHERE user_id=? AND product_id=?");
+    $st->execute([$U['id'], $pid]);
+    if ($st->fetchColumn()) {
+        db()->prepare("DELETE FROM favorites WHERE user_id=? AND product_id=?")->execute([$U['id'], $pid]);
+        echo json_encode(['ok' => true, 'fav' => false]);
+    } else {
+        db()->prepare("INSERT INTO favorites (user_id, product_id) VALUES (?,?)")->execute([$U['id'], $pid]);
+        echo json_encode(['ok' => true, 'fav' => true]);
+    }
+    exit;
+}
+
+function user_favs($U) {
+    if (!$U) return [];
+    db()->exec("CREATE TABLE IF NOT EXISTS favorites (user_id INTEGER, product_id TEXT, PRIMARY KEY(user_id, product_id))");
+    $st = db()->prepare("SELECT product_id FROM favorites WHERE user_id=?");
+    $st->execute([$U['id']]);
+    return $st->fetchAll(PDO::FETCH_COLUMN);
+}
+
+/* ===== رسم كرت منتج (مثل FastCard: صورة + اسم + غير متوفر + قلب) ===== */
+function product_card($p, $favs) {
+    $isFav = in_array((string)$p['id'], $favs); ?>
+    <div class="card product-card <?= $p['available'] ? '' : 'oos' ?>"
+         data-id="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>"
+         data-price="<?= e($p['price']) ?>" data-desc="<?= e($p['desc']) ?>"
+         onclick="openBuy(this)">
+      <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>
+      <?php if ($p['image']): ?><img src="<?= e($p['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="ph">🎮</div><?php endif; ?>
+      <div class="p-name"><?= e($p['name']) ?></div>
+      <div class="p-price"><?= number_format($p['price']) ?> ل.س</div>
+      <?php if (!$p['available']): ?><div class="oos-badge">غير متوفر حالياً ❌</div><?php endif; ?>
+    </div>
+<?php }
+
+/* ===== صفحات ثابتة ===== */
 if ($page === 'about' || $page === 'terms') {
     $pageTitle = $page === 'about' ? 'من نحن' : 'سياسة الاسترجاع';
     include __DIR__ . '/header.php'; ?>
@@ -24,58 +66,59 @@ if ($page === 'about' || $page === 'terms') {
     <?php include __DIR__ . '/footer.php'; exit;
 }
 
-if ($page === 'products') {
-    $cat = $_GET['cat'] ?? '';
-    $products = array_values(array_filter(store_products(), fn($p) => $p['category'] === $cat));
-    $pageTitle = $cat ?: 'المنتجات';
+/* ===== صفحة المفضلة ===== */
+if ($page === 'favs') {
+    $favs = user_favs($U);
+    $products = array_values(array_filter(store_products(), fn($p) => in_array((string)$p['id'], $favs)));
+    $pageTitle = 'المفضلة';
     include __DIR__ . '/header.php'; ?>
-
-    <h1 class="section-title"><?= e($cat) ?></h1>
-    <?php if (!$products): ?>
-      <p class="empty">لا توجد منتجات في هذا القسم حالياً. تأكد من ضبط توكن FastCard في الإعدادات.</p>
+    <h1 class="section-title">المفضلة ❤</h1>
+    <?php if (!$U): ?><p class="empty"><a href="/auth.php">سجّل دخول</a> لاستخدام المفضلة.</p>
+    <?php elseif (!$products): ?><p class="empty">ما في منتجات بالمفضلة بعد — اضغط ❤ على أي منتج لإضافته.</p>
+    <?php else: ?>
+      <div class="grid products-grid"><?php foreach ($products as $p) product_card($p, $favs); ?></div>
+      <?php include __DIR__ . '/buy_modal.php'; ?>
     <?php endif; ?>
-    <div class="grid products-grid">
-      <?php foreach ($products as $p): ?>
-        <div class="card product-card <?= $p['available'] ? '' : 'oos' ?>"
-             data-id="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>"
-             data-price="<?= e($p['price']) ?>" data-desc="<?= e($p['desc']) ?>"
-             onclick="openBuy(this)">
-          <?php if ($p['image']): ?><img src="<?= e($p['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="ph">🎮</div><?php endif; ?>
-          <div class="p-name"><?= e($p['name']) ?></div>
-          <div class="p-price"><?= number_format($p['price']) ?> ل.س</div>
-          <?php if (!$p['available']): ?><div class="oos-badge">غير متوفر ❌</div><?php endif; ?>
-        </div>
-      <?php endforeach; ?>
-    </div>
-
-    <!-- مودال الشراء -->
-    <div class="modal" id="buyModal">
-      <div class="modal-box">
-        <h3 id="mName">اسم المنتج</h3>
-        <div class="m-price" id="mPrice"></div>
-        <p class="muted" id="mDesc"></p>
-        <label>الكمية</label>
-        <div class="qty-row">
-          <button type="button" onclick="qtyStep(-1)">−</button>
-          <input type="number" id="mQty" value="1" min="1">
-          <button type="button" onclick="qtyStep(1)">+</button>
-        </div>
-        <label>ID اللاعب / المعرف المطلوب</label>
-        <input type="text" id="mPlayer" placeholder="مثال: 5123456789">
-        <div class="m-total">الإجمالي: <b id="mTotal"></b> ل.س</div>
-        <div class="m-msg" id="mMsg"></div>
-        <div class="m-actions">
-          <button class="btn ghost" onclick="closeBuy()">إلغاء</button>
-          <button class="btn" id="mBuyBtn" onclick="submitBuy()">شراء الآن</button>
-        </div>
-      </div>
-    </div>
     <script>const IS_LOGGED = <?= $U ? 'true' : 'false' ?>;</script>
     <?php include __DIR__ . '/footer.php'; exit;
 }
 
-// ===== الرئيسية =====
-$cats = store_categories();
+/* ===== صفحة قسم: أقسام فرعية + منتجات (مثل FastCard بالضبط) ===== */
+if ($page === 'products') {
+    $cat = $_GET['cat'] ?? '';
+    $subs = child_categories($cat);
+    $products = products_in($cat);
+    $favs = user_favs($U);
+    $pageTitle = category_name($cat);
+    include __DIR__ . '/header.php'; ?>
+
+    <h1 class="section-title"><?= e(category_name($cat)) ?></h1>
+
+    <?php if ($subs): ?>
+      <div class="grid cats-grid">
+        <?php foreach ($subs as $c): ?>
+          <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>">
+            <?php if ($c['image']): ?><img class="cat-img" src="<?= e($c['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon">🎮</div><?php endif; ?>
+            <div class="cat-name"><?= e($c['name']) ?></div>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+
+    <?php if ($products): ?>
+      <?php if ($subs): ?><h2 class="section-title">المنتجات</h2><?php endif; ?>
+      <div class="grid products-grid"><?php foreach ($products as $p) product_card($p, $favs); ?></div>
+    <?php elseif (!$subs): ?>
+      <p class="empty">لا توجد منتجات في هذا القسم حالياً.</p>
+    <?php endif; ?>
+
+    <?php include __DIR__ . '/buy_modal.php'; ?>
+    <script>const IS_LOGGED = <?= $U ? 'true' : 'false' ?>;</script>
+    <?php include __DIR__ . '/footer.php'; exit;
+}
+
+/* ===== الرئيسية: الأقسام الرئيسية ===== */
+$roots = root_categories();
 $pageTitle = 'الرئيسية';
 include __DIR__ . '/header.php'; ?>
 
@@ -88,15 +131,14 @@ include __DIR__ . '/header.php'; ?>
 </section>
 
 <h2 class="section-title">الأقسام</h2>
-<?php if (!$cats): ?>
-  <p class="empty">لم يتم تحميل المنتجات بعد — تأكد من توكن FastCard في <code>config.php</code> أو متغير البيئة <code>FASTCARD_TOKEN</code>.</p>
+<?php if (!$roots): ?>
+  <p class="empty">لم يتم تحميل المنتجات بعد — تأكد من توكن FastCard في الإعدادات.</p>
 <?php endif; ?>
 <div class="grid cats-grid">
-  <?php foreach ($cats as $name => $count): ?>
-    <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($name) ?>">
-      <div class="cat-icon">🎮</div>
-      <div class="cat-name"><?= e($name) ?></div>
-      <div class="cat-count"><?= $count ?> منتج</div>
+  <?php foreach ($roots as $c): ?>
+    <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>">
+      <?php if (!empty($c['image'])): ?><img class="cat-img" src="<?= e($c['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon">🎮</div><?php endif; ?>
+      <div class="cat-name"><?= e($c['name']) ?></div>
     </a>
   <?php endforeach; ?>
 </div>

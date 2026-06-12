@@ -216,3 +216,14 @@ input, select {
   .container { padding: 16px 12px 40px; }
 }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== المفضلة وصور الأقسام ===== */
+.product-card { position: relative; }
+.fav-btn {
+  position: absolute; top: 8px; inset-inline-start: 8px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 50%; width: 34px; height: 34px;
+  color: var(--muted); font-size: 1rem; cursor: pointer; z-index: 2;
+}
+.fav-btn.on { color: var(--no); border-color: var(--no); }
+.cat-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }

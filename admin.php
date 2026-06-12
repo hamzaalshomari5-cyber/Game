@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = 'تم تعديل الرصيد ✅';
     }
     if (isset($_POST['sync_products'])) {
-        fc_products(true);
+        fc_products(true); fc_categories(true);
         $msg = 'تمت مزامنة المنتجات من FastCard ✅';
     }
 }
