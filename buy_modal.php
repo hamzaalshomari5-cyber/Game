@@ -9,8 +9,10 @@
       <input type="number" id="mQty" value="1" min="1">
       <button type="button" onclick="qtyStep(1)">+</button>
     </div>
-    <label>ID اللاعب / المعرف المطلوب</label>
-    <input type="text" id="mPlayer" placeholder="مثال: 5123456789">
+    <div id="mPlayerWrap">
+      <label id="mPlayerLabel">ID اللاعب</label>
+      <input type="text" id="mPlayer" placeholder="">
+    </div>
     <div class="m-total">الإجمالي: <b id="mTotal"></b> ل.س</div>
     <div class="m-msg" id="mMsg"></div>
     <div class="m-actions">

@@ -10,10 +10,11 @@ foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $o) {
     $chk = fc_check_uuid($o['uuid']);
     if (!$chk || !$chk['status']) continue;
     $s = $chk['status'];
+    $codes = !empty($chk['codes']) ? json_encode(array_filter($chk['codes']), JSON_UNESCAPED_UNICODE) : $o['codes'];
     if ($s === 'accept' || $s === 'completed') {
-        db()->prepare("UPDATE orders SET status='accept', updated_at=datetime('now') WHERE id=?")->execute([$o['id']]);
+        db()->prepare("UPDATE orders SET status='accept', codes=?, fc_order_id=COALESCE(fc_order_id,?), updated_at=datetime('now') WHERE id=?")
+            ->execute([$codes, $chk['id'], $o['id']]);
     } elseif ($s === 'reject' || $s === 'rejected') {
-        // مرفوض → إعادة المبلغ
         db()->beginTransaction();
         db()->prepare("UPDATE orders SET status='reject', updated_at=datetime('now') WHERE id=?")->execute([$o['id']]);
         db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")->execute([$o['total'], $o['user_id']]);
@@ -44,6 +45,16 @@ include __DIR__ . '/header.php'; ?>
       <div class="o-body">
         <div><?= e($o['product_name']) ?> × <?= $o['qty'] ?></div>
         <?php if ($o['player_id']): ?><div class="muted">ID: <?= e($o['player_id']) ?></div><?php endif; ?>
+        <?php
+          $codes = $o['codes'] ? json_decode($o['codes'], true) : [];
+          if ($codes): ?>
+          <div class="codes-box">
+            🎟 الكود:
+            <?php foreach ($codes as $c): ?>
+              <b class="copyable" onclick="copyText('<?= e($c) ?>')"><?= e($c) ?> 📋</b>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
         <div class="o-total"><?= number_format($o['total']) ?> ل.س</div>
         <div class="muted small"><?= e($o['created_at']) ?></div>
       </div>

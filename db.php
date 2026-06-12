@@ -36,6 +36,10 @@ function init_db($pdo) {
         status TEXT DEFAULT 'approved',
         created_at TEXT DEFAULT (datetime('now'))
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS favorites (
+        user_id INTEGER, product_id TEXT, PRIMARY KEY(user_id, product_id)
+    )");
+    try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
     $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY, value TEXT
     )");

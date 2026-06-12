@@ -4,7 +4,7 @@ function toggleSidebar() {
   document.getElementById('overlay').classList.toggle('show');
 }
 
-// الوضع الداكن/الفاتح (بدون localStorage — كوكي)
+// الوضع الداكن/الفاتح
 function toggleTheme() {
   const light = document.body.classList.toggle('light');
   document.cookie = 'theme=' + (light ? 'light' : 'dark') + ';path=/;max-age=31536000';
@@ -18,15 +18,29 @@ function copyText(t) {
 }
 
 // ===== مودال الشراء =====
-let curPrice = 0;
+let curPrice = 0, qMin = 1, qMax = 0;
 
 function openBuy(card) {
   if (card.classList.contains('oos')) return;
   curPrice = parseFloat(card.dataset.price) || 0;
+  qMin = parseInt(card.dataset.qmin) || 1;
+  qMax = parseInt(card.dataset.qmax) || 0;
   document.getElementById('mName').textContent = card.dataset.name;
   document.getElementById('mPrice').textContent = Number(curPrice).toLocaleString() + ' ل.س';
   document.getElementById('mDesc').textContent = card.dataset.desc || '';
-  document.getElementById('mQty').value = 1;
+  const qty = document.getElementById('mQty');
+  qty.value = qMin; qty.min = qMin;
+  if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
+  // حقل المعرف حسب متطلبات المنتج من API
+  const param = card.dataset.param || '';
+  const wrap = document.getElementById('mPlayerWrap');
+  if (param) {
+    wrap.style.display = '';
+    document.getElementById('mPlayerLabel').textContent = param;
+    document.getElementById('mPlayer').placeholder = param;
+  } else {
+    wrap.style.display = 'none';
+  }
   document.getElementById('mPlayer').value = '';
   document.getElementById('mMsg').textContent = '';
   document.getElementById('mMsg').className = 'm-msg';
@@ -37,11 +51,14 @@ function openBuy(card) {
 function closeBuy() { document.getElementById('buyModal').classList.remove('show'); }
 function qtyStep(d) {
   const i = document.getElementById('mQty');
-  i.value = Math.max(1, (parseInt(i.value) || 1) + d);
+  let v = (parseInt(i.value) || qMin) + d;
+  if (v < qMin) v = qMin;
+  if (qMax > 0 && v > qMax) v = qMax;
+  i.value = v;
   updateTotal();
 }
 function updateTotal() {
-  const q = parseInt(document.getElementById('mQty').value) || 1;
+  const q = parseInt(document.getElementById('mQty').value) || qMin;
   document.getElementById('mTotal').textContent = (curPrice * q).toLocaleString();
 }
 document.addEventListener('input', e => { if (e.target.id === 'mQty') updateTotal(); });

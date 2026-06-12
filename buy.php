@@ -18,10 +18,20 @@ $p = store_product($pid);
 if (!$p) out(false, 'المنتج غير موجود');
 if (!$p['available']) out(false, 'المنتج غير متوفر حالياً ❌');
 
+// حدود الكمية من API
+if ($qty < $p['qty_min']) out(false, 'أقل كمية مسموحة: ' . $p['qty_min']);
+if ($p['qty_max'] > 0 && $qty > $p['qty_max']) out(false, 'أكبر كمية مسموحة: ' . $p['qty_max']);
+
+// إذا المنتج بيطلب معرف لاعب
+if (!empty($p['params']) && $player === '') out(false, 'مطلوب: ' . $p['params'][0]);
+
 $total = $p['price'] * $qty;
 if ($U['balance'] < $total) out(false, 'رصيد محفظتك غير كافٍ — المطلوب ' . number_format($total) . ' ل.س. اشحن محفظتك أولاً.');
 
-$uuid = bin2hex(random_bytes(16));
+// UUIDv4 حسب التوثيق (idempotency)
+$b = random_bytes(16);
+$b[6] = chr(ord($b[6]) & 0x0f | 0x40); $b[8] = chr(ord($b[8]) & 0x3f | 0x80);
+$uuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($b), 4));
 
 // خصم الرصيد وحجز الطلب
 db()->beginTransaction();
@@ -33,21 +43,30 @@ $st->execute([$U['id'], $pid, $p['name'], $qty, $player, $p['price'], $total, $u
 $orderId = db()->lastInsertId();
 db()->commit();
 
-// إرسال الطلب لـ FastCard
+// إرسال الطلب — POST حسب التوثيق
 $r = fc_new_order($pid, $qty, $player, $uuid);
-$success = $r['code'] >= 200 && $r['code'] < 300 && is_array($r['data'])
-           && (($r['data']['status'] ?? '') !== 'error') && empty($r['data']['error']);
+$d = is_array($r['data']) ? $r['data'] : [];
+$success = ($d['status'] ?? '') === 'OK';
 
 if (!$success) {
-    // فشل الإرسال → إعادة المبلغ
+    // فشل → إعادة المبلغ
     db()->beginTransaction();
     db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")->execute([$total, $U['id']]);
     db()->prepare("UPDATE orders SET status='reject', updated_at=datetime('now') WHERE id=?")->execute([$orderId]);
     db()->commit();
-    out(false, 'تعذّر تنفيذ الطلب وتمت إعادة المبلغ لمحفظتك. حاول لاحقاً أو تواصل مع الدعم.');
+    $apiMsg = $d['message'] ?? $d['msg'] ?? '';
+    out(false, 'تعذّر تنفيذ الطلب وتمت إعادة المبلغ لمحفظتك.' . ($apiMsg ? ' (' . $apiMsg . ')' : ''));
 }
 
-$fcId = $r['data']['order_id'] ?? $r['data']['id'] ?? ($r['data']['order']['id'] ?? null);
-if ($fcId) db()->prepare("UPDATE orders SET fc_order_id=? WHERE id=?")->execute([$fcId, $orderId]);
+$od = $d['data'] ?? [];
+$fcId   = $od['order_id'] ?? null;
+$fcStat = $od['status'] ?? 'processing';
+$codes  = is_array($od['replay_api'] ?? null) ? array_filter($od['replay_api']) : [];
 
-out(true, 'تم إرسال طلبك بنجاح ✅ — تابع حالته من صفحة "طلباتي"', ['order_id' => $orderId]);
+$newStatus = ($fcStat === 'accept' || $fcStat === 'completed') ? 'accept' : 'pending';
+db()->prepare("UPDATE orders SET fc_order_id=?, status=?, codes=?, updated_at=datetime('now') WHERE id=?")
+    ->execute([$fcId, $newStatus, $codes ? json_encode($codes, JSON_UNESCAPED_UNICODE) : null, $orderId]);
+
+$msg = 'تم إرسال طلبك بنجاح ✅ — تابع حالته من صفحة "طلباتي"';
+if ($codes) $msg = 'تم تنفيذ طلبك ✅ الكود موجود بصفحة "طلباتي"';
+out(true, $msg, ['order_id' => $orderId]);

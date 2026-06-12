@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = 'تم تعديل الرصيد ✅';
     }
     if (isset($_POST['sync_products'])) {
-        fc_products(true); fc_categories(true);
+        store_products(true); fc_content(0, true);
         $msg = 'تمت مزامنة المنتجات من FastCard ✅';
     }
 }
@@ -101,12 +101,12 @@ include __DIR__ . '/header.php'; ?>
     </form>
   </div>
   <div class="card">
-    <h3>حالة الأقسام</h3>
-    <?php $nc = count(fc_categories()); $np = count(fc_products()); ?>
+    <h3>حالة الربط مع FastCard</h3>
+    <?php $root = fc_content(0); $np = count(store_products()); ?>
     <p class="muted">
-      المنتجات من API: <b><?= $np ?></b> —
-      أقسام الشجرة من API: <b><?= $nc ?></b><br>
-      <?= $nc ? '✅ النظام الشجري شغال (مثل FastCard)' : '⚠️ API ما رجّع شجرة أقسام — الموقع شغال بالعرض المسطّح. ابعت سكرين شوت لكلود ليعالجها.' ?>
+      الأقسام الرئيسية: <b><?= count($root['categories']) ?></b> —
+      إجمالي المنتجات: <b><?= $np ?></b><br>
+      <?= count($root['categories']) ? '✅ النظام الشجري شغال (content API)' : '⚠️ ما في أقسام — تأكد من التوكن' ?>
     </p>
   </div>
   <div class="card">
