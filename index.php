@@ -39,7 +39,7 @@ function product_card($p, $favs) {
       <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>
       <?php if ($p['image']): ?><img src="<?= e($p['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="ph">🎮</div><?php endif; ?>
       <div class="p-name"><?= e($p['name']) ?></div>
-      <div class="p-price"><?= number_format($p['price']) ?> ل.س</div>
+      <div class="p-price"><?= fmt_price($p['price']) ?></div>
       <?php if (!$p['available']): ?><div class="oos-badge">غير متوفر حالياً ❌</div><?php endif; ?>
     </div>
 <?php }

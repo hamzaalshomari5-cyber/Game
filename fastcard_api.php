@@ -27,11 +27,12 @@ function fc_profile() {
 }
 
 function _map_product($p, $profit) {
+    $rate = usd_rate();
     return [
         'id'        => (string)($p['id'] ?? ''),
         'name'      => $p['name'] ?? '',
         'cost'      => (float)($p['price'] ?? 0),
-        'price'     => round((float)($p['price'] ?? 0) * (1 + $profit / 100)),
+        'price'     => round((float)($p['price'] ?? 0) * $rate * (1 + $profit / 100)),
         'category'  => $p['category_name'] ?? '',
         'parent_id' => (string)($p['parent_id'] ?? '0'),
         'image'     => $p['image'] ?? $p['img'] ?? '',

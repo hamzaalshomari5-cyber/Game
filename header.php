@@ -45,6 +45,7 @@ $U = current_user();
     <a href="/index.php?page=terms">📄 سياسة الاسترجاع</a>
   </nav>
   <button class="theme-toggle" onclick="toggleTheme()">🌙 / ☀️ تبديل الوضع</button>
+  <button class="theme-toggle" onclick="toggleCurrency()">💱 العملة: <?= display_currency() === 'usd' ? 'دولار $' : 'ليرة ل.س' ?></button>
   <div class="sb-social">
     <?php if (WHATSAPP_1): ?><a href="<?= e(WHATSAPP_1) ?>" target="_blank">واتساب</a><?php endif; ?>
     <?php if (INSTAGRAM): ?><a href="<?= e(INSTAGRAM) ?>" target="_blank">انستغرام</a><?php endif; ?>
@@ -62,4 +63,5 @@ $U = current_user();
     <?php endif; ?>
   </div>
 </header>
+<script>const USD_RATE = <?= usd_rate() ?>; const CUR = '<?= display_currency() ?>';</script>
 <main class="container">

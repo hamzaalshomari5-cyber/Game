@@ -5,6 +5,10 @@ $tab = $_GET['tab'] ?? 'stats';
 $msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['usd_rate'])) {
+        set_setting('usd_rate', (float)$_POST['usd_rate']);
+        $msg = 'تم حفظ سعر الصرف ✅';
+    }
     if (isset($_POST['profit_percent'])) {
         set_setting('profit_percent', (float)$_POST['profit_percent']);
         cache_set('fc_products', cache_get('fc_products') ?? [], 0); // إبطال الكاش
@@ -92,6 +96,22 @@ include __DIR__ . '/header.php'; ?>
   </div>
 
 <?php else: ?>
+  <div class="card">
+    <h3>سعر صرف الدولار 💱</h3>
+    <p class="muted">أسعار FastCard بترجع بالدولار — حط سعر الصرف ليتحول السعر لليرة تلقائياً.</p>
+    <form method="post" class="inline-form">
+      <input name="usd_rate" type="number" step="any" value="<?= e(setting('usd_rate', 11000)) ?>" required>
+      <span class="muted">ل.س لكل 1$</span>
+      <button class="btn">حفظ</button>
+    </form>
+    <?php $sp = store_products(); if ($sp): $x = $sp[0]; ?>
+      <p class="muted" style="margin-top:10px">
+        ✔ مثال للتأكد: "<?= e($x['name']) ?>" — سعر FastCard: <b><?= e($x['cost']) ?>$</b> →
+        سعر البيع عندك: <b><?= number_format($x['price']) ?> ل.س</b>
+        (<?= e($x['cost']) ?> × <?= e(setting('usd_rate', 11000)) ?> × <?= 1 + (float)setting('profit_percent', DEFAULT_PROFIT) / 100 ?>)
+      </p>
+    <?php endif; ?>
+  </div>
   <div class="card">
     <h3>هامش الربح</h3>
     <form method="post" class="inline-form">

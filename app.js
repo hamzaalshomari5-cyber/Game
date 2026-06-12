@@ -13,6 +13,19 @@ function toggleTheme() {
   if (document.cookie.includes('theme=light')) document.body.classList.add('light');
 })();
 
+// تبديل العملة (ل.س / $)
+function toggleCurrency() {
+  const cur = (typeof CUR !== 'undefined' && CUR === 'usd') ? 'syp' : 'usd';
+  document.cookie = 'currency=' + cur + ';path=/;max-age=31536000';
+  location.reload();
+}
+// تنسيق سعر (المخزن دائماً ل.س)
+function fmtPrice(syp) {
+  if (typeof CUR !== 'undefined' && CUR === 'usd')
+    return (syp / USD_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' $';
+  return Number(syp).toLocaleString() + ' ل.س';
+}
+
 function copyText(t) {
   navigator.clipboard && navigator.clipboard.writeText(t);
 }
@@ -26,7 +39,7 @@ function openBuy(card) {
   qMin = parseInt(card.dataset.qmin) || 1;
   qMax = parseInt(card.dataset.qmax) || 0;
   document.getElementById('mName').textContent = card.dataset.name;
-  document.getElementById('mPrice').textContent = Number(curPrice).toLocaleString() + ' ل.س';
+  document.getElementById('mPrice').textContent = fmtPrice(curPrice);
   document.getElementById('mDesc').textContent = card.dataset.desc || '';
   const qty = document.getElementById('mQty');
   qty.value = qMin; qty.min = qMin;
@@ -59,7 +72,7 @@ function qtyStep(d) {
 }
 function updateTotal() {
   const q = parseInt(document.getElementById('mQty').value) || qMin;
-  document.getElementById('mTotal').textContent = (curPrice * q).toLocaleString();
+  document.getElementById('mTotal').textContent = fmtPrice(curPrice * q);
 }
 document.addEventListener('input', e => { if (e.target.id === 'mQty') updateTotal(); });
 document.addEventListener('click', e => { if (e.target.id === 'buyModal') closeBuy(); });

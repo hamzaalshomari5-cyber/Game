@@ -13,7 +13,7 @@
       <label id="mPlayerLabel">ID اللاعب</label>
       <input type="text" id="mPlayer" placeholder="">
     </div>
-    <div class="m-total">الإجمالي: <b id="mTotal"></b> ل.س</div>
+    <div class="m-total">الإجمالي: <b id="mTotal"></b></div>
     <div class="m-msg" id="mMsg"></div>
     <div class="m-actions">
       <button class="btn ghost" onclick="closeBuy()">إلغاء</button>
