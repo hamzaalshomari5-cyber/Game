@@ -101,6 +101,15 @@ include __DIR__ . '/header.php'; ?>
     </form>
   </div>
   <div class="card">
+    <h3>حالة الأقسام</h3>
+    <?php $nc = count(fc_categories()); $np = count(fc_products()); ?>
+    <p class="muted">
+      المنتجات من API: <b><?= $np ?></b> —
+      أقسام الشجرة من API: <b><?= $nc ?></b><br>
+      <?= $nc ? '✅ النظام الشجري شغال (مثل FastCard)' : '⚠️ API ما رجّع شجرة أقسام — الموقع شغال بالعرض المسطّح. ابعت سكرين شوت لكلود ليعالجها.' ?>
+    </p>
+  </div>
+  <div class="card">
     <h3>مزامنة المنتجات</h3>
     <p class="muted">تُحدَّث المنتجات تلقائياً كل 5 دقائق — أو حدّثها الآن:</p>
     <form method="post"><button class="btn" name="sync_products" value="1">مزامنة الآن 🔄</button></form>
