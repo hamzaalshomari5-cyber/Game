@@ -28,21 +28,22 @@ function user_favs($U) {
 }
 
 /* ===== كرت منتج (مثل FastCard: صورة + اسم + سعر + غير متوفر + قلب) ===== */
-function needs_verify($p) {
-    $t = mb_strtolower($p['name'] . ' ' . $p['category']);
-    foreach (['ببجي', 'pubg', 'شدة', 'فري فاير', 'فري  فاير', 'free fire', 'freefire'] as $k)
+function needs_verify($p, $ctx = '') {
+    $t = mb_strtolower($p['name'] . ' ' . $p['category'] . ' ' . $ctx);
+    foreach (['ببجي', 'pubg', 'شدة', 'شدات', 'فري فاير', 'free fire', 'freefire', 'uc '] as $k)
         if (mb_strpos($t, $k) !== false) return true;
+    if (preg_match('/\d+\s*uc\b|\buc\s*\d+/i', $t)) return true;
     return false;
 }
 
-function product_card($p, $favs) {
+function product_card($p, $favs, $ctx = '') {
     $isFav = in_array((string)$p['id'], $favs);
     $label = $p['params'][0] ?? ''; ?>
     <div class="card product-card <?= $p['available'] ? '' : 'oos' ?>"
          data-id="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>"
          data-price="<?= e($p['price']) ?>" data-desc="<?= e($p['desc']) ?>"
          data-param="<?= e($label) ?>" data-qmin="<?= e($p['qty_min']) ?>" data-qmax="<?= e($p['qty_max']) ?>"
-         data-verify="<?= (needs_verify($p) && !empty($p['params'])) ? '1' : '0' ?>"
+         data-verify="<?= (needs_verify($p, $ctx) && !empty($p['params'])) ? '1' : '0' ?>"
          onclick="openBuy(this)">
       <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>
       <?php if ($p['image']): ?><img src="<?= e($p['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="ph">🎮</div><?php endif; ?>
@@ -117,7 +118,7 @@ if ($page === 'products') {
 
     <?php if ($products): ?>
       <?php if ($subs): ?><h2 class="section-title">المنتجات</h2><?php endif; ?>
-      <div class="grid products-grid"><?php foreach ($products as $p) product_card($p, $favs); ?></div>
+      <div class="grid products-grid"><?php foreach ($products as $p) product_card($p, $favs, $catName); ?></div>
     <?php elseif (!$subs): ?>
       <p class="empty">لا توجد منتجات في هذا القسم حالياً.</p>
     <?php endif; ?>
