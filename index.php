@@ -28,6 +28,22 @@ function user_favs($U) {
 }
 
 /* ===== كرت منتج (مثل FastCard: صورة + اسم + سعر + غير متوفر + قلب) ===== */
+function fc_img($file, $cls) {
+    if (!$file) return false;
+    if (preg_match('#^https?://#', $file)) { $src = $file; $alts = ''; }
+    else {
+        $base = 'https://fastcard1.store/uploads/';
+        $first = (strpos($file, 'cat_') === 0) ? 'categories/' : 'products/';
+        $src = $base . $first . $file;
+        $alts = e($base . $file);
+    }
+    echo '<img class="' . $cls . '" src="' . e($src) . '" alt="" loading="lazy"'
+       . ($alts ? ' onerror="if(!this.dataset.t){this.dataset.t=1;this.src=\'' . $alts . '\'}else{this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<div class=ph>🎮</div>\')}"'
+                : ' onerror="this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<div class=ph>🎮</div>\')"')
+       . '>';
+    return true;
+}
+
 function needs_verify($p, $ctx = '') {
     $t = mb_strtolower($p['name'] . ' ' . $p['category'] . ' ' . $ctx);
     foreach (['ببجي', 'pubg', 'شدة', 'شدات', 'فري فاير', 'free fire', 'freefire', 'uc '] as $k)
@@ -46,7 +62,7 @@ function product_card($p, $favs, $ctx = '') {
          data-verify="<?= (needs_verify($p, $ctx) && !empty($p['params'])) ? '1' : '0' ?>"
          onclick="openBuy(this)">
       <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>
-      <?php if ($p['image']): ?><img src="<?= e($p['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="ph">🎮</div><?php endif; ?>
+      <?php if (!fc_img($p['image'], '')): ?><div class="ph">🎮</div><?php endif; ?>
       <div class="p-name"><?= e($p['name']) ?></div>
       <div class="p-price"><?= fmt_price($p['price']) ?></div>
       <?php if (!$p['available']): ?><div class="oos-badge">غير متوفر حالياً ❌</div><?php endif; ?>
@@ -109,7 +125,7 @@ if ($page === 'products') {
       <div class="grid cats-grid">
         <?php foreach ($subs as $c): ?>
           <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?>">
-            <?php if ($c['image']): ?><img class="cat-img" src="<?= e($c['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon">🎮</div><?php endif; ?>
+            <?php if (!fc_img($c['image'], 'cat-img')): ?><div class="cat-icon">🎮</div><?php endif; ?>
             <div class="cat-name"><?= e($c['name']) ?></div>
           </a>
         <?php endforeach; ?>
@@ -148,7 +164,7 @@ include __DIR__ . '/header.php'; ?>
 <div class="grid cats-grid">
   <?php foreach ($root['categories'] as $c): ?>
     <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?>">
-      <?php if ($c['image']): ?><img class="cat-img" src="<?= e($c['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon">🎮</div><?php endif; ?>
+      <?php if (!fc_img($c['image'], 'cat-img')): ?><div class="cat-icon">🎮</div><?php endif; ?>
       <div class="cat-name"><?= e($c['name']) ?></div>
     </a>
   <?php endforeach; ?>
