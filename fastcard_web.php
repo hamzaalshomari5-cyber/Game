@@ -111,17 +111,18 @@ function fcw_login() {
  * التحقق من اسم اللاعب.
  * يرجّع: ['ok'=>true,'name'=>...] أو ['ok'=>false,'msg'=>...] أو ['ok'=>false,'soft'=>true,...]
  */
-function fcw_check_player($playerId, $productId) {
-    if (!fcw_enabled()) return ['ok' => false, 'soft' => true, 'msg' => 'تحقق الاسم غير مفعّل'];
+function fcw_check_player($playerId, $productId, &$debug = null) {
+    if (!fcw_enabled()) return ['ok' => false, 'soft' => true, 'msg' => 'تحقق الاسم غير مفعّل — بيانات دخول الموقع ناقصة'];
 
     $base = fcw_base();
     $url  = $base . '/ajax/player-id-check';
 
     for ($attempt = 1; $attempt <= 2; $attempt++) {
-        if ($attempt === 2) { @unlink(fcw_cookiefile()); fcw_login(); }
-        elseif (!file_exists(fcw_cookiefile())) fcw_login();
+        if ($attempt === 2) { @unlink(fcw_cookiefile()); $lg = fcw_login(); if (is_array($debug)) $debug[] = "attempt2 login=" . var_export($lg, true); }
+        elseif (!file_exists(fcw_cookiefile())) { $lg = fcw_login(); if (is_array($debug)) $debug[] = "login=" . var_export($lg, true); }
 
         $csrf = fcw_csrf();
+        if (is_array($debug)) $debug[] = "attempt=$attempt product=$productId csrf_len=" . strlen($csrf);
         [$body, $info] = fcw_curl($url, [
             CURLOPT_POST       => true,
             CURLOPT_POSTFIELDS => http_build_query(['user_id' => (string)$playerId, 'product_id' => (int)$productId]),
@@ -134,6 +135,7 @@ function fcw_check_player($playerId, $productId) {
             ],
         ]);
         $data = json_decode((string)$body, true);
+        if (is_array($debug)) $debug[] = "http=" . ($info['http_code'] ?? '?') . " body=" . mb_substr(trim((string)$body), 0, 300);
 
         // رد مش JSON → غالباً جلسة منتهية، أعد المحاولة
         if (!is_array($data)) {
