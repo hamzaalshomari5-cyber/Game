@@ -51,11 +51,20 @@ $variants = [
 ];
 
 $reached = false;
+$debug = [];
 foreach ($variants as [$params, $post]) {
     [$code, $res] = try_check(CHECK_PLAYER_URL, $params, $post);
     if ($code >= 200 && $code < 500 && $res !== false) $reached = true;
+    $debug[] = ($post ? 'POST ' : 'GET ') . json_encode($params) . " => HTTP $code | " . mb_substr(trim((string)$res), 0, 250);
     $name = extract_name($res);
     if ($name) { echo json_encode(['ok' => true, 'name' => $name], JSON_UNESCAPED_UNICODE); exit; }
+}
+
+// وضع الفحص: /check_name.php?player=XXX&debug=1
+if (isset($_GET['debug'])) {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo implode("\n\n", $debug);
+    exit;
 }
 
 if ($reached) {
