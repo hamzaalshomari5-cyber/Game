@@ -61,18 +61,18 @@ function fcw_totp($secret) {
     return str_pad((string)$code, 6, '0', STR_PAD_LEFT);
 }
 
-/** يجلب CSRF token من صفحات المنتجات */
+/** يجلب CSRF token من صفحات المنتجات — يرجع [token, sourcePage] */
 function fcw_csrf() {
     $base = fcw_base();
     foreach (['/index?page=products&cat=440', '/index?page=products', '/index'] as $page) {
         [$html] = fcw_curl($base . $page);
         if (!$html) continue;
-        if (preg_match('/PLAYER_CHECK_CSRF\s*=\s*["\']([a-f0-9]{20,})["\']/i', $html, $m)) return $m[1];
-        if (preg_match('/<meta\s+name=["\']csrf-token["\']\s+content=["\']([^"\']+)["\']/', $html, $m)) return $m[1];
-        if (preg_match('/csrf[_-]?token["\']?\s*[:=]\s*["\']([a-f0-9]{32,})["\']/i', $html, $m)) return $m[1];
-        if (preg_match('/name=["\']_token["\']\s+value=["\']([^"\']+)["\']/', $html, $m)) return $m[1];
+        if (preg_match('/PLAYER_CHECK_CSRF\s*=\s*["\']([a-f0-9]{20,})["\']/i', $html, $m)) return [$m[1], $page];
+        if (preg_match('/<meta\s+name=["\']csrf-token["\']\s+content=["\']([^"\']+)["\']/', $html, $m)) return [$m[1], $page];
+        if (preg_match('/csrf[_-]?token["\']?\s*[:=]\s*["\']([a-f0-9]{32,})["\']/i', $html, $m)) return [$m[1], $page];
+        if (preg_match('/name=["\']_token["\']\s+value=["\']([^"\']+)["\']/', $html, $m)) return [$m[1], $page];
     }
-    return '';
+    return ['', '/index?page=products'];
 }
 
 /** تسجيل الدخول لموقع FastCard */
@@ -121,37 +121,40 @@ function fcw_check_player($playerId, $productId, &$debug = null) {
         if ($attempt === 2) { @unlink(fcw_cookiefile()); $lg = fcw_login(); if (is_array($debug)) $debug[] = "attempt2 login=" . var_export($lg, true); }
         elseif (!file_exists(fcw_cookiefile())) { $lg = fcw_login(); if (is_array($debug)) $debug[] = "login=" . var_export($lg, true); }
 
-        $csrf = fcw_csrf();
-        if (is_array($debug)) $debug[] = "attempt=$attempt product=$productId csrf_len=" . strlen($csrf);
-        [$body, $info] = fcw_curl($url, [
-            CURLOPT_POST       => true,
-            CURLOPT_POSTFIELDS => http_build_query(['user_id' => (string)$playerId, 'product_id' => (int)$productId]),
-            CURLOPT_HTTPHEADER => [
-                'X-Requested-With: XMLHttpRequest',
-                'Accept: application/json',
-                'X-CSRF-TOKEN: ' . $csrf,
-                'Origin: ' . $base,
-                'Referer: ' . $base . '/index?page=products',
-            ],
-        ]);
-        $data = json_decode((string)$body, true);
-        if (is_array($debug)) $debug[] = "http=" . ($info['http_code'] ?? '?') . " body=" . mb_substr(trim((string)$body), 0, 300);
+        [$csrf, $srcPage] = fcw_csrf();
+        if (is_array($debug)) $debug[] = "attempt=$attempt product=$productId csrf_len=" . strlen($csrf) . " src=$srcPage";
 
-        // رد مش JSON → غالباً جلسة منتهية، أعد المحاولة
-        if (!is_array($data)) {
-            if ($attempt === 1) continue;
-            return ['ok' => false, 'soft' => true, 'msg' => 'رد غير متوقع من الموقع'];
+        // عدة صيغ لإرسال الطلب (الموقع بيغيّر الصيغة بين التحديثات)
+        $payloads = [
+            ['user_id' => (string)$playerId, 'product_id' => (int)$productId, 'csrf_token' => $csrf, '_token' => $csrf],
+            ['user_id' => (string)$playerId, 'product_id' => (int)$productId, 'csrf' => $csrf],
+            ['user_id' => (string)$playerId, 'product_id' => (int)$productId],
+            ['player_id' => (string)$playerId, 'product_id' => (int)$productId, 'csrf_token' => $csrf],
+        ];
+
+        foreach ($payloads as $pi => $payload) {
+            [$body, $info] = fcw_curl($url, [
+                CURLOPT_POST       => true,
+                CURLOPT_POSTFIELDS => http_build_query($payload),
+                CURLOPT_HTTPHEADER => [
+                    'X-Requested-With: XMLHttpRequest',
+                    'Accept: application/json',
+                    'Content-Type: application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-CSRF-TOKEN: ' . $csrf,
+                    'Origin: ' . $base,
+                    'Referer: ' . $base . $srcPage,
+                ],
+            ]);
+            $data = json_decode((string)$body, true);
+            if (is_array($debug)) $debug[] = "p$pi keys=" . implode(',', array_keys($payload)) . " http=" . ($info['http_code'] ?? '?') . " body=" . mb_substr(trim((string)$body), 0, 250);
+
+            if (!is_array($data)) continue;
+
+            $valid = $data['valid'] ?? null;
+            $name  = $data['player_name'] ?? $data['name'] ?? $data['username'] ?? null;
+            if ($valid && $valid !== 'invalid' && $name) return ['ok' => true, 'name' => $name];
         }
-
-        $valid = $data['valid'] ?? null;
-        $name  = $data['player_name'] ?? $data['name'] ?? $data['username'] ?? null;
-        if ($valid && $name) return ['ok' => true, 'name' => $name];
-
-        $success = $data['success'] ?? null;
-        $msg = strtolower((string)($data['message'] ?? $data['error'] ?? ''));
-        if ($attempt === 1 && (strpos($msg, 'login') !== false || strpos($msg, 'تسجيل') !== false || !$success)) continue;
-
-        return ['ok' => false, 'msg' => 'ID غير صحيح أو لم يتم العثور على اللاعب'];
+        // كل الصيغ فشلت بهالمحاولة → أعد تسجيل الدخول وجرب مرة ثانية
     }
-    return ['ok' => false, 'soft' => true, 'msg' => 'تعذّر الاتصال بالموقع'];
+    return ['ok' => false, 'msg' => 'ID غير صحيح أو لم يتم العثور على اللاعب'];
 }
