@@ -1,0 +1,41 @@
+<?php
+// ===== إعدادات الموقع =====
+define('STORE_NAME', 'LUXE CARD');
+define('STORE_TAGLINE', 'شحن ألعاب وبطاقات رقمية بسرعة وأمان');
+
+// FastCard API
+define('FASTCARD_BASE', 'https://api.fastcard1.store/client/api');
+define('FASTCARD_TOKEN', 'ضع_توكن_FASTCARD_هنا'); // أو متغير بيئة FASTCARD_TOKEN
+
+// هامش الربح الافتراضي % (يتعدل من لوحة الأدمن)
+define('DEFAULT_PROFIT', 10);
+
+// سيرياتيل كاش
+define('SYRIATEL_NUMBER', '0982493924');
+define('APISYRIA_KEY', 'ضع_مفتاح_APISYRIA_هنا'); // أو متغير بيئة APISYRIA_KEY
+define('APISYRIA_URL', 'https://apisyria.com/api/v1/');
+
+// حساب الأدمن (أول دخول)
+define('ADMIN_EMAIL', 'admin@luxecard.store');
+define('ADMIN_PASS', 'admin123'); // غيّرها فوراً بعد أول دخول
+
+// روابط التواصل
+define('WHATSAPP_1', 'https://wa.me/963900000000');
+define('WHATSAPP_GROUP', '');
+define('INSTAGRAM', '');
+
+// قاعدة البيانات (Railway Volume إذا موجود)
+define('DB_PATH', getenv('DB_PATH') ?: __DIR__ . '/data/store.db');
+
+// كاش المنتجات (ثواني)
+define('PRODUCTS_CACHE_TTL', 300);
+
+function env_or($name, $const) {
+    $v = getenv($name);
+    return $v !== false && $v !== '' ? $v : $const;
+}
+function fastcard_token() { return env_or('FASTCARD_TOKEN', FASTCARD_TOKEN); }
+function apisyria_key()  { return env_or('APISYRIA_KEY', APISYRIA_KEY); }
+
+date_default_timezone_set('Asia/Damascus');
+session_start();
