@@ -28,6 +28,13 @@ function user_favs($U) {
 }
 
 /* ===== كرت منتج (مثل FastCard: صورة + اسم + سعر + غير متوفر + قلب) ===== */
+function needs_verify($p) {
+    $t = mb_strtolower($p['name'] . ' ' . $p['category']);
+    foreach (['ببجي', 'pubg', 'شدة', 'فري فاير', 'فري  فاير', 'free fire', 'freefire'] as $k)
+        if (mb_strpos($t, $k) !== false) return true;
+    return false;
+}
+
 function product_card($p, $favs) {
     $isFav = in_array((string)$p['id'], $favs);
     $label = $p['params'][0] ?? ''; ?>
@@ -35,6 +42,7 @@ function product_card($p, $favs) {
          data-id="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>"
          data-price="<?= e($p['price']) ?>" data-desc="<?= e($p['desc']) ?>"
          data-param="<?= e($label) ?>" data-qmin="<?= e($p['qty_min']) ?>" data-qmax="<?= e($p['qty_max']) ?>"
+         data-verify="<?= (needs_verify($p) && !empty($p['params'])) ? '1' : '0' ?>"
          onclick="openBuy(this)">
       <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>
       <?php if ($p['image']): ?><img src="<?= e($p['image']) ?>" alt="" loading="lazy"><?php else: ?><div class="ph">🎮</div><?php endif; ?>

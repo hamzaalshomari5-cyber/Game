@@ -39,3 +39,6 @@ function apisyria_key()  { return env_or('APISYRIA_KEY', APISYRIA_KEY); }
 
 date_default_timezone_set('Asia/Damascus');
 session_start();
+
+// رابط التحقق من اسم اللاعب (نفس اللي بيستخدمه موقع FastCard)
+define('CHECK_PLAYER_URL', 'https://fastcard1.store/redeemtech_check_player.php');

@@ -234,3 +234,12 @@ input, select {
   display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
 }
 .codes-box b { color: var(--ok); direction: ltr; }
+
+.verify-box {
+  margin-top: 8px; padding: 9px 12px; border-radius: 10px;
+  font-weight: 700; font-size: .9rem;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.verify-box.ok { border-color: var(--ok); color: var(--ok); background: rgba(47,208,114,.08); }
+.verify-box.no { border-color: var(--no); color: var(--no); background: rgba(255,93,108,.08); }
+.verify-box.warn { border-color: var(--accent); color: var(--accent); background: rgba(255,185,56,.08); }

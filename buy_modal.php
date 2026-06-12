@@ -11,7 +11,8 @@
     </div>
     <div id="mPlayerWrap">
       <label id="mPlayerLabel">ID اللاعب</label>
-      <input type="text" id="mPlayer" placeholder="">
+      <input type="text" id="mPlayer" placeholder="" oninput="resetVerify()">
+      <div class="verify-box" id="mVerify" style="display:none"></div>
     </div>
     <div class="m-total">الإجمالي: <b id="mTotal"></b></div>
     <div class="m-msg" id="mMsg"></div>

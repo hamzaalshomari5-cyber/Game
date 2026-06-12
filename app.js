@@ -31,7 +31,7 @@ function copyText(t) {
 }
 
 // ===== مودال الشراء =====
-let curPrice = 0, qMin = 1, qMax = 0;
+let curPrice = 0, qMin = 1, qMax = 0, needVerify = false, verified = false, softPass = false;
 
 function openBuy(card) {
   if (card.classList.contains('oos')) return;
@@ -45,6 +45,11 @@ function openBuy(card) {
   qty.value = qMin; qty.min = qMin;
   if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
   // حقل المعرف حسب متطلبات المنتج من API
+  needVerify = card.dataset.verify === '1';
+  verified = false; softPass = false;
+  const vb = document.getElementById('mVerify');
+  vb.style.display = 'none'; vb.textContent = '';
+  document.getElementById('mBuyBtn').textContent = needVerify ? 'تحقق من الاسم 🔍' : 'شراء';
   const param = card.dataset.param || '';
   const wrap = document.getElementById('mPlayerWrap');
   if (param) {
@@ -77,6 +82,51 @@ function updateTotal() {
 document.addEventListener('input', e => { if (e.target.id === 'mQty') updateTotal(); });
 document.addEventListener('click', e => { if (e.target.id === 'buyModal') closeBuy(); });
 
+// إعادة ضبط التحقق عند تغيير الـ ID
+function resetVerify() {
+  if (!needVerify) return;
+  verified = false; softPass = false;
+  const vb = document.getElementById('mVerify');
+  vb.style.display = 'none';
+  document.getElementById('mBuyBtn').textContent = 'تحقق من الاسم 🔍';
+}
+
+// التحقق من اسم اللاعب (ببجي / فري فاير)
+async function verifyName() {
+  const btn = document.getElementById('mBuyBtn');
+  const vb = document.getElementById('mVerify');
+  const player = document.getElementById('mPlayer').value.trim();
+  const msg = document.getElementById('mMsg');
+  if (!player) { msg.textContent = 'أدخل ID اللاعب أولاً'; msg.className = 'm-msg no'; return; }
+  btn.disabled = true;
+  msg.className = 'm-msg'; msg.textContent = '';
+  vb.style.display = ''; vb.className = 'verify-box'; vb.textContent = 'جارٍ التحقق من الاسم... ⏳';
+  try {
+    const res = await fetch('/check_name.php?player=' + encodeURIComponent(player));
+    const d = await res.json();
+    if (d.ok) {
+      verified = true;
+      vb.className = 'verify-box ok';
+      vb.textContent = '👤 اسم اللاعب: ' + d.name + ' — إذا الاسم صحيح اضغط شراء';
+      btn.textContent = 'شراء ✅';
+    } else if (d.soft) {
+      softPass = true;
+      vb.className = 'verify-box warn';
+      vb.textContent = '⚠️ ' + d.msg + ' — تأكد من الـ ID بنفسك ثم اضغط شراء';
+      btn.textContent = 'شراء';
+    } else {
+      vb.className = 'verify-box no';
+      vb.textContent = '❌ ' + d.msg;
+    }
+  } catch (e) {
+    softPass = true;
+    vb.className = 'verify-box warn';
+    vb.textContent = '⚠️ تعذّر التحقق — تأكد من الـ ID بنفسك ثم اضغط شراء';
+    btn.textContent = 'شراء';
+  }
+  btn.disabled = false;
+}
+
 async function submitBuy() {
   const modal = document.getElementById('buyModal');
   const msg = document.getElementById('mMsg');
@@ -86,6 +136,8 @@ async function submitBuy() {
     location.href = '/auth.php';
     return;
   }
+  // منتجات ببجي/فري فاير: لازم تحقق من الاسم أول
+  if (needVerify && !verified && !softPass) { verifyName(); return; }
   btn.disabled = true;
   msg.className = 'm-msg';
   msg.textContent = 'جارٍ إرسال الطلب...';
