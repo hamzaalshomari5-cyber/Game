@@ -1,58 +1,105 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+/* ===== كشف نوع قاعدة البيانات ===== */
+function db_url() {
+    return getenv('DATABASE_URL') ?: '';
+}
+function is_pg() {
+    static $pg = null;
+    if ($pg === null) $pg = (bool)db_url();
+    return $pg;
+}
+/** دالة الوقت الحالي حسب القاعدة */
+function NOW_FN() { return is_pg() ? 'NOW()' : "datetime('now')"; }
+
 function db() {
     static $pdo = null;
     if ($pdo) return $pdo;
-    $dir = dirname(DB_PATH);
-    if (!is_dir($dir)) mkdir($dir, 0775, true);
-    $pdo = new PDO('sqlite:' . DB_PATH);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->exec('PRAGMA journal_mode=WAL');
+
+    if (is_pg()) {
+        // PostgreSQL (Railway) — البيانات دائمة
+        $u = parse_url(db_url());
+        $host = $u['host'] ?? 'localhost';
+        $port = $u['port'] ?? 5432;
+        $dbname = ltrim($u['path'] ?? '', '/');
+        $user = $u['user'] ?? '';
+        $pass = $u['pass'] ?? '';
+        $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+        $pdo = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_PERSISTENT => true,
+        ]);
+    } else {
+        // SQLite (تجربة محلية)
+        $dir = dirname(DB_PATH);
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        $pdo = new PDO('sqlite:' . DB_PATH);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('PRAGMA journal_mode=WAL');
+    }
     init_db($pdo);
     return $pdo;
 }
 
 function init_db($pdo) {
+    $pk = is_pg() ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
+    $now = is_pg() ? 'CURRENT_TIMESTAMP' : "(datetime('now'))";
+    $real = is_pg() ? 'DOUBLE PRECISION' : 'REAL';
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id $pk,
         name TEXT, email TEXT UNIQUE, password TEXT,
-        balance REAL DEFAULT 0, role TEXT DEFAULT 'user',
-        created_at TEXT DEFAULT (datetime('now'))
+        balance $real DEFAULT 0, role TEXT DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT $now
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS orders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id $pk,
         user_id INTEGER, product_id TEXT, product_name TEXT,
         qty INTEGER DEFAULT 1, player_id TEXT,
-        price REAL, total REAL,
-        uuid TEXT, fc_order_id TEXT,
-        status TEXT DEFAULT 'pending', -- pending / accept / reject
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
+        price $real, total $real,
+        uuid TEXT, fc_order_id TEXT, codes TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT $now,
+        updated_at TIMESTAMP DEFAULT $now
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS topups (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER, tx_id TEXT UNIQUE, amount REAL,
+        id $pk,
+        user_id INTEGER, tx_id TEXT UNIQUE, amount $real,
         status TEXT DEFAULT 'approved',
-        created_at TEXT DEFAULT (datetime('now'))
+        created_at TIMESTAMP DEFAULT $now
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS favorites (
         user_id INTEGER, product_id TEXT, PRIMARY KEY(user_id, product_id)
     )");
-    try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
     $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY, value TEXT
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS cache (
-        key TEXT PRIMARY KEY, value TEXT, expires INTEGER
+        key TEXT PRIMARY KEY, value TEXT, expires BIGINT
     )");
+    // لو القاعدة قديمة (SQLite) وما فيها عمود codes
+    if (!is_pg()) {
+        try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
+    }
     // أدمن افتراضي
     $st = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role='admin'");
     $st->execute();
     if (!$st->fetchColumn()) {
-        $pdo->prepare("INSERT OR IGNORE INTO users (name,email,password,role) VALUES (?,?,?,'admin')")
-            ->execute(['الأدمن', ADMIN_EMAIL, password_hash(ADMIN_PASS, PASSWORD_DEFAULT)]);
+        $ins = is_pg()
+            ? "INSERT INTO users (name,email,password,role) VALUES (?,?,?,'admin') ON CONFLICT (email) DO NOTHING"
+            : "INSERT OR IGNORE INTO users (name,email,password,role) VALUES (?,?,?,'admin')";
+        $pdo->prepare($ins)->execute(['الأدمن', ADMIN_EMAIL, password_hash(ADMIN_PASS, PASSWORD_DEFAULT)]);
     }
+}
+
+/** آخر ID مُدرج (PostgreSQL يحتاج اسم السيكوينس) */
+function last_id($table = null) {
+    if (is_pg()) {
+        $seq = $table ? "{$table}_id_seq" : null;
+        return $seq ? db()->lastInsertId($seq) : db()->lastInsertId();
+    }
+    return db()->lastInsertId();
 }
 
 function setting($key, $default = null) {
@@ -62,8 +109,9 @@ function setting($key, $default = null) {
     return $v !== false ? $v : $default;
 }
 function set_setting($key, $value) {
-    db()->prepare("INSERT INTO settings (key,value) VALUES (?,?)
-        ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute([$key, $value]);
+    $sql = "INSERT INTO settings (key,value) VALUES (?,?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value";
+    db()->prepare($sql)->execute([$key, $value]);
 }
 
 function cache_get($key) {
@@ -73,9 +121,9 @@ function cache_get($key) {
     return $v !== false ? json_decode($v, true) : null;
 }
 function cache_set($key, $data, $ttl) {
-    db()->prepare("INSERT INTO cache (key,value,expires) VALUES (?,?,?)
-        ON CONFLICT(key) DO UPDATE SET value=excluded.value, expires=excluded.expires")
-        ->execute([$key, json_encode($data, JSON_UNESCAPED_UNICODE), time() + $ttl]);
+    $sql = "INSERT INTO cache (key,value,expires) VALUES (?,?,?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value, expires=excluded.expires";
+    db()->prepare($sql)->execute([$key, json_encode($data, JSON_UNESCAPED_UNICODE), time() + $ttl]);
 }
 
 function current_user() {
@@ -93,11 +141,3 @@ function require_admin() {
     return $u;
 }
 function e($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-
-/* ===== العملة وسعر الصرف ===== */
-function usd_rate() { return max(0.0001, (float)setting('usd_rate', 11000)); }
-function display_currency() { return (($_COOKIE['currency'] ?? 'syp') === 'usd') ? 'usd' : 'syp'; }
-function fmt_price($syp) {
-    if (display_currency() === 'usd') return number_format($syp / usd_rate(), 2) . ' $';
-    return number_format($syp) . ' ل.س';
-}

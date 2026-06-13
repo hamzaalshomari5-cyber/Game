@@ -12,11 +12,11 @@ foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $o) {
     $s = $chk['status'];
     $codes = !empty($chk['codes']) ? json_encode(array_filter($chk['codes']), JSON_UNESCAPED_UNICODE) : $o['codes'];
     if ($s === 'accept' || $s === 'completed') {
-        db()->prepare("UPDATE orders SET status='accept', codes=?, fc_order_id=COALESCE(fc_order_id,?), updated_at=datetime('now') WHERE id=?")
+        db()->prepare("UPDATE orders SET status='accept', codes=?, fc_order_id=COALESCE(fc_order_id,?), updated_at=" . NOW_FN() . " WHERE id=?")
             ->execute([$codes, $chk['id'], $o['id']]);
     } elseif ($s === 'reject' || $s === 'rejected') {
         db()->beginTransaction();
-        db()->prepare("UPDATE orders SET status='reject', updated_at=datetime('now') WHERE id=?")->execute([$o['id']]);
+        db()->prepare("UPDATE orders SET status='reject', updated_at=" . NOW_FN() . " WHERE id=?")->execute([$o['id']]);
         db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")->execute([$o['total'], $o['user_id']]);
         db()->commit();
     }

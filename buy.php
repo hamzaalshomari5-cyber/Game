@@ -40,7 +40,7 @@ db()->prepare("UPDATE users SET balance = balance - ? WHERE id=? AND balance >= 
 $st = db()->prepare("INSERT INTO orders (user_id,product_id,product_name,qty,player_id,price,total,uuid)
     VALUES (?,?,?,?,?,?,?,?)");
 $st->execute([$U['id'], $pid, $p['name'], $qty, $player, $p['price'], $total, $uuid]);
-$orderId = db()->lastInsertId();
+$orderId = last_id('orders');
 db()->commit();
 
 // إرسال الطلب — POST حسب التوثيق
@@ -52,7 +52,7 @@ if (!$success) {
     // فشل → إعادة المبلغ
     db()->beginTransaction();
     db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")->execute([$total, $U['id']]);
-    db()->prepare("UPDATE orders SET status='reject', updated_at=datetime('now') WHERE id=?")->execute([$orderId]);
+    db()->prepare("UPDATE orders SET status='reject', updated_at=" . NOW_FN() . " WHERE id=?")->execute([$orderId]);
     db()->commit();
     $apiMsg = $d['message'] ?? $d['msg'] ?? '';
     out(false, 'تعذّر تنفيذ الطلب وتمت إعادة المبلغ لمحفظتك.' . ($apiMsg ? ' (' . $apiMsg . ')' : ''));
@@ -64,7 +64,7 @@ $fcStat = $od['status'] ?? 'processing';
 $codes  = is_array($od['replay_api'] ?? null) ? array_filter($od['replay_api']) : [];
 
 $newStatus = ($fcStat === 'accept' || $fcStat === 'completed') ? 'accept' : 'pending';
-db()->prepare("UPDATE orders SET fc_order_id=?, status=?, codes=?, updated_at=datetime('now') WHERE id=?")
+db()->prepare("UPDATE orders SET fc_order_id=?, status=?, codes=?, updated_at=" . NOW_FN() . " WHERE id=?")
     ->execute([$fcId, $newStatus, $codes ? json_encode($codes, JSON_UNESCAPED_UNICODE) : null, $orderId]);
 
 $msg = 'تم إرسال طلبك بنجاح ✅ — تابع حالته من صفحة "طلباتي"';

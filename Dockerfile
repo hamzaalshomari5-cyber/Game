@@ -1,6 +1,8 @@
 FROM php:8.2-cli
 
-RUN docker-php-ext-install pdo pdo_sqlite > /dev/null 2>&1 || true
+# تثبيت مكتبات PostgreSQL و SQLite
+RUN apt-get update && apt-get install -y libpq-dev > /dev/null 2>&1 \
+    && docker-php-ext-install pdo pdo_pgsql pdo_sqlite > /dev/null 2>&1 || true
 
 WORKDIR /app
 COPY . /app

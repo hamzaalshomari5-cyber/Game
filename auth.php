@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 db()->prepare("INSERT INTO users (name,email,password) VALUES (?,?,?)")
                     ->execute([$name, $email, password_hash($pass, PASSWORD_DEFAULT)]);
-                $_SESSION['uid'] = db()->lastInsertId();
+                $_SESSION['uid'] = last_id('users');
                 header('Location: /index.php'); exit;
             } catch (Exception $ex) { $err = 'الإيميل مستخدم مسبقاً'; $mode = 'register'; }
         }
