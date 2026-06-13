@@ -124,16 +124,18 @@ function fcw_check_player($playerId, $productId, &$debug = null) {
         [$csrf, $srcPage] = fcw_csrf();
         if (is_array($debug)) $debug[] = "attempt=$attempt product=$productId csrf_len=" . strlen($csrf) . " src=$srcPage";
 
-        // مطابق للبوت تماماً: payload بسيط + توكن بالهيدر X-CSRF-TOKEN فقط
+        // مطابق لملف player-id-check.js الأصلي حرف بحرف:
+        // X-CSRF-Token (مش TOKEN) + Content-Type + الترتيب product_id ثم user_id + Referer مع cat
         [$body, $info] = fcw_curl($url, [
             CURLOPT_POST       => true,
-            CURLOPT_POSTFIELDS => http_build_query(['user_id' => (string)$playerId, 'product_id' => (int)$productId]),
+            CURLOPT_POSTFIELDS => http_build_query(['product_id' => (int)$productId, 'user_id' => (string)$playerId]),
             CURLOPT_HTTPHEADER => [
-                'X-Requested-With: XMLHttpRequest',
                 'Accept: application/json',
-                'X-CSRF-TOKEN: ' . $csrf,
+                'Content-Type: application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With: XMLHttpRequest',
+                'X-CSRF-Token: ' . $csrf,
                 'Origin: ' . $base,
-                'Referer: ' . $base . '/index?page=products',
+                'Referer: ' . $base . '/index?page=products&cat=440',
             ],
         ]);
         $data = json_decode((string)$body, true);
