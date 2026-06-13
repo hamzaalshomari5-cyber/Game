@@ -51,3 +51,9 @@ define('FASTCARD_2FA_SECRET', '');   // أو متغير بيئة FASTCARD_2FA_SE
 function fcw_user()   { return env_or('FASTCARD_WEB_USERNAME', FASTCARD_WEB_USERNAME); }
 function fcw_pass()   { return env_or('FASTCARD_WEB_PASSWORD', FASTCARD_WEB_PASSWORD); }
 function fcw_2fa()    { return env_or('FASTCARD_2FA_SECRET', FASTCARD_2FA_SECRET); }
+
+// التحقق من اسم اللاعب عبر البوت (الأنظف — البوت تحققه شغال)
+define('BOT_CHECK_URL', ''); // مثال: https://luxegame-bot-xxx.up.railway.app/api/check-player — أو متغير بيئة BOT_CHECK_URL
+define('CHECK_API_SECRET', ''); // نفس القيمة على البوت — أو متغير بيئة CHECK_API_SECRET
+function bot_check_url() { return env_or('BOT_CHECK_URL', BOT_CHECK_URL); }
+function check_secret()  { return env_or('CHECK_API_SECRET', CHECK_API_SECRET); }
