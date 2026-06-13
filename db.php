@@ -19,12 +19,21 @@ function db() {
 
     if (is_pg()) {
         // PostgreSQL (Railway) — البيانات دائمة
-        $u = parse_url(db_url());
-        $host = $u['host'] ?? 'localhost';
-        $port = $u['port'] ?? 5432;
-        $dbname = ltrim($u['path'] ?? '', '/');
-        $user = $u['user'] ?? '';
-        $pass = $u['pass'] ?? '';
+        // الأولوية للمتغيرات المنفصلة (أضمن من تفكيك الرابط)
+        $host = getenv('PGHOST');
+        $port = getenv('PGPORT') ?: 5432;
+        $dbname = getenv('PGDATABASE');
+        $user = getenv('PGUSER');
+        $pass = getenv('PGPASSWORD');
+        // إذا المنفصلة ناقصة، فكّك DATABASE_URL
+        if (!$host || !$user) {
+            $u = parse_url(db_url());
+            $host = $u['host'] ?? 'localhost';
+            $port = $u['port'] ?? 5432;
+            $dbname = ltrim($u['path'] ?? '', '/');
+            $user = $u['user'] ?? '';
+            $pass = isset($u['pass']) ? urldecode($u['pass']) : '';
+        }
         $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
         $pdo = new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
