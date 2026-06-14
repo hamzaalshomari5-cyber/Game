@@ -1,3 +1,15 @@
+// زر الرجوع
+function goBack() {
+  // إذا في صفحة سابقة بنفس الموقع، ارجع لها — وإلا روح للرئيسية
+  if (document.referrer && document.referrer.indexOf(location.host) !== -1 && history.length > 1) {
+    history.back();
+  } else if (history.length > 1) {
+    history.back();
+  } else {
+    location.href = '/index.php';
+  }
+}
+
 // السايدبار
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');

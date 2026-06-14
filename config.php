@@ -87,3 +87,31 @@ function site_url() {
     return $proto . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
 }
 function google_enabled() { return google_client_id() !== '' && google_client_secret() !== ''; }
+
+// ===== إشعارات الأدمن عبر تيليغرام =====
+// أنشئ بوت من @BotFather واحصل على التوكن، واحصل على chat_id من @userinfobot
+define('ADMIN_BOT_TOKEN', '');  // أو متغير بيئة ADMIN_BOT_TOKEN
+define('ADMIN_CHAT_ID', '');    // أو متغير بيئة ADMIN_CHAT_ID
+function admin_bot_token() { return env_or('ADMIN_BOT_TOKEN', ADMIN_BOT_TOKEN); }
+function admin_chat_id()   { return env_or('ADMIN_CHAT_ID', ADMIN_CHAT_ID); }
+
+// إرسال إشعار للأدمن (لا يعطّل العملية إذا فشل)
+function notify_admin($text) {
+    $token = admin_bot_token();
+    $chat = admin_chat_id();
+    if ($token === '' || $chat === '') return;
+    $url = "https://api.telegram.org/bot$token/sendMessage";
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query([
+            'chat_id' => $chat,
+            'text' => $text,
+            'parse_mode' => 'HTML',
+        ]),
+    ]);
+    @curl_exec($ch);
+    @curl_close($ch);
+}

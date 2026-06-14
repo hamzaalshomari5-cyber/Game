@@ -90,6 +90,26 @@ function init_db($pdo) {
     $pdo->exec("CREATE TABLE IF NOT EXISTS sessions (
         sid TEXT PRIMARY KEY, data TEXT, updated BIGINT
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS coupons (
+        id $pk,
+        code TEXT UNIQUE, type TEXT DEFAULT 'percent', amount $real DEFAULT 0,
+        max_uses INTEGER DEFAULT 0, used INTEGER DEFAULT 0,
+        active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT $now
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS coupon_uses (
+        coupon_id INTEGER, user_id INTEGER, used_at TIMESTAMP DEFAULT $now,
+        PRIMARY KEY(coupon_id, user_id)
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS slides (
+        id $pk,
+        image TEXT, link TEXT, sort INTEGER DEFAULT 0, active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT $now
+    )");
+    // عمود الكوبون بجدول الإيداع
+    if (!is_pg()) {
+        try { $pdo->exec("ALTER TABLE topups ADD COLUMN coupon TEXT"); } catch (Exception $e) {}
+    }
     // لو القاعدة قديمة (SQLite) وما فيها عمود codes
     if (!is_pg()) {
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}

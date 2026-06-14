@@ -23,6 +23,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         store_products(true); fc_content(0, true);
         $msg = 'تمت مزامنة المنتجات من FastCard ✅';
     }
+    // إضافة كوبون
+    if (isset($_POST['add_coupon'])) {
+        $code = strtoupper(trim($_POST['coupon_code'] ?? ''));
+        $type = ($_POST['coupon_type'] ?? 'percent') === 'fixed' ? 'fixed' : 'percent';
+        $amt = (float)($_POST['coupon_amount'] ?? 0);
+        $maxu = (int)($_POST['coupon_maxuses'] ?? 0);
+        if ($code && $amt > 0) {
+            try {
+                db()->prepare("INSERT INTO coupons (code,type,amount,max_uses) VALUES (?,?,?,?)")
+                    ->execute([$code, $type, $amt, $maxu]);
+                $msg = 'تم إضافة كود الخصم ✅';
+            } catch (Exception $e) { $msg = 'الكود موجود مسبقاً'; }
+        } else { $msg = 'تأكد من الكود والقيمة'; }
+    }
+    // حذف/تفعيل كوبون
+    if (isset($_POST['toggle_coupon'])) {
+        db()->prepare("UPDATE coupons SET active = 1 - active WHERE id=?")->execute([(int)$_POST['toggle_coupon']]);
+        $msg = 'تم التحديث ✅';
+    }
+    if (isset($_POST['del_coupon'])) {
+        db()->prepare("DELETE FROM coupons WHERE id=?")->execute([(int)$_POST['del_coupon']]);
+        $msg = 'تم حذف الكود ✅';
+    }
+    // إضافة سلايد
+    if (isset($_POST['add_slide'])) {
+        $img = trim($_POST['slide_image'] ?? '');
+        $link = trim($_POST['slide_link'] ?? '');
+        $sort = (int)($_POST['slide_sort'] ?? 0);
+        if ($img) {
+            db()->prepare("INSERT INTO slides (image,link,sort) VALUES (?,?,?)")->execute([$img, $link, $sort]);
+            $msg = 'تم إضافة الصورة ✅';
+        } else { $msg = 'أدخل رابط الصورة'; }
+    }
+    if (isset($_POST['del_slide'])) {
+        db()->prepare("DELETE FROM slides WHERE id=?")->execute([(int)$_POST['del_slide']]);
+        $msg = 'تم حذف الصورة ✅';
+    }
 }
 
 $stats = [
@@ -42,6 +79,8 @@ include __DIR__ . '/header.php'; ?>
   <a class="<?= $tab === 'stats' ? 'on' : '' ?>" href="?tab=stats">إحصائيات</a>
   <a class="<?= $tab === 'orders' ? 'on' : '' ?>" href="?tab=orders">الطلبات</a>
   <a class="<?= $tab === 'users' ? 'on' : '' ?>" href="?tab=users">المستخدمين</a>
+  <a class="<?= $tab === 'coupons' ? 'on' : '' ?>" href="?tab=coupons">كوبونات</a>
+  <a class="<?= $tab === 'slides' ? 'on' : '' ?>" href="?tab=slides">السلايدر</a>
   <a class="<?= $tab === 'settings' ? 'on' : '' ?>" href="?tab=settings">الإعدادات</a>
 </div>
 <?php if ($msg): ?><div class="alert ok"><?= e($msg) ?></div><?php endif; ?>
@@ -111,6 +150,74 @@ include __DIR__ . '/header.php'; ?>
     });
   }
   </script>
+
+<?php elseif ($tab === 'coupons'):
+  $coupons = db()->query("SELECT * FROM coupons ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC); ?>
+  <div class="card">
+    <h3>إضافة كود خصم 🎁</h3>
+    <p class="muted">كود الخصم بيعطي المستخدم <b>مكافأة إضافية</b> على مبلغ الإيداع. مثلاً 10% يعني لو أودع 100,000 بياخد 110,000.</p>
+    <form method="post" class="inline-form">
+      <input name="coupon_code" placeholder="الكود مثلاً WELCOME" required style="text-transform:uppercase">
+      <select name="coupon_type">
+        <option value="percent">نسبة %</option>
+        <option value="fixed">مبلغ ثابت ل.س</option>
+      </select>
+      <input name="coupon_amount" type="number" step="any" placeholder="القيمة" required>
+      <input name="coupon_maxuses" type="number" placeholder="حد الاستخدام (0=لا نهائي)">
+      <button class="btn" name="add_coupon" value="1">إضافة</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>الأكواد (<?= count($coupons) ?>)</h3>
+    <?php if (!$coupons): ?><p class="empty">ما في أكواد بعد.</p><?php else: ?>
+    <table class="tbl">
+      <tr><th>الكود</th><th>القيمة</th><th>الاستخدام</th><th>الحالة</th><th>إجراء</th></tr>
+      <?php foreach ($coupons as $c): ?>
+        <tr>
+          <td><b><?= e($c['code']) ?></b></td>
+          <td><?= $c['type'] === 'percent' ? e($c['amount']).'%' : number_format($c['amount']).' ل.س' ?></td>
+          <td><?= $c['used'] ?><?= $c['max_uses'] > 0 ? '/'.$c['max_uses'] : '' ?></td>
+          <td><?= $c['active'] ? '✅ فعّال' : '⛔ موقوف' ?></td>
+          <td style="white-space:nowrap">
+            <form method="post" style="display:inline"><button class="btn-mini" name="toggle_coupon" value="<?= $c['id'] ?>"><?= $c['active'] ? 'إيقاف' : 'تفعيل' ?></button></form>
+            <form method="post" style="display:inline" onsubmit="return confirm('حذف الكود؟')"><button class="btn-mini danger" name="del_coupon" value="<?= $c['id'] ?>">حذف</button></form>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+    </table>
+    <?php endif; ?>
+  </div>
+
+<?php elseif ($tab === 'slides'):
+  $slides = db()->query("SELECT * FROM slides ORDER BY sort ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC); ?>
+  <div class="card">
+    <h3>إضافة صورة للسلايدر 🖼</h3>
+    <p class="muted">حط رابط صورة (URL) — يظهر بالرئيسية. ممكن تضيف رابط يفتح عند الضغط (اختياري).</p>
+    <form method="post">
+      <label>رابط الصورة</label>
+      <input name="slide_image" placeholder="https://..." required>
+      <label>رابط عند الضغط (اختياري)</label>
+      <input name="slide_link" placeholder="https://... أو /index.php?page=products&cat=...">
+      <label>الترتيب</label>
+      <input name="slide_sort" type="number" value="0">
+      <button class="btn full" name="add_slide" value="1">إضافة الصورة</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>الصور (<?= count($slides) ?>)</h3>
+    <?php if (!$slides): ?><p class="empty">ما في صور بعد.</p><?php else: ?>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+        <?php foreach ($slides as $s): ?>
+          <div style="position:relative">
+            <img src="<?= e($s['image']) ?>" style="width:100%;border-radius:10px;border:1px solid var(--border)" alt="">
+            <form method="post" onsubmit="return confirm('حذف الصورة؟')" style="margin-top:6px">
+              <button class="btn-mini danger full" name="del_slide" value="<?= $s['id'] ?>">حذف</button>
+            </form>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
 
 <?php else: ?>
   <div class="card">

@@ -28,9 +28,26 @@ function verify_tx($txId, $method) {
     return $amount > 0 ? $amount : null;
 }
 
+// التحقق من كود الخصم وإرجاع نسبة/قيمة الإضافة
+function check_coupon($code, $userId) {
+    $code = strtoupper(trim($code));
+    if ($code === '') return [0, null];
+    $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1");
+    $st->execute([$code]);
+    $c = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$c) return [0, 'كود الخصم غير صحيح'];
+    if ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses']) return [0, 'انتهت صلاحية كود الخصم'];
+    // مرة واحدة لكل مستخدم
+    $st = db()->prepare("SELECT COUNT(*) FROM coupon_uses WHERE coupon_id=? AND user_id=?");
+    $st->execute([$c['id'], $userId]);
+    if ($st->fetchColumn()) return [0, 'استخدمت هذا الكود مسبقاً'];
+    return [$c, null];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $txId = trim($_POST['tx_id'] ?? '');
     $method = ($_POST['method'] ?? 'syriatel') === 'shamcash' ? 'shamcash' : 'syriatel';
+    $couponCode = trim($_POST['coupon'] ?? '');
     if (!$txId) {
         $msg = 'أدخل رقم عملية التحويل';
     } else {
@@ -44,15 +61,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dest = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
                 $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . $dest;
             } else {
+                // تطبيق كود الخصم (مكافأة إضافية على الإيداع)
+                $bonus = 0; $couponObj = null; $couponMsg = null;
+                if ($couponCode !== '') {
+                    [$couponObj, $couponMsg] = check_coupon($couponCode, $U['id']);
+                    if ($couponObj) {
+                        if ($couponObj['type'] === 'percent') $bonus = round($amount * $couponObj['amount'] / 100);
+                        else $bonus = $couponObj['amount'];
+                    }
+                }
+                $total = $amount + $bonus;
                 db()->beginTransaction();
-                db()->prepare("INSERT INTO topups (user_id,tx_id,amount) VALUES (?,?,?)")
-                    ->execute([$U['id'], $txId, $amount]);
+                db()->prepare("INSERT INTO topups (user_id,tx_id,amount,coupon) VALUES (?,?,?,?)")
+                    ->execute([$U['id'], $txId, $total, $couponObj ? $couponCode : null]);
                 db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")
-                    ->execute([$amount, $U['id']]);
+                    ->execute([$total, $U['id']]);
+                if ($couponObj) {
+                    db()->prepare("UPDATE coupons SET used = used + 1 WHERE id=?")->execute([$couponObj['id']]);
+                    db()->prepare("INSERT INTO coupon_uses (coupon_id,user_id) VALUES (?,?)")
+                        ->execute([$couponObj['id'], $U['id']]);
+                }
                 db()->commit();
                 $ok = true;
-                $msg = 'تم شحن محفظتك بمبلغ ' . number_format($amount) . ' ل.س ✅';
+                $msg = 'تم شحن محفظتك بمبلغ ' . number_format($total) . ' ل.س ✅';
+                if ($bonus > 0) $msg .= ' (منها ' . number_format($bonus) . ' مكافأة كود الخصم 🎁)';
+                elseif ($couponMsg) $msg .= ' — ملاحظة: ' . $couponMsg;
                 $U = current_user();
+                // إشعار الأدمن
+                notify_admin("💰 <b>إيداع جديد</b>\nالمستخدم: " . e($U['name']) . "\nالمبلغ: " . number_format($total) . " ل.س\nالطريقة: " . ($method === 'shamcash' ? 'شام كاش' : 'سيرياتيل كاش') . "\nرقم العملية: $txId");
             }
         }
     }
@@ -75,7 +111,6 @@ include __DIR__ . '/header.php'; ?>
   <div class="card">
     <h3>شحن المحفظة</h3>
 
-    <!-- اختيار طريقة الإيداع (نفس أسلوب FastCard) -->
     <div class="pay-methods">
       <button type="button" class="pay-method active" data-method="syriatel" onclick="selectMethod(this)">
         <span class="pm-icon">📱</span>
@@ -89,7 +124,6 @@ include __DIR__ . '/header.php'; ?>
       <?php endif; ?>
     </div>
 
-    <!-- تعليمات سيرياتيل -->
     <div class="pay-box" id="box-syriatel">
       <ol class="steps">
         <li>حوّل المبلغ المطلوب إلى رقم سيرياتيل كاش:
@@ -100,7 +134,6 @@ include __DIR__ . '/header.php'; ?>
     </div>
 
     <?php if ($hasSham): ?>
-    <!-- تعليمات شام كاش -->
     <div class="pay-box" id="box-shamcash" style="display:none">
       <ol class="steps">
         <li>حوّل المبلغ المطلوب إلى محفظة شام كاش:
@@ -116,6 +149,8 @@ include __DIR__ . '/header.php'; ?>
       <input type="hidden" name="method" id="payMethod" value="syriatel">
       <label>رقم عملية التحويل</label>
       <input name="tx_id" required placeholder="مثال: 600123456789">
+      <label>كود الخصم (اختياري) 🎁</label>
+      <input name="coupon" placeholder="إذا عندك كود خصم، اكتبه هون">
       <button class="btn full" type="submit">تحقق وشحن</button>
     </form>
   </div>

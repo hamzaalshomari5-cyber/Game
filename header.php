@@ -34,6 +34,8 @@ $U = current_user();
   <?php endif; ?>
   <nav class="sb-nav">
     <a href="/index.php">🏠 الرئيسية</a>
+    <a href="/index.php?page=search">🔍 بحث عن منتج</a>
+    <a href="/assistant.php">🤖 المساعد الذكي</a>
     <?php if ($U): ?>
       <a href="/orders.php">🧾 طلباتي</a>
       <a href="/index.php?page=favs">❤ المفضلة</a>
@@ -42,6 +44,7 @@ $U = current_user();
       <a href="/auth.php?logout=1">🚪 تسجيل الخروج</a>
     <?php endif; ?>
     <a href="/index.php?page=about">ℹ️ من نحن</a>
+    <a href="/contact.php">📞 تواصل معنا</a>
     <a href="/index.php?page=terms">📄 سياسة الاسترجاع</a>
   </nav>
   <button class="theme-toggle" onclick="toggleTheme()">🌙 / ☀️ تبديل الوضع</button>
@@ -54,8 +57,15 @@ $U = current_user();
 
 <header class="topbar">
   <button class="burger" onclick="toggleSidebar()">☰</button>
+  <?php
+    $_uri = $_SERVER['REQUEST_URI'] ?? '';
+    $_isHome = ($_uri === '/' || $_uri === '/index.php' || strpos($_uri, '/index.php?page=home') === 0
+                || (strpos($_uri, '/index.php') === 0 && strpos($_uri, 'page=') === false && strpos($_uri, 'cat=') === false));
+  ?>
+  <?php if (!$_isHome): ?><button class="back-btn" onclick="goBack()" title="رجوع">‹</button><?php endif; ?>
   <a class="logo-txt" href="/index.php"><?= e(STORE_NAME) ?> <span>⚡</span></a>
   <div class="top-actions">
+    <a class="icon-btn" href="/index.php?page=search" title="بحث">🔍</a>
     <?php if ($U): ?>
       <a class="balance-pill" href="/wallet.php">💳 <?= number_format($U['balance']) ?> ل.س</a>
     <?php else: ?>

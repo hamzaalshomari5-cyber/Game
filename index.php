@@ -92,6 +92,41 @@ if ($page === 'about' || $page === 'terms') {
 }
 
 /* ===== صفحة المفضلة ===== */
+/* ===== صفحة البحث ===== */
+if ($page === 'search') {
+    $q = trim($_GET['q'] ?? '');
+    $favs = user_favs($U);
+    $results = [];
+    if ($q !== '' && mb_strlen($q) >= 2) {
+        $ql = mb_strtolower($q);
+        foreach (store_products() as $p) {
+            if (mb_strpos(mb_strtolower($p['name']), $ql) !== false
+                || mb_strpos(mb_strtolower($p['category']), $ql) !== false) {
+                $results[] = $p;
+            }
+        }
+    }
+    $pageTitle = 'بحث';
+    include __DIR__ . '/header.php'; ?>
+    <h1 class="section-title">🔍 بحث عن منتج</h1>
+    <form method="get" class="search-form">
+      <input type="hidden" name="page" value="search">
+      <input type="text" name="q" value="<?= e($q) ?>" placeholder="اكتب اسم المنتج أو القسم..." autofocus>
+      <button class="btn" type="submit">بحث</button>
+    </form>
+    <?php if ($q !== '' && mb_strlen($q) < 2): ?>
+      <p class="empty">اكتب حرفين على الأقل للبحث.</p>
+    <?php elseif ($q !== '' && !$results): ?>
+      <p class="empty">ما في نتائج لـ "<?= e($q) ?>" — جرّب كلمة ثانية.</p>
+    <?php elseif ($results): ?>
+      <p class="muted" style="margin-bottom:14px"><?= count($results) ?> نتيجة لـ "<?= e($q) ?>"</p>
+      <div class="grid products-grid"><?php foreach (array_slice($results, 0, 60) as $p) product_card($p, $favs); ?></div>
+    <?php endif; ?>
+    <?php include __DIR__ . '/buy_modal.php'; ?>
+    <script>const IS_LOGGED = <?= $U ? 'true' : 'false' ?>;</script>
+    <?php include __DIR__ . '/footer.php'; exit;
+}
+
 if ($page === 'favs') {
     $favs = user_favs($U);
     $products = array_values(array_filter(store_products(), fn($p) => in_array((string)$p['id'], $favs)));
@@ -146,6 +181,7 @@ if ($page === 'products') {
 
 /* ===== الرئيسية: content/0 → الأقسام الرئيسية ===== */
 $root = fc_content(0);
+$slides = db()->query("SELECT * FROM slides WHERE active=1 ORDER BY sort ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
 $pageTitle = 'الرئيسية';
 include __DIR__ . '/header.php'; ?>
 
@@ -153,9 +189,34 @@ include __DIR__ . '/header.php'; ?>
   <div class="hero-inner">
     <h1><?= e(STORE_NAME) ?> <span class="bolt">⚡</span></h1>
     <p><?= e(STORE_TAGLINE) ?> — أفضل الأسعار وأسرع خدمة</p>
-    <div class="hero-ticker"><span>🔥 أسعار خاصة وخصومات للتجار وأصحاب المحلات — تواصل معنا عبر واتساب</span></div>
+    <div class="hero-ticker"><span>⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة &nbsp;•&nbsp; ⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة</span></div>
   </div>
 </section>
+
+<?php if ($slides): ?>
+<div class="slider" id="slider">
+  <div class="slides" id="slides">
+    <?php foreach ($slides as $s): ?>
+      <?php if ($s['link']): ?><a href="<?= e($s['link']) ?>" class="slide"><img src="<?= e($s['image']) ?>" alt="" loading="lazy"></a>
+      <?php else: ?><div class="slide"><img src="<?= e($s['image']) ?>" alt="" loading="lazy"></div><?php endif; ?>
+    <?php endforeach; ?>
+  </div>
+  <?php if (count($slides) > 1): ?>
+  <div class="slider-dots" id="sliderDots">
+    <?php foreach ($slides as $i => $s): ?><button class="<?= $i === 0 ? 'on' : '' ?>" onclick="goSlide(<?= $i ?>)"></button><?php endforeach; ?>
+  </div>
+  <script>
+  let slideIdx = 0; const slideCount = <?= count($slides) ?>;
+  function goSlide(i) {
+    slideIdx = (i + slideCount) % slideCount;
+    document.getElementById('slides').style.transform = 'translateX(' + (slideIdx * 100) + '%)';
+    document.querySelectorAll('#sliderDots button').forEach((d, j) => d.classList.toggle('on', j === slideIdx));
+  }
+  setInterval(() => goSlide(slideIdx + 1), 4500);
+  </script>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <h2 class="section-title">الأقسام</h2>
 <?php if (!$root['categories'] && !$root['products']): ?>

@@ -211,10 +211,6 @@ input, select {
 }
 .foot-links { display: flex; gap: 14px; justify-content: center; }
 
-@media (max-width: 600px) {
-  .hero h1 { font-size: 1.5rem; }
-  .container { padding: 16px 12px 40px; }
-}
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ===== المفضلة وصور الأقسام ===== */
@@ -276,3 +272,219 @@ input, select {
 }
 .btn-google:hover { box-shadow: 0 2px 8px rgba(0,0,0,.15); }
 body.light .btn-google { border-color: #dadce0; }
+
+/* =====================================================
+   نظام التجاوب الشامل (موبايل + تابلت + كمبيوتر)
+   ===================================================== */
+
+/* ===== شاشات كبيرة (كمبيوتر) — أكتر من 1024px ===== */
+@media (min-width: 1025px) {
+  .cats-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .products-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  /* السايدبار ما يغطي كامل الشاشة عالكمبيوتر */
+  .sidebar { width: 300px; }
+}
+
+/* ===== تابلت — من 601px لـ 1024px ===== */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .container { max-width: 100%; padding: 20px 20px 50px; }
+  .cats-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .products-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .hero { padding: 32px 24px; }
+  .hero h1 { font-size: 1.8rem; }
+}
+
+/* ===== موبايل — 600px وأقل ===== */
+@media (max-width: 600px) {
+  .container { padding: 14px 12px 40px; }
+  .hero { padding: 26px 18px; border-radius: 16px; }
+  .hero h1 { font-size: 1.5rem; }
+  .hero p { font-size: .9rem; }
+  .section-title { font-size: 1.2rem; margin: 20px 0 12px; }
+
+  /* الشبكات: عمودين على الموبايل */
+  .cats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .card { padding: 13px; border-radius: 12px; }
+  .p-name { font-size: .85rem; min-height: 2.2em; }
+  .p-price { font-size: .95rem; }
+  .cat-name { font-size: .9rem; }
+
+  /* الميزات: عمودين */
+  .features { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .feat { padding: 12px; font-size: .85rem; }
+
+  /* المودال: يملأ عرض الشاشة بمسافة */
+  .modal { padding: 12px; align-items: flex-end; }
+  .modal-box { max-width: 100%; border-radius: 18px 18px 0 0; padding: 18px; }
+
+  /* النماذج والأزرار */
+  .auth-box { margin: 16px auto; }
+  .wallet-wrap { gap: 12px; }
+  .big-balance { font-size: 1.9rem; }
+  input, select { font-size: 16px; } /* 16px يمنع التكبير التلقائي بـ iOS */
+  .btn { padding: 12px 20px; }
+
+  /* الجداول: تمرير أفقي بدل ما تنكسر */
+  .tbl { font-size: .82rem; }
+  .card { overflow-x: auto; }
+  .tbl th, .tbl td { padding: 8px 6px; white-space: nowrap; }
+
+  /* التبويبات (الأدمن): تمرير أفقي */
+  .tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+  .tabs a { white-space: nowrap; padding: 7px 14px; font-size: .85rem; }
+
+  /* النماذج الأفقية: تتراص عمودياً */
+  .inline-form { flex-direction: column; align-items: stretch; }
+  .inline-form input { width: 100%; min-width: 0; }
+  .inline-form .btn { width: 100%; }
+
+  /* طرق الدفع: عمودين */
+  .pay-methods { gap: 8px; }
+  .pay-method { min-width: calc(50% - 4px); padding: 12px; font-size: .9rem; }
+
+  /* السايدبار أعرض شوي على الموبايل الصغير */
+  .sidebar { width: 85%; max-width: 300px; }
+
+  /* الإحصائيات: عمودين */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat .n { font-size: 1.4rem; }
+}
+
+/* ===== موبايل صغير جداً — 360px وأقل ===== */
+@media (max-width: 360px) {
+  .cats-grid, .products-grid, .features, .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .hero h1 { font-size: 1.3rem; }
+  .logo-txt { font-size: 1rem; }
+  .balance-pill { padding: 5px 10px; font-size: .8rem; }
+}
+
+/* ===== تحسينات عامة للمس (كل الموبايلات) ===== */
+@media (max-width: 1024px) {
+  /* أزرار أكبر للمس المريح */
+  .btn, .pay-method, .qty-row button { min-height: 44px; }
+  /* منع التكبير الأفقي */
+  body { overflow-x: hidden; }
+  img { max-width: 100%; height: auto; }
+}
+
+/* ===== زر الرجوع ===== */
+.back-btn {
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text); width: 38px; height: 38px; border-radius: 10px;
+  font-size: 1.6rem; line-height: 1; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.back-btn:hover { background: var(--card-hover); }
+/* بالـ RTL السهم ‹ بيشير لليمين (رجوع) تلقائياً */
+
+/* ===== المساعد الذكي ===== */
+.ai-wrap {
+  max-width: 720px; margin: 0 auto;
+  display: flex; flex-direction: column;
+  height: calc(100vh - 160px); min-height: 420px;
+}
+.ai-head {
+  display: flex; align-items: center; gap: 12px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 14px;
+}
+.ai-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;
+}
+.ai-head h2 { font-size: 1.2rem; margin: 0; }
+.ai-messages {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+  padding: 4px; margin-bottom: 12px;
+}
+.ai-msg { display: flex; }
+.ai-msg.user { justify-content: flex-start; }
+.ai-msg.bot { justify-content: flex-end; }
+.ai-bubble {
+  max-width: 80%; padding: 12px 16px; border-radius: 16px; line-height: 1.6;
+  font-size: .95rem;
+}
+.ai-msg.bot .ai-bubble {
+  background: var(--card); border: 1px solid var(--border);
+  border-top-right-radius: 4px; color: var(--text);
+}
+.ai-msg.user .ai-bubble {
+  background: var(--accent); color: #1a1a1a;
+  border-top-left-radius: 4px; font-weight: 600;
+}
+.ai-typing span { animation: aiBlink 1.2s infinite; }
+.ai-typing span:nth-child(2) { animation-delay: .2s; }
+.ai-typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes aiBlink { 0%, 60%, 100% { opacity: .2; } 30% { opacity: 1; } }
+.ai-suggestions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.ai-suggestions button {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 8px 14px; border-radius: 999px; font-family: inherit; font-size: .85rem;
+  cursor: pointer; transition: all .15s;
+}
+.ai-suggestions button:hover { border-color: var(--accent); background: var(--card-hover); }
+.ai-input-bar {
+  display: flex; gap: 10px; align-items: center;
+  padding-top: 12px; border-top: 1px solid var(--border);
+}
+.ai-input-bar input { flex: 1; }
+.ai-input-bar .btn { flex-shrink: 0; }
+
+@media (max-width: 600px) {
+  .ai-wrap { height: calc(100vh - 130px); }
+  .ai-bubble { max-width: 88%; font-size: .9rem; }
+  .ai-head h2 { font-size: 1.05rem; }
+}
+
+/* ===== أيقونة البحث بالشريط ===== */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--card); border: 1px solid var(--border);
+  font-size: 1.1rem; margin-inline-end: 8px; text-decoration: none;
+}
+.icon-btn:hover { background: var(--card-hover); }
+.top-actions { display: flex; align-items: center; }
+
+/* ===== نموذج البحث ===== */
+.search-form { display: flex; gap: 10px; margin-bottom: 18px; }
+.search-form input { flex: 1; }
+.search-form .btn { flex-shrink: 0; }
+
+/* ===== السلايدر ===== */
+.slider { position: relative; margin: 0 0 20px; border-radius: 16px; overflow: hidden; }
+.slides { display: flex; transition: transform .5s ease; }
+.slide { min-width: 100%; display: block; }
+.slide img { width: 100%; display: block; max-height: 280px; object-fit: cover; }
+.slider-dots { position: absolute; bottom: 12px; inset-inline-start: 0; inset-inline-end: 0; display: flex; gap: 8px; justify-content: center; }
+.slider-dots button {
+  width: 10px; height: 10px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,.5); padding: 0;
+}
+.slider-dots button.on { background: #fff; width: 24px; border-radius: 6px; }
+
+/* ===== صفحة تواصل معنا ===== */
+.contact-wrap { max-width: 680px; margin: 0 auto; }
+.contact-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
+.contact-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px 14px; text-align: center; color: var(--text); transition: all .15s;
+}
+.contact-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.cc-icon { font-size: 2rem; }
+.cc-title { font-weight: 800; margin-top: 8px; }
+.cc-sub { color: var(--muted); font-size: .82rem; margin-top: 4px; }
+
+/* ===== أزرار صغيرة بالأدمن ===== */
+.btn-mini {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 5px 12px; border-radius: 8px; font-family: inherit; font-size: .8rem;
+  cursor: pointer; margin: 2px;
+}
+.btn-mini:hover { background: var(--card-hover); }
+.btn-mini.danger { border-color: var(--no); color: var(--no); }
+.btn-mini.full { width: 100%; }

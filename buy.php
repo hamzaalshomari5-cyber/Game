@@ -69,4 +69,8 @@ db()->prepare("UPDATE orders SET fc_order_id=?, status=?, codes=?, updated_at=" 
 
 $msg = 'تم إرسال طلبك بنجاح ✅ — تابع حالته من صفحة "طلباتي"';
 if ($codes) $msg = 'تم تنفيذ طلبك ✅ الكود موجود بصفحة "طلباتي"';
+
+// إشعار الأدمن بالطلب الجديد
+notify_admin("🛒 <b>طلب جديد</b>\nالمستخدم: " . e($U['name']) . "\nالمنتج: " . e($p['name']) . " ×$qty\n" . ($player ? "ID: $player\n" : "") . "الإجمالي: " . number_format($total) . " ل.س\nالحالة: " . ($newStatus === 'accept' ? 'تم التنفيذ ✅' : 'قيد التنفيذ ⏳'));
+
 out(true, $msg, ['order_id' => $orderId]);
