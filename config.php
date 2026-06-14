@@ -12,12 +12,15 @@ define('DEFAULT_PROFIT', 10);
 
 // ===== طرق الإيداع =====
 // سيرياتيل كاش
-define('SYRIATEL_NUMBER', '0982493924');
+define('SYRIATEL_NUMBER', '0982493924'); // الرقم المعروض للزبون ليحوّل عليه
+// رقم/كود حساب سيرياتيل المربوط بـ apisyria للبحث (افتراضياً = نفس الرقم المعروض)
+define('SYRIATEL_GSM', ''); // أو متغير بيئة SYRIATEL_GSM — اتركه فارغاً ليستخدم SYRIATEL_NUMBER
 // شام كاش
-define('SHAMCASH_NUMBER', ''); // رقم/كود محفظة شام كاش — أو متغير بيئة SHAMCASH_NUMBER
+define('SHAMCASH_NUMBER', ''); // عنوان شام كاش المعروض للزبون — أو متغير بيئة SHAMCASH_NUMBER
+define('SHAMCASH_ADDRESS', ''); // account_address المربوط بـ apisyria — أو متغير بيئة SHAMCASH_ADDRESS (افتراضياً = SHAMCASH_NUMBER)
 // التحقق من التحويلات
 define('APISYRIA_KEY', 'ضع_مفتاح_APISYRIA_هنا'); // أو متغير بيئة APISYRIA_KEY
-define('APISYRIA_URL', 'https://apisyria.com/api/v1/');
+define('APISYRIA_URL', 'https://apisyria.com/api/v1');
 
 // حساب الأدمن (أول دخول)
 define('ADMIN_EMAIL', 'admin@luxecard.store');
@@ -44,6 +47,16 @@ function env_or($name, $const) {
 function fastcard_token() { return env_or('FASTCARD_TOKEN', FASTCARD_TOKEN); }
 function apisyria_key()   { return env_or('APISYRIA_KEY', APISYRIA_KEY); }
 function shamcash_number() { return env_or('SHAMCASH_NUMBER', SHAMCASH_NUMBER); }
+// رقم سيرياتيل المربوط بـ apisyria (يرجع للرقم المعروض إذا ما تحدد)
+function syriatel_gsm() {
+    $g = env_or('SYRIATEL_GSM', SYRIATEL_GSM);
+    return $g !== '' ? $g : SYRIATEL_NUMBER;
+}
+// عنوان شام كاش المربوط بـ apisyria (يرجع للعنوان المعروض إذا ما تحدد)
+function shamcash_account() {
+    $a = env_or('SHAMCASH_ADDRESS', SHAMCASH_ADDRESS);
+    return $a !== '' ? $a : shamcash_number();
+}
 
 date_default_timezone_set('Asia/Damascus');
 

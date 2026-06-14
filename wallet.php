@@ -4,27 +4,81 @@ require_login();
 $U = current_user();
 $msg = ''; $ok = false;
 
-// التحقق من تحويل (سيرياتيل أو شام كاش) عبر apisyria
-function verify_tx($txId, $method) {
-    $gsm = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
-    $action = $method === 'shamcash' ? 'find_tx_shamcash' : 'find_tx';
-    $url = APISYRIA_URL . '?' . http_build_query([
-        'key'    => apisyria_key(),
-        'action' => $action,
-        'gsm'    => $gsm,
-        'period' => 'all',
-        'tx'     => $txId,
-    ]);
+// وضع تشخيص: /wallet.php?apidebug=TXID&m=syriatel  (احذفه بعد الحل)
+if (isset($_GET['apidebug'])) {
+    header('Content-Type: text/plain; charset=utf-8');
+    $txId = preg_replace('/\D/', '', $_GET['apidebug']);
+    $method = ($_GET['m'] ?? 'syriatel') === 'shamcash' ? 'shamcash' : 'syriatel';
+    $base = 'https://apisyria.com/api/v1';
+    if ($method === 'shamcash') {
+        $params = ['resource'=>'shamcash','action'=>'find_tx','tx'=>$txId,'account_address'=>shamcash_account(),'api_key'=>apisyria_key()];
+    } else {
+        $params = ['resource'=>'syriatel','action'=>'find_tx','tx'=>$txId,'gsm'=>syriatel_gsm(),'period'=>'all','api_key'=>apisyria_key()];
+    }
+    $url = $base . '?' . http_build_query($params);
+    $shown = str_replace(urlencode(apisyria_key()), '***KEY***', $url);
+    echo "الطريقة: $method
+";
+    echo "GSM/Address: " . ($method==='shamcash'?shamcash_account():syriatel_gsm()) . "
+";
+    echo "مفتاح apisyria: " . (apisyria_key()!==''?'موجود (طول '.strlen(apisyria_key()).')':'فارغ ❌') . "
+";
+    echo "الرابط: $shown
+
+";
     $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30]);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>30, CURLOPT_HTTPHEADER=>['Accept: application/json']]);
     $res = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    echo "HTTP: $code
+";
+    if ($err) echo "CURL_ERR: $err
+";
+    echo "
+الرد:
+$res";
+    exit;
+}
+
+// التحقق من تحويل (سيرياتيل أو شام كاش) عبر apisyria — حسب التوثيق الرسمي
+function verify_tx($txId, $method) {
+    $base = 'https://apisyria.com/api/v1';
+    if ($method === 'shamcash') {
+        $params = [
+            'resource'        => 'shamcash',
+            'action'          => 'find_tx',
+            'tx'              => $txId,
+            'account_address' => shamcash_account(),
+            'api_key'         => apisyria_key(),
+        ];
+    } else {
+        $params = [
+            'resource' => 'syriatel',
+            'action'   => 'find_tx',
+            'tx'       => $txId,
+            'gsm'      => syriatel_gsm(),
+            'period'   => 'all',
+            'api_key'  => apisyria_key(),
+        ];
+    }
+    $url = $base . '?' . http_build_query($params);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => ['Accept: application/json'],
+    ]);
+    $res = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     $d = json_decode($res, true);
-    if (!is_array($d)) return null;
-    $tx = $d['tx'] ?? $d['data'] ?? $d['result'] ?? null;
-    if (is_array($tx) && isset($tx[0])) $tx = $tx[0];
-    if (!is_array($tx)) return null;
-    $amount = (float)($tx['amount'] ?? $tx['value'] ?? 0);
+    if (!is_array($d) || empty($d['success'])) return null;
+    $data = $d['data'] ?? [];
+    if (empty($data['found'])) return null;
+    $tx = $data['transaction'] ?? [];
+    $amount = (float)($tx['amount'] ?? 0);
     return $amount > 0 ? $amount : null;
 }
 
