@@ -1019,3 +1019,35 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
   .slider-overlay { background: rgba(0,0,0,.4) !important; padding: 14px !important; }
   .slider-caption .cap-line { font-size: .95rem; }
 }
+
+/* =====================================================
+   شريط النص فوق السلايدر (منفصل عن الصورة) — نهائي
+   ===================================================== */
+/* نلغي طبقة النص القديمة اللي كانت فوق الصورة */
+.slider-overlay { display: none !important; }
+
+/* شريط النص فوق الصورة */
+.slider-topbar {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 10px;
+  background: linear-gradient(135deg, var(--accent2), #2a1d6b);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 20px rgba(124,92,255,.22);
+}
+.slider-topbar .cap-line {
+  color: #fff; font-weight: 800; font-size: 1rem;
+  white-space: nowrap;
+}
+.slider-topbar .cap-dot { color: var(--accent); font-weight: 900; font-size: 1.1rem; }
+
+/* الصور نظيفة بدون تعتيم */
+.slider { position: relative; margin: 0 0 20px; border-radius: 16px; overflow: hidden; }
+
+@media (max-width: 600px) {
+  .slider-topbar { padding: 12px 14px; gap: 6px; }
+  .slider-topbar .cap-line { font-size: .85rem; }
+  .slider-topbar .cap-dot { display: none; }
+  .slider-topbar .cap-line { flex-basis: 100%; text-align: center; }
+}

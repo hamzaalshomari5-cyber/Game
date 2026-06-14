@@ -186,16 +186,18 @@ $pageTitle = 'الرئيسية';
 include __DIR__ . '/header.php'; ?>
 
 <?php if ($slides): ?>
+<!-- النص فوق الصورة (شريط منفصل) -->
+<div class="slider-topbar">
+  <span class="cap-line">⚡ تسليم فوري ودعم 24/7</span>
+  <span class="cap-dot">•</span>
+  <span class="cap-line">💰 أفضل الأسعار وأسرع خدمة</span>
+</div>
 <div class="slider" id="slider">
   <div class="slides" id="slides">
     <?php foreach ($slides as $s): ?>
       <?php if ($s['link']): ?><a href="<?= e($s['link']) ?>" class="slide"><img src="<?= e($s['image']) ?>" alt="" loading="lazy"></a>
       <?php else: ?><div class="slide"><img src="<?= e($s['image']) ?>" alt="" loading="lazy"></div><?php endif; ?>
     <?php endforeach; ?>
-  </div>
-  <!-- النص فوق الصور -->
-  <div class="slider-overlay">
-    <div class="slider-caption"><span class="cap-line">⚡ تسليم فوري ودعم 24/7</span><span class="cap-dot">•</span><span class="cap-line">💰 أفضل الأسعار وأسرع خدمة</span></div>
   </div>
   <?php if (count($slides) > 1): ?>
   <div class="slider-dots" id="sliderDots">
