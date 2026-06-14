@@ -1,7 +1,13 @@
-// زر الرجوع
+// زر الرجوع الذكي
 function goBack() {
+  // إذا فاتح مودال، سكّرو بدل ما ترجع صفحة
+  const openModal = document.querySelector('.modal.show');
+  if (openModal) { openModal.classList.remove('show'); return; }
+  // إذا السايدبار مفتوح، سكّرو
+  const sb = document.getElementById('sidebar');
+  if (sb && sb.classList.contains('open')) { toggleSidebar(); return; }
   // إذا في صفحة سابقة بنفس الموقع، ارجع لها — وإلا روح للرئيسية
-  if (document.referrer && document.referrer.indexOf(location.host) !== -1 && history.length > 1) {
+  if (document.referrer && document.referrer.indexOf(location.host) !== -1) {
     history.back();
   } else if (history.length > 1) {
     history.back();

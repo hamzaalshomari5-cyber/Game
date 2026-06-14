@@ -671,3 +671,117 @@ input:focus, select:focus {
 
 /* انتقالات عامة سلسة */
 a, button { transition: color .15s, background .15s, transform .15s, box-shadow .15s; }
+
+/* =====================================================
+   توسيع الموقع + 3 أقسام بالصف + دقّة أعلى
+   ===================================================== */
+
+/* ===== عرض أوسع للموقع ===== */
+.container { max-width: 1280px; }
+
+/* ===== الأقسام والمنتجات: 3 بالصف (موبايل) ===== */
+@media (max-width: 600px) {
+  .cats-grid, .products-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+  .card { padding: 10px; border-radius: 12px; }
+  .cat-card { padding: 12px 6px; }
+  .cat-icon { font-size: 1.6rem; }
+  .cat-name { font-size: .78rem; margin-top: 6px; }
+  .cat-count { font-size: .68rem; }
+  .product-card { padding: 10px 6px; }
+  .p-name { font-size: .76rem; min-height: 2.3em; line-height: 1.4; }
+  .p-price { font-size: .8rem; padding: 2px 7px; margin-top: 5px; }
+  .product-card .ph { font-size: 1.9rem; padding: 10px 0; }
+  .fav-btn { width: 26px; height: 26px; font-size: .75rem; top: 5px; inset-inline-start: 5px; }
+  .oos-badge { font-size: .68rem; }
+  .section-title { font-size: 1.15rem; }
+}
+
+/* ===== موبايل صغير جداً: نظل 3 بس أصغر ===== */
+@media (max-width: 360px) {
+  .cats-grid, .products-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
+  .p-name { font-size: .7rem; }
+  .p-price { font-size: .74rem; padding: 2px 5px; }
+  .cat-name { font-size: .72rem; }
+}
+
+/* ===== تابلت: 4 بالصف ===== */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .cats-grid { grid-template-columns: repeat(4, 1fr); }
+  .products-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ===== كمبيوتر: 6 بالصف (استغلال العرض الواسع) ===== */
+@media (min-width: 1025px) {
+  .cats-grid { grid-template-columns: repeat(6, 1fr); }
+  .products-grid { grid-template-columns: repeat(6, 1fr); }
+}
+
+/* ===== دقّة أعلى: حواف وصور أنعم ===== */
+.product-card img, .cat-img {
+  border-radius: 12px;
+  background: var(--bg);
+}
+.card {
+  border-radius: 16px;
+}
+
+/* تباعد أنعم بين العناصر */
+.grid { gap: 14px; }
+@media (min-width: 1025px) { .grid { gap: 16px; } }
+
+/* عنوان القسم أوضح */
+.section-title {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 900;
+}
+
+/* اسم المنتج — قص أنيق لو طويل */
+.p-name {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* السعر — توسيط ثابت */
+.product-card { display: flex; flex-direction: column; }
+.product-card .p-price { align-self: center; }
+
+/* =====================================================
+   زر الرجوع — نسخة محسّنة ونهائية
+   ===================================================== */
+.back-btn {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  width: 40px !important; height: 40px !important;
+  border-radius: 12px !important;
+  display: flex !important; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  font-size: 0 !important;
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+  padding: 0;
+}
+/* سهم رجوع واضح (يمين بالـ RTL) عبر SVG مرسوم بـ CSS border */
+.back-btn::before {
+  content: '' !important;
+  width: 10px; height: 10px;
+  border-top: 2.5px solid var(--text);
+  border-right: 2.5px solid var(--text);
+  transform: rotate(45deg);
+  margin-inline-start: -3px;
+  transition: border-color .2s;
+}
+.back-btn:hover {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  transform: translateX(3px);
+  box-shadow: 0 4px 14px rgba(255,185,56,.35);
+}
+.back-btn:hover::before { border-color: #1a1a1a; }
+.back-btn:active { transform: scale(.9); }
+
+/* على الموبايل: أوضح شوي */
+@media (max-width: 600px) {
+  .back-btn { width: 38px !important; height: 38px !important; }
+}
