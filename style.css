@@ -488,3 +488,186 @@ body.light .btn-google { border-color: #dadce0; }
 .btn-mini:hover { background: var(--card-hover); }
 .btn-mini.danger { border-color: var(--no); color: var(--no); }
 .btn-mini.full { width: 100%; }
+
+/* =====================================================
+   تحسينات الواجهة الاحترافية (طبقة فوق الأساسي)
+   ===================================================== */
+
+/* خلفية متدرّجة ناعمة */
+body {
+  background:
+    radial-gradient(900px 500px at 100% -5%, rgba(124,92,255,.10), transparent 55%),
+    radial-gradient(800px 480px at 0% 0%, rgba(255,185,56,.06), transparent 50%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* ===== الشريط العلوي — زجاجي ناعم ===== */
+.topbar {
+  background: color-mix(in srgb, var(--bg2) 82%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 var(--border);
+  border-bottom: none;
+}
+
+/* ===== زر الرجوع — محسّن ودائري ===== */
+.back-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  width: 40px; height: 40px; border-radius: 12px;
+  font-size: 1.3rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.back-btn::before {
+  content: '→';
+  font-size: 1.25rem; line-height: 1;
+}
+/* نخفي الرمز القديم ‹ ونستبدله بسهم أوضح */
+.back-btn { font-size: 0; }
+.back-btn::before { font-size: 1.25rem; color: var(--text); }
+.back-btn:hover {
+  background: var(--accent); border-color: var(--accent);
+  transform: translateX(3px);
+}
+.back-btn:hover::before { color: #1a1a1a; }
+.back-btn:active { transform: scale(.92); }
+
+/* ===== أيقونة البحث متناسقة مع زر الرجوع ===== */
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 12px;
+  transition: all .2s; font-size: 1.15rem;
+}
+.icon-btn:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-2px); }
+
+/* ===== البطاقات — ظل وحركة أنعم ===== */
+.card {
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  transition: transform .2s cubic-bezier(.4,0,.2,1), box-shadow .2s, border-color .2s;
+}
+.cat-card, .product-card {
+  transition: transform .2s cubic-bezier(.4,0,.2,1), box-shadow .2s, border-color .2s;
+}
+.cat-card:hover, .product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(124,92,255,.16);
+  border-color: color-mix(in srgb, var(--accent2) 45%, var(--border));
+}
+
+/* صور المنتجات/الأقسام — إطار ناعم */
+.product-card img, .cat-img {
+  transition: transform .3s ease;
+}
+.product-card:hover img { transform: scale(1.04); }
+
+/* السعر — لمسة بارزة */
+.p-price {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  display: inline-block; padding: 3px 10px; border-radius: 8px;
+  margin-top: 6px;
+}
+
+/* ===== الهيرو — تدرّج أغنى وحدود مضيئة ===== */
+.hero {
+  background:
+    linear-gradient(135deg, var(--accent2), #2a1d6b 55%, var(--bg2)),
+    var(--bg2);
+  box-shadow: 0 12px 40px rgba(124,92,255,.22);
+  position: relative; overflow: hidden;
+}
+.hero::after {
+  content: ''; position: absolute; top: -50%; inset-inline-end: -10%;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,185,56,.25), transparent 70%);
+  pointer-events: none;
+}
+.hero h1 { letter-spacing: .5px; }
+
+/* ===== الأزرار — تدرّج ولمعة ===== */
+.btn {
+  background: linear-gradient(135deg, var(--accent), #ffa516);
+  box-shadow: 0 4px 14px rgba(255,185,56,.3);
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+  border: none;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,185,56,.4); filter: brightness(1.05); }
+.btn:active { transform: translateY(0); }
+.btn.ghost { background: transparent; box-shadow: none; }
+.btn.ghost:hover { background: var(--card-hover); transform: none; }
+
+/* ===== الحقول — تركيز أوضح ===== */
+input, select {
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: none;
+}
+
+/* ===== السايدبار — أنعم ===== */
+.sidebar {
+  box-shadow: -8px 0 40px rgba(0,0,0,.3);
+}
+.sb-nav a {
+  transition: all .18s; position: relative;
+}
+.sb-nav a:hover {
+  background: color-mix(in srgb, var(--accent2) 12%, var(--card));
+  padding-inline-start: 14px;
+}
+
+/* ===== شارات الحالة (طلباتي) — أوضح ===== */
+.badge { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+
+/* ===== عناوين الأقسام — خط متدرّج تحتها ===== */
+.section-title::before {
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+}
+
+/* ===== المودال — ظهور أنعم ===== */
+.modal-box {
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  animation: modalPop .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modalPop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ===== طرق الدفع — تحديد أوضح ===== */
+.pay-method { transition: all .2s cubic-bezier(.4,0,.2,1); }
+.pay-method.active {
+  box-shadow: 0 4px 14px rgba(255,185,56,.25);
+  transform: translateY(-1px);
+}
+
+/* ===== التبويبات (الأدمن) — نشطة بارزة ===== */
+.tabs a.on { box-shadow: 0 3px 10px rgba(255,185,56,.3); }
+
+/* ===== الميزات بالرئيسية — أيقونات بدائرة ===== */
+.feat {
+  transition: transform .2s, border-color .2s;
+}
+.feat:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+/* ===== شريط تمرير أنعم ===== */
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ===== المساعد الذكي — فقاعات أنعم ===== */
+.ai-msg.bot .ai-bubble { box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.ai-msg.user .ai-bubble { box-shadow: 0 3px 12px rgba(255,185,56,.25); }
+.ai-suggestions button { transition: all .18s; }
+.ai-suggestions button:hover { transform: translateY(-2px); }
+
+/* ===== بطاقات التواصل — أيقونات بخلفية ===== */
+.cc-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; border-radius: 16px;
+  background: color-mix(in srgb, var(--accent2) 14%, transparent);
+  margin: 0 auto;
+}
+
+/* انتقالات عامة سلسة */
+a, button { transition: color .15s, background .15s, transform .15s, box-shadow .15s; }
