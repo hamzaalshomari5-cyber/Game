@@ -785,3 +785,64 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
 @media (max-width: 600px) {
   .back-btn { width: 38px !important; height: 38px !important; }
 }
+
+/* =====================================================
+   الشريط العلوي — عناصر أصغر ومتناسقة (نهائي)
+   ===================================================== */
+.topbar {
+  padding: 10px 14px !important;
+  gap: 10px !important;
+}
+
+/* اللوغو بحجم متوازن */
+.topbar .logo-txt {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+}
+.topbar .logo-txt span { font-size: .9em !important; }
+
+/* زر القائمة (البرغر) أصغر */
+.burger {
+  font-size: 1.3rem !important;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 !important;
+}
+
+/* زر الرجوع وأيقونة البحث: نفس الحجم الصغير المتناسق */
+.back-btn, .icon-btn {
+  width: 34px !important; height: 34px !important;
+  border-radius: 10px !important;
+  flex-shrink: 0;
+}
+.icon-btn { font-size: .95rem !important; margin-inline-end: 6px !important; }
+.back-btn::before { width: 8px !important; height: 8px !important; border-width: 2px !important; }
+
+/* حبة الرصيد — أصغر وأنيقة */
+.balance-pill {
+  padding: 6px 12px !important;
+  font-size: .82rem !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  height: 34px;
+  display: flex; align-items: center; gap: 4px;
+  white-space: nowrap;
+}
+
+/* المسافات بين عناصر اليمين */
+.top-actions { gap: 6px !important; }
+
+/* على الموبايل: أصغر شوي كمان */
+@media (max-width: 600px) {
+  .topbar { padding: 8px 12px !important; gap: 8px !important; }
+  .topbar .logo-txt { font-size: .95rem !important; }
+  .burger { font-size: 1.2rem !important; width: 32px; height: 32px; }
+  .back-btn, .icon-btn { width: 32px !important; height: 32px !important; }
+  .balance-pill { padding: 5px 10px !important; font-size: .76rem !important; height: 32px; }
+}
+
+/* موبايل صغير: نخفي كلمة ل.س ونخلي الرقم بس مع الأيقونة */
+@media (max-width: 360px) {
+  .topbar .logo-txt { font-size: .85rem !important; }
+  .balance-pill { padding: 5px 8px !important; font-size: .72rem !important; }
+}
