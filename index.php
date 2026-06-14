@@ -185,14 +185,6 @@ $slides = db()->query("SELECT * FROM slides WHERE active=1 ORDER BY sort ASC, id
 $pageTitle = 'الرئيسية';
 include __DIR__ . '/header.php'; ?>
 
-<section class="hero">
-  <div class="hero-inner">
-    <h1><?= e(STORE_NAME) ?> <span class="bolt">⚡</span></h1>
-    <p><?= e(STORE_TAGLINE) ?> — أفضل الأسعار وأسرع خدمة</p>
-    <div class="hero-ticker"><span>⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة &nbsp;•&nbsp; ⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة</span></div>
-  </div>
-</section>
-
 <?php if ($slides): ?>
 <div class="slider" id="slider">
   <div class="slides" id="slides">
@@ -200,6 +192,10 @@ include __DIR__ . '/header.php'; ?>
       <?php if ($s['link']): ?><a href="<?= e($s['link']) ?>" class="slide"><img src="<?= e($s['image']) ?>" alt="" loading="lazy"></a>
       <?php else: ?><div class="slide"><img src="<?= e($s['image']) ?>" alt="" loading="lazy"></div><?php endif; ?>
     <?php endforeach; ?>
+  </div>
+  <!-- النص فوق الصور -->
+  <div class="slider-overlay">
+    <div class="slider-ticker"><span>⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة &nbsp;•&nbsp; ⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة</span></div>
   </div>
   <?php if (count($slides) > 1): ?>
   <div class="slider-dots" id="sliderDots">
@@ -215,6 +211,11 @@ include __DIR__ . '/header.php'; ?>
   setInterval(() => goSlide(slideIdx + 1), 4500);
   </script>
   <?php endif; ?>
+</div>
+<?php else: ?>
+<!-- لو ما في صور بالسلايدر، نعرض شريط بسيط فيه النص -->
+<div class="mini-banner">
+  <div class="slider-ticker"><span>⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة &nbsp;•&nbsp; ⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة</span></div>
 </div>
 <?php endif; ?>
 

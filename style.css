@@ -858,3 +858,46 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
   box-shadow: 0 4px 14px rgba(255,185,56,.3);
 }
 .coupon-head h2 { margin: 0; font-size: 1.2rem; }
+
+/* =====================================================
+   النص فوق صور السلايدر (بدل الهيرو القديم)
+   ===================================================== */
+.slider { position: relative; margin: 0 0 20px; border-radius: 18px; overflow: hidden; }
+
+/* طبقة النص فوق الصورة */
+.slider-overlay {
+  position: absolute; bottom: 0; inset-inline-start: 0; inset-inline-end: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,.35) 60%, transparent);
+  padding: 30px 16px 16px;
+  pointer-events: none;
+}
+
+/* الشريط المتحرك */
+.slider-ticker {
+  overflow: hidden; white-space: nowrap; position: relative;
+}
+.slider-ticker span {
+  display: inline-block; padding-inline-start: 100%;
+  animation: tickerMove 18s linear infinite;
+  color: #fff; font-weight: 800; font-size: .95rem;
+  text-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+@keyframes tickerMove {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+/* شريط بسيط لما ما في صور سلايدر */
+.mini-banner {
+  margin: 0 0 18px; border-radius: 14px; overflow: hidden;
+  background: linear-gradient(135deg, var(--accent2), #2a1d6b);
+  padding: 16px 0;
+  box-shadow: 0 8px 28px rgba(124,92,255,.2);
+}
+.mini-banner .slider-ticker span { font-size: 1rem; }
+
+/* النقاط فوق الصورة */
+.slider-dots {
+  position: absolute; bottom: 12px; inset-inline-start: 0; inset-inline-end: 0;
+  display: flex; gap: 8px; justify-content: center; z-index: 3;
+}
