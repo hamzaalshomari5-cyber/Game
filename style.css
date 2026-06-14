@@ -981,3 +981,41 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
   .slider-caption .cap-dot { display: none; } /* نخفي الفاصل بالموبايل لترتيب أنظف */
   .slider-caption .cap-line { flex-basis: 100%; } /* كل عبارة بسطر */
 }
+
+/* =====================================================
+   نص السلايدر بالوسط فوق الصورة (بالعرض كامل) — نهائي
+   ===================================================== */
+.slider-overlay {
+  position: absolute !important;
+  top: 0 !important; bottom: 0 !important;
+  left: 0 !important; right: 0 !important;
+  z-index: 5 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  /* تعتيم خفيف على كامل الصورة ليظهر النص واضح */
+  background: rgba(0,0,0,.35) !important;
+  padding: 16px !important;
+  pointer-events: none;
+}
+
+/* النص بالوسط، بالعرض، متمركز */
+.slider-caption {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; width: 100%; text-align: center;
+}
+.slider-caption .cap-line {
+  display: block;
+  color: #fff; font-weight: 800;
+  font-size: 1.15rem; line-height: 1.5;
+  text-shadow: 0 2px 10px rgba(0,0,0,.85);
+  white-space: normal;
+}
+.slider-caption .cap-dot { display: none; } /* نخفي الفاصل، كل عبارة بسطر */
+
+/* موبايل */
+@media (max-width: 600px) {
+  .slider-overlay { background: rgba(0,0,0,.4) !important; padding: 14px !important; }
+  .slider-caption .cap-line { font-size: .95rem; }
+}
