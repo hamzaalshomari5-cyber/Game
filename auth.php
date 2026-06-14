@@ -51,6 +51,15 @@ include __DIR__ . '/header.php'; ?>
     <input type="password" name="password" required>
     <button class="btn full" type="submit"><?= $mode === 'register' ? 'إنشاء الحساب' : 'دخول' ?></button>
   </form>
+
+  <?php if (google_enabled()): ?>
+  <div class="auth-divider"><span>أو</span></div>
+  <a class="btn-google" href="/google_login.php">
+    <img src="https://store.ahminix.com/google-icon-logo.svg" alt="Google" width="18" height="18">
+    تسجيل بواسطة غوغل
+  </a>
+  <?php endif; ?>
+
   <p class="muted center">
     <?php if ($mode === 'register'): ?>
       عندك حساب؟ <a href="/auth.php">سجّل دخول</a>

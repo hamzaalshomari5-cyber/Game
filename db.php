@@ -87,6 +87,9 @@ function init_db($pdo) {
     $pdo->exec("CREATE TABLE IF NOT EXISTS cache (
         key TEXT PRIMARY KEY, value TEXT, expires BIGINT
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sessions (
+        sid TEXT PRIMARY KEY, data TEXT, updated BIGINT
+    )");
     // لو القاعدة قديمة (SQLite) وما فيها عمود codes
     if (!is_pg()) {
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
@@ -110,6 +113,50 @@ function last_id($table = null) {
     }
     return db()->lastInsertId();
 }
+
+/* ===== جلسة محفوظة بقاعدة البيانات (تضل مسجّل دخول رغم إعادة النشر) ===== */
+class DbSessionHandler implements SessionHandlerInterface {
+    public function open($path, $name): bool { return true; }
+    public function close(): bool { return true; }
+    #[\ReturnTypeWillChange]
+    public function read($sid) {
+        try {
+            $st = db()->prepare("SELECT data FROM sessions WHERE sid=?");
+            $st->execute([$sid]);
+            $v = $st->fetchColumn();
+            return $v !== false ? (string)$v : '';
+        } catch (Exception $e) { return ''; }
+    }
+    public function write($sid, $data): bool {
+        try {
+            $sql = "INSERT INTO sessions (sid,data,updated) VALUES (?,?,?)
+                    ON CONFLICT(sid) DO UPDATE SET data=excluded.data, updated=excluded.updated";
+            db()->prepare($sql)->execute([$sid, $data, time()]);
+            return true;
+        } catch (Exception $e) { return false; }
+    }
+    public function destroy($sid): bool {
+        try { db()->prepare("DELETE FROM sessions WHERE sid=?")->execute([$sid]); } catch (Exception $e) {}
+        return true;
+    }
+    #[\ReturnTypeWillChange]
+    public function gc($maxlifetime) {
+        try { db()->prepare("DELETE FROM sessions WHERE updated < ?")->execute([time() - $maxlifetime]); } catch (Exception $e) {}
+        return true;
+    }
+}
+
+// بدء الجلسة بعد تجهيز القاعدة (مرة واحدة)
+function start_session_once() {
+    if (session_status() === PHP_SESSION_ACTIVE) return;
+    db(); // التأكد من تجهيز القاعدة والجداول
+    try {
+        session_set_save_handler(new DbSessionHandler(), true);
+    } catch (Exception $e) {}
+    @session_start();
+}
+start_session_once();
+
 
 function setting($key, $default = null) {
     $st = db()->prepare("SELECT value FROM settings WHERE key=?");

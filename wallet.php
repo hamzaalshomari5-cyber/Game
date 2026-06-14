@@ -4,12 +4,14 @@ require_login();
 $U = current_user();
 $msg = ''; $ok = false;
 
-function verify_syriatel_tx($txId) {
-    // التحقق عبر apisyria - find_tx
+// التحقق من تحويل (سيرياتيل أو شام كاش) عبر apisyria
+function verify_tx($txId, $method) {
+    $gsm = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
+    $action = $method === 'shamcash' ? 'find_tx_shamcash' : 'find_tx';
     $url = APISYRIA_URL . '?' . http_build_query([
         'key'    => apisyria_key(),
-        'action' => 'find_tx',
-        'gsm'    => SYRIATEL_NUMBER,
+        'action' => $action,
+        'gsm'    => $gsm,
         'period' => 'all',
         'tx'     => $txId,
     ]);
@@ -19,7 +21,6 @@ function verify_syriatel_tx($txId) {
     curl_close($ch);
     $d = json_decode($res, true);
     if (!is_array($d)) return null;
-    // يدعم أكثر من شكل للرد
     $tx = $d['tx'] ?? $d['data'] ?? $d['result'] ?? null;
     if (is_array($tx) && isset($tx[0])) $tx = $tx[0];
     if (!is_array($tx)) return null;
@@ -29,18 +30,19 @@ function verify_syriatel_tx($txId) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $txId = trim($_POST['tx_id'] ?? '');
+    $method = ($_POST['method'] ?? 'syriatel') === 'shamcash' ? 'shamcash' : 'syriatel';
     if (!$txId) {
         $msg = 'أدخل رقم عملية التحويل';
     } else {
-        // منع التكرار
         $st = db()->prepare("SELECT COUNT(*) FROM topups WHERE tx_id=?");
         $st->execute([$txId]);
         if ($st->fetchColumn()) {
             $msg = 'رقم العملية هذا مستخدم مسبقاً';
         } else {
-            $amount = verify_syriatel_tx($txId);
+            $amount = verify_tx($txId, $method);
             if ($amount === null) {
-                $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . SYRIATEL_NUMBER;
+                $dest = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
+                $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . $dest;
             } else {
                 db()->beginTransaction();
                 db()->prepare("INSERT INTO topups (user_id,tx_id,amount) VALUES (?,?,?)")
@@ -59,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $st = db()->prepare("SELECT * FROM topups WHERE user_id=? ORDER BY id DESC LIMIT 10");
 $st->execute([$U['id']]);
 $history = $st->fetchAll(PDO::FETCH_ASSOC);
+$hasSham = shamcash_number() !== '';
 
 $pageTitle = 'المحفظة';
 include __DIR__ . '/header.php'; ?>
@@ -70,14 +73,47 @@ include __DIR__ . '/header.php'; ?>
   </div>
 
   <div class="card">
-    <h3>شحن المحفظة — سيرياتيل كاش</h3>
-    <ol class="steps">
-      <li>حوّل المبلغ المطلوب إلى الرقم: <b class="copyable" onclick="copyText('<?= SYRIATEL_NUMBER ?>')"><?= SYRIATEL_NUMBER ?> 📋</b></li>
-      <li>أدخل رقم عملية التحويل بالأسفل</li>
-      <li>سيُضاف المبلغ تلقائياً بعد التحقق</li>
-    </ol>
+    <h3>شحن المحفظة</h3>
+
+    <!-- اختيار طريقة الإيداع (نفس أسلوب FastCard) -->
+    <div class="pay-methods">
+      <button type="button" class="pay-method active" data-method="syriatel" onclick="selectMethod(this)">
+        <span class="pm-icon">📱</span>
+        <span class="pm-name">سيرياتيل كاش</span>
+      </button>
+      <?php if ($hasSham): ?>
+      <button type="button" class="pay-method" data-method="shamcash" onclick="selectMethod(this)">
+        <span class="pm-icon">💳</span>
+        <span class="pm-name">شام كاش</span>
+      </button>
+      <?php endif; ?>
+    </div>
+
+    <!-- تعليمات سيرياتيل -->
+    <div class="pay-box" id="box-syriatel">
+      <ol class="steps">
+        <li>حوّل المبلغ المطلوب إلى رقم سيرياتيل كاش:
+          <b class="copyable" onclick="copyText('<?= SYRIATEL_NUMBER ?>')"><?= SYRIATEL_NUMBER ?> 📋</b></li>
+        <li>أدخل رقم عملية التحويل بالأسفل</li>
+        <li>سيُضاف المبلغ تلقائياً بعد التحقق</li>
+      </ol>
+    </div>
+
+    <?php if ($hasSham): ?>
+    <!-- تعليمات شام كاش -->
+    <div class="pay-box" id="box-shamcash" style="display:none">
+      <ol class="steps">
+        <li>حوّل المبلغ المطلوب إلى محفظة شام كاش:
+          <b class="copyable" onclick="copyText('<?= e(shamcash_number()) ?>')"><?= e(shamcash_number()) ?> 📋</b></li>
+        <li>أدخل رقم عملية التحويل بالأسفل</li>
+        <li>سيُضاف المبلغ تلقائياً بعد التحقق</li>
+      </ol>
+    </div>
+    <?php endif; ?>
+
     <?php if ($msg): ?><div class="alert <?= $ok ? 'ok' : '' ?>"><?= e($msg) ?></div><?php endif; ?>
     <form method="post">
+      <input type="hidden" name="method" id="payMethod" value="syriatel">
       <label>رقم عملية التحويل</label>
       <input name="tx_id" required placeholder="مثال: 600123456789">
       <button class="btn full" type="submit">تحقق وشحن</button>
@@ -96,5 +132,17 @@ include __DIR__ . '/header.php'; ?>
   </div>
   <?php endif; ?>
 </div>
+
+<script>
+function selectMethod(btn) {
+  document.querySelectorAll('.pay-method').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const m = btn.dataset.method;
+  document.getElementById('payMethod').value = m;
+  document.querySelectorAll('.pay-box').forEach(b => b.style.display = 'none');
+  const box = document.getElementById('box-' + m);
+  if (box) box.style.display = '';
+}
+</script>
 
 <?php include __DIR__ . '/footer.php';

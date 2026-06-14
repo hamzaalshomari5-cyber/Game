@@ -78,22 +78,39 @@ include __DIR__ . '/header.php'; ?>
 <?php elseif ($tab === 'users'):
   $users = db()->query("SELECT * FROM users ORDER BY id DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC); ?>
   <div class="card">
-    <h3>تعديل رصيد مستخدم</h3>
+    <h3>تعديل رصيد مستخدم 💰</h3>
+    <p class="muted">حط رقم المستخدم (من الجدول تحت) والمبلغ — موجب للإضافة، سالب للخصم.</p>
     <form method="post" class="inline-form">
       <input name="add_balance_user" type="number" placeholder="رقم المستخدم" required>
-      <input name="add_balance_amount" type="number" step="any" placeholder="المبلغ (سالب للخصم)" required>
+      <input name="add_balance_amount" type="number" step="any" placeholder="المبلغ بالليرة (± )" required>
       <button class="btn">تنفيذ</button>
     </form>
   </div>
   <div class="card">
-    <table class="tbl">
+    <h3>المستخدمين (<?= count($users) ?>)</h3>
+    <input type="text" id="userSearch" placeholder="🔍 ابحث بالاسم أو الإيميل..." onkeyup="filterUsers()" style="margin-bottom:12px">
+    <table class="tbl" id="usersTable">
       <tr><th>#</th><th>الاسم</th><th>الإيميل</th><th>الرصيد</th><th>الدور</th></tr>
       <?php foreach ($users as $u): ?>
-        <tr><td><?= $u['id'] ?></td><td><?= e($u['name']) ?></td><td><?= e($u['email']) ?></td>
-            <td><?= number_format($u['balance']) ?></td><td><?= e($u['role']) ?></td></tr>
+        <tr>
+          <td><b><?= $u['id'] ?></b></td>
+          <td><?= e($u['name']) ?></td>
+          <td class="small"><?= e($u['email']) ?></td>
+          <td><b><?= number_format($u['balance']) ?></b></td>
+          <td><?= $u['role'] === 'admin' ? '👑 أدمن' : 'مستخدم' ?></td>
+        </tr>
       <?php endforeach; ?>
     </table>
   </div>
+  <script>
+  function filterUsers() {
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    document.querySelectorAll('#usersTable tr').forEach((row, i) => {
+      if (i === 0) return;
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  </script>
 
 <?php else: ?>
   <div class="card">
@@ -135,8 +152,19 @@ include __DIR__ . '/header.php'; ?>
     <form method="post"><button class="btn" name="sync_products" value="1">مزامنة الآن 🔄</button></form>
   </div>
   <div class="card">
-    <h3>ملاحظة</h3>
-    <p class="muted">توكن FastCard ومفتاح apisyria يُضبطان في <code>config.php</code> أو عبر متغيرات البيئة <code>FASTCARD_TOKEN</code> و <code>APISYRIA_KEY</code> على Railway.</p>
+    <h3>الإعدادات والمتغيرات (Railway)</h3>
+    <p class="muted">تُضبط عبر متغيرات البيئة على Railway (صندوق الموقع → Variables):</p>
+    <p class="muted small" style="line-height:2">
+      <code>FASTCARD_TOKEN</code> — توكن FastCard<br>
+      <code>APISYRIA_KEY</code> — التحقق من التحويلات<br>
+      <code>SHAMCASH_NUMBER</code> — رقم محفظة شام كاش (لتفعيل الإيداع عبرها)<br>
+      <code>BOT_CHECK_URL</code> + <code>CHECK_API_SECRET</code> — التحقق من اسم اللاعب<br>
+      <code>GOOGLE_CLIENT_ID</code> + <code>GOOGLE_CLIENT_SECRET</code> + <code>SITE_URL</code> — دخول جوجل
+    </p>
+    <p class="muted small">
+      حالة شام كاش: <?= shamcash_number() ? '✅ مفعّل' : '⚠️ غير مفعّل' ?> —
+      حالة دخول جوجل: <?= google_enabled() ? '✅ مفعّل' : '⚠️ غير مفعّل' ?>
+    </p>
   </div>
 <?php endif; ?>
 
