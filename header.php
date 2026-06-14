@@ -40,6 +40,7 @@ $U = current_user();
       <a href="/orders.php">🧾 طلباتي</a>
       <a href="/index.php?page=favs">❤ المفضلة</a>
       <a href="/wallet.php">💳 المحفظة</a>
+      <a href="/coupon.php">🎁 كود الخصم</a>
       <?php if ($U['role'] === 'admin'): ?><a href="/admin.php">🛠 لوحة الأدمن</a><?php endif; ?>
       <a href="/auth.php?logout=1">🚪 تسجيل الخروج</a>
     <?php endif; ?>

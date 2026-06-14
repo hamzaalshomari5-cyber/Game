@@ -846,3 +846,15 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
   .topbar .logo-txt { font-size: .85rem !important; }
   .balance-pill { padding: 5px 8px !important; font-size: .72rem !important; }
 }
+
+/* ===== صفحة كود الخصم ===== */
+.coupon-page { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.coupon-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.coupon-icon {
+  width: 54px; height: 54px; border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent), #ffa516);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(255,185,56,.3);
+}
+.coupon-head h2 { margin: 0; font-size: 1.2rem; }

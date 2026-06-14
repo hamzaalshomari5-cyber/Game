@@ -203,10 +203,11 @@ include __DIR__ . '/header.php'; ?>
       <input type="hidden" name="method" id="payMethod" value="syriatel">
       <label>رقم عملية التحويل</label>
       <input name="tx_id" required placeholder="مثال: 600123456789">
-      <label>كود الخصم (اختياري) 🎁</label>
-      <input name="coupon" placeholder="إذا عندك كود خصم، اكتبه هون">
       <button class="btn full" type="submit">تحقق وشحن</button>
     </form>
+    <p class="muted small" style="margin-top:10px; text-align:center">
+      عندك كود خصم؟ <a href="/coupon.php" style="color:var(--accent)">فعّله من هنا 🎁</a>
+    </p>
   </div>
 
   <?php if ($history): ?>
