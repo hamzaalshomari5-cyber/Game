@@ -8,13 +8,17 @@ include __DIR__ . '/header.php'; ?>
   <p class="muted">فريقنا جاهز لمساعدتك على مدار الساعة. اختر طريقة التواصل المناسبة:</p>
 
   <div class="contact-cards">
-    <?php if (WHATSAPP_1): ?>
     <a class="contact-card" href="<?= e(WHATSAPP_1) ?>" target="_blank">
       <div class="cc-icon">💬</div>
-      <div class="cc-title">واتساب</div>
-      <div class="cc-sub">للدعم والاستفسارات</div>
+      <div class="cc-title">واتساب 1</div>
+      <div class="cc-sub" dir="ltr"><?= e(WHATSAPP_NUM_1) ?></div>
     </a>
-    <?php endif; ?>
+
+    <a class="contact-card" href="<?= e(WHATSAPP_2) ?>" target="_blank">
+      <div class="cc-icon">💬</div>
+      <div class="cc-title">واتساب 2</div>
+      <div class="cc-sub" dir="ltr"><?= e(WHATSAPP_NUM_2) ?></div>
+    </a>
 
     <?php if (WHATSAPP_GROUP): ?>
     <a class="contact-card" href="<?= e(WHATSAPP_GROUP) ?>" target="_blank">

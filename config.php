@@ -24,7 +24,10 @@ define('ADMIN_EMAIL', 'admin@luxecard.store');
 define('ADMIN_PASS', 'admin123'); // غيّرها فوراً بعد أول دخول
 
 // روابط التواصل
-define('WHATSAPP_1', 'https://wa.me/963900000000');
+define('WHATSAPP_NUM_1', '0982493924');
+define('WHATSAPP_NUM_2', '0951655874');
+define('WHATSAPP_1', 'https://wa.me/963982493924');
+define('WHATSAPP_2', 'https://wa.me/963951655874');
 define('WHATSAPP_GROUP', '');
 define('INSTAGRAM', '');
 
