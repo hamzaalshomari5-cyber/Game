@@ -195,7 +195,7 @@ include __DIR__ . '/header.php'; ?>
   </div>
   <!-- النص فوق الصور -->
   <div class="slider-overlay">
-    <div class="slider-ticker"><span>⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة &nbsp;•&nbsp; ⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة</span></div>
+    <div class="slider-caption"><span class="cap-line">⚡ تسليم فوري ودعم 24/7</span><span class="cap-dot">•</span><span class="cap-line">💰 أفضل الأسعار وأسرع خدمة</span></div>
   </div>
   <?php if (count($slides) > 1): ?>
   <div class="slider-dots" id="sliderDots">
@@ -215,7 +215,7 @@ include __DIR__ . '/header.php'; ?>
 <?php else: ?>
 <!-- لو ما في صور بالسلايدر، نعرض شريط بسيط فيه النص -->
 <div class="mini-banner">
-  <div class="slider-ticker"><span>⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة &nbsp;•&nbsp; ⚡ تسليم فوري ودعم 24/7 &nbsp;•&nbsp; 💰 أفضل الأسعار وأسرع خدمة</span></div>
+  <div class="slider-caption"><span class="cap-line">⚡ تسليم فوري ودعم 24/7</span><span class="cap-dot">•</span><span class="cap-line">💰 أفضل الأسعار وأسرع خدمة</span></div>
 </div>
 <?php endif; ?>
 

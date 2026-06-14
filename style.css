@@ -943,3 +943,41 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
   .slider-overlay { padding: 30px 12px 14px !important; }
   .slider-overlay .slider-ticker span { font-size: .85rem !important; }
 }
+
+/* =====================================================
+   نص السلايدر — نظيف ومتناسق (نهائي)
+   ===================================================== */
+.slider-overlay {
+  position: absolute !important;
+  bottom: 0 !important; left: 0 !important; right: 0 !important;
+  z-index: 5 !important;
+  background: linear-gradient(to top, rgba(0,0,0,.82), rgba(0,0,0,.3) 60%, transparent) !important;
+  padding: 36px 16px 16px !important;
+  pointer-events: none;
+}
+
+/* النص: سطر واحد أنيق، عناصر بمحاذاة الوسط */
+.slider-caption {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 10px;
+  text-align: center;
+}
+.slider-caption .cap-line {
+  color: #fff; font-weight: 800;
+  font-size: .95rem; line-height: 1.4;
+  text-shadow: 0 2px 6px rgba(0,0,0,.7);
+  white-space: nowrap;
+}
+.slider-caption .cap-dot {
+  color: var(--accent); font-size: 1rem; font-weight: 900;
+  text-shadow: 0 2px 6px rgba(0,0,0,.7);
+}
+
+/* موبايل: العناصر تحت بعض لو ضاقت */
+@media (max-width: 600px) {
+  .slider-overlay { padding: 28px 12px 14px !important; }
+  .slider-caption { gap: 6px; }
+  .slider-caption .cap-line { font-size: .82rem; }
+  .slider-caption .cap-dot { display: none; } /* نخفي الفاصل بالموبايل لترتيب أنظف */
+  .slider-caption .cap-line { flex-basis: 100%; } /* كل عبارة بسطر */
+}
