@@ -106,12 +106,12 @@ function init_db($pdo) {
         image TEXT, link TEXT, sort INTEGER DEFAULT 0, active INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT $now
     )");
-    // عمود الكوبون بجدول الإيداع
-    if (!is_pg()) {
+    // عمود الكوبون بجدول الإيداع (للقواعد القديمة)
+    if (is_pg()) {
+        try { $pdo->exec("ALTER TABLE topups ADD COLUMN IF NOT EXISTS coupon TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS codes TEXT"); } catch (Exception $e) {}
+    } else {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN coupon TEXT"); } catch (Exception $e) {}
-    }
-    // لو القاعدة قديمة (SQLite) وما فيها عمود codes
-    if (!is_pg()) {
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
     }
     // أدمن افتراضي
