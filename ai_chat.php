@@ -17,20 +17,22 @@ if (isset($_GET['debug'])) {
     header('Content-Type: text/plain; charset=utf-8');
     echo "GEMINI_API_KEY موجود: " . ($apiKey !== '' ? 'نعم (طول: ' . strlen($apiKey) . ')' : 'لا ❌') . "\n";
     if ($apiKey === '') { echo "\n⚠️ المفتاح مش محطوط على Railway. ضيف متغير GEMINI_API_KEY"; exit; }
-    $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" . urlencode($apiKey);
-    $ch = curl_init($testUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_TIMEOUT => 30,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_POSTFIELDS => json_encode(['contents' => [['role' => 'user', 'parts' => [['text' => 'قل مرحبا']]]]]),
-    ]);
-    $r = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
-    curl_close($ch);
-    echo "\nHTTP: $code\n";
-    if ($err) echo "CURL_ERR: $err\n";
-    echo "\nالرد:\n" . mb_substr($r, 0, 800);
+    $models = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash', 'gemini-2.0-flash-001', 'gemini-flash-latest'];
+    foreach ($models as $m) {
+        $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent?key=" . urlencode($apiKey);
+        $ch = curl_init($testUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_TIMEOUT => 25,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => json_encode(['contents' => [['role' => 'user', 'parts' => [['text' => 'قل مرحبا']]]]]),
+        ]);
+        $r = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        $okMark = $code === 200 ? ' ✅ شغّال!' : '';
+        echo "$m => HTTP $code$okMark\n";
+        if ($code === 200) { echo "\n🎉 استخدم هذا الموديل: $m\n"; break; }
+    }
     exit;
 }
 
@@ -86,7 +88,7 @@ $payload = [
 ];
 
 // ===== نداء Gemini API =====
-$model = 'gemini-2.0-flash';
+$model = 'gemini-1.5-flash';
 $url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=" . urlencode($apiKey);
 $ch = curl_init($url);
 curl_setopt_array($ch, [
