@@ -88,7 +88,7 @@ $payload = [
 ];
 
 // ===== نداء Gemini API =====
-$model = 'gemini-1.5-flash';
+$model = 'gemini-flash-latest';
 $url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=" . urlencode($apiKey);
 $ch = curl_init($url);
 curl_setopt_array($ch, [
