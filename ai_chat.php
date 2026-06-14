@@ -10,6 +10,41 @@ $in = json_decode(file_get_contents('php://input'), true) ?: [];
 $message = trim((string)($in['message'] ?? ''));
 $history = is_array($in['history'] ?? null) ? $in['history'] : [];
 
+$U = current_user();
+
+// ===== كشف طلب تسريع الطلب وإشعار الأدمن =====
+function detect_speedup($text) {
+    $t = mb_strtolower($text);
+    $keys = ['تسريع', 'سرعو', 'سرّعو', 'استعجل', 'مستعجل', 'متأخر', 'تأخر', 'وين طلبي', 'طلبي ما وصل',
+             'لسا ما وصل', 'ما وصلني', 'يصلني الطلب', 'بدي طلبي', 'اين طلبي', 'وينو طلبي', 'speed', 'urgent'];
+    foreach ($keys as $k) if (mb_strpos($t, $k) !== false) return true;
+    return false;
+}
+
+if ($U && detect_speedup($message)) {
+    // آخر طلب للمستخدم (قيد التنفيذ إن وجد)
+    $st = db()->prepare("SELECT * FROM orders WHERE user_id=? ORDER BY id DESC LIMIT 1");
+    $st->execute([$U['id']]);
+    $lastOrder = $st->fetch(PDO::FETCH_ASSOC);
+    $orderInfo = $lastOrder
+        ? ("آخر طلب: #{$lastOrder['id']} — {$lastOrder['product_name']} ×{$lastOrder['qty']}\n"
+           . ($lastOrder['player_id'] ? "ID اللاعب: {$lastOrder['player_id']}\n" : "")
+           . "الإجمالي: " . number_format($lastOrder['total']) . " ل.س\n"
+           . "الحالة: " . ($lastOrder['status'] === 'accept' ? 'تم التنفيذ ✅' : ($lastOrder['status'] === 'reject' ? 'مرفوض' : 'قيد التنفيذ ⏳')))
+        : "لا يوجد طلبات سابقة";
+
+    notify_admin("🚨 <b>طلب تسريع من زبون</b>\n"
+        . "الاسم: " . e($U['name']) . "\n"
+        . "الإيميل: " . e($U['email']) . "\n"
+        . "الرصيد: " . number_format($U['balance']) . " ل.س\n"
+        . "─────────\n"
+        . $orderInfo . "\n─────────\n"
+        . "رسالة الزبون: " . e(mb_substr($message, 0, 200)));
+
+    // نعلم Gemini أنه تم إبلاغ الفريق (ليطمئن الزبون)
+    $message .= "\n\n[ملاحظة للنظام: تم إبلاغ فريق الدعم بطلب التسريع تلقائياً، طمئن الزبون أن فريقنا تم تنبيهه وسيتابع طلبه فوراً.]";
+}
+
 $apiKey = env_or('GEMINI_API_KEY', '');
 
 // وضع تشخيص: افتح /ai_chat.php?debug=1 بالمتصفح
