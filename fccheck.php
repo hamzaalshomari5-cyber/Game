@@ -29,6 +29,7 @@ if ($pid !== '') {
         mt_rand(0,0xffff), mt_rand(0,0xffff), mt_rand(0,0xffff));
     $r = fc_new_order($pid, $qty, $player, $uuid);
     echo "   HTTP: " . ($r['code'] ?? '?') . "\n";
+    if (!empty($r['err'])) echo "   خطأ الاتصال: " . $r['err'] . "\n";
     echo "   الرد:\n   " . str_replace("\n", "\n   ", mb_substr($r['raw'] ?? '(فارغ)', 0, 600)) . "\n";
 } else {
     echo "3) لاختبار طلب: ?pid=2832&player=51851037296&qty=1\n";

@@ -49,12 +49,32 @@ $d = is_array($r['data']) ? $r['data'] : [];
 $success = ($d['status'] ?? '') === 'OK';
 
 if (!$success) {
-    // فشل → إعادة المبلغ
+    // فشل → إعادة المبلغ للزبون
     db()->beginTransaction();
     db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")->execute([$total, $U['id']]);
     db()->prepare("UPDATE orders SET status='reject', updated_at=" . NOW_FN() . " WHERE id=?")->execute([$orderId]);
     db()->commit();
-    $apiMsg = $d['message'] ?? $d['msg'] ?? '';
+
+    $apiMsg = strtolower($d['message'] ?? $d['msg'] ?? '');
+    $httpCode = $r['code'] ?? 0;
+    // كشف نقص الرصيد أو عدم توفر الخدمة (رصيد المورّد، فشل اتصال، رسالة balance)
+    $isUnavailable = ($httpCode === 0)
+        || strpos($apiMsg, 'balance') !== false
+        || strpos($apiMsg, 'insufficient') !== false
+        || strpos($apiMsg, 'credit') !== false
+        || strpos($apiMsg, 'رصيد') !== false;
+
+    // إشعار الأدمن بالفشل (مهم — حتى تعرف وتشحن رصيد المورّد)
+    notify_admin("⚠️ <b>فشل تنفيذ طلب</b>\nالمستخدم: " . e($U['name'])
+        . "\nالمنتج: " . e($p['name']) . " ×$qty"
+        . ($player ? "\nID: $player" : "")
+        . "\nالإجمالي: " . number_format($total) . " ل.س"
+        . "\nالسبب: " . ($isUnavailable ? 'رصيد المورّد غير كافٍ / الخدمة غير متوفرة' : ('فشل — ' . ($apiMsg ?: "HTTP $httpCode")))
+        . "\n💰 تمت إعادة المبلغ للزبون");
+
+    if ($isUnavailable) {
+        out(false, 'الخدمة غير متوفرة حالياً، يرجى المحاولة مرة أخرى لاحقاً. تمت إعادة المبلغ لمحفظتك. 🙏');
+    }
     out(false, 'تعذّر تنفيذ الطلب وتمت إعادة المبلغ لمحفظتك.' . ($apiMsg ? ' (' . $apiMsg . ')' : ''));
 }
 

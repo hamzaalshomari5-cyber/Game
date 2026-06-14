@@ -3,21 +3,29 @@ require_once __DIR__ . '/db.php';
 
 function fc_request($path, $params = [], $post = false) {
     $url = rtrim(FASTCARD_BASE, '/') . '/' . ltrim($path, '/');
-    if ($params) $url .= (strpos($url, '?') === false ? '?' : '&') . http_build_query($params);
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
+    $ch = curl_init();
+    $opts = [
+        CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 40,
-        CURLOPT_POST => $post,
         CURLOPT_HTTPHEADER => [
             'api-token: ' . fastcard_token(),
             'Accept: application/json',
         ],
-    ]);
+    ];
+    if ($post) {
+        $opts[CURLOPT_POST] = true;
+        // الـ params بالـ body (معيار POST الصحيح)
+        if ($params) $opts[CURLOPT_POSTFIELDS] = http_build_query($params);
+    } else {
+        if ($params) $opts[CURLOPT_URL] = $url . (strpos($url, '?') === false ? '?' : '&') . http_build_query($params);
+    }
+    curl_setopt_array($ch, $opts);
     $res = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
     curl_close($ch);
-    return ['code' => $code, 'data' => json_decode($res, true), 'raw' => $res];
+    return ['code' => $code, 'data' => json_decode($res, true), 'raw' => $res, 'err' => $err];
 }
 
 /** رصيد حسابك عند FastCard: {status, balance, email} */
