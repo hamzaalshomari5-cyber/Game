@@ -12,6 +12,30 @@ $history = is_array($in['history'] ?? null) ? $in['history'] : [];
 if ($message === '') out(false, ['msg' => 'اكتب سؤالك']);
 
 $apiKey = env_or('GEMINI_API_KEY', '');
+
+// وضع تشخيص: افتح /ai_chat.php?debug=1 بالمتصفح
+if (isset($_GET['debug'])) {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "GEMINI_API_KEY موجود: " . ($apiKey !== '' ? 'نعم (طول: ' . strlen($apiKey) . ')' : 'لا ❌') . "\n";
+    if ($apiKey === '') { echo "\n⚠️ المفتاح مش محطوط على Railway. ضيف متغير GEMINI_API_KEY"; exit; }
+    // اختبار اتصال فعلي
+    $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" . urlencode($apiKey);
+    $ch = curl_init($testUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => json_encode(['contents' => [['role' => 'user', 'parts' => [['text' => 'قل مرحبا']]]]]),
+    ]);
+    $r = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    echo "\nHTTP: $code\n";
+    if ($err) echo "CURL_ERR: $err\n";
+    echo "\nالرد:\n" . mb_substr($r, 0, 800);
+    exit;
+}
+
 if ($apiKey === '') {
     out(false, ['msg' => 'المساعد الذكي غير مفعّل حالياً. تواصل معنا عبر واتساب.']);
 }
