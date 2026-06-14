@@ -9,7 +9,6 @@ function out($ok, $data = []) {
 $in = json_decode(file_get_contents('php://input'), true) ?: [];
 $message = trim((string)($in['message'] ?? ''));
 $history = is_array($in['history'] ?? null) ? $in['history'] : [];
-if ($message === '') out(false, ['msg' => 'اكتب سؤالك']);
 
 $apiKey = env_or('GEMINI_API_KEY', '');
 
@@ -18,7 +17,6 @@ if (isset($_GET['debug'])) {
     header('Content-Type: text/plain; charset=utf-8');
     echo "GEMINI_API_KEY موجود: " . ($apiKey !== '' ? 'نعم (طول: ' . strlen($apiKey) . ')' : 'لا ❌') . "\n";
     if ($apiKey === '') { echo "\n⚠️ المفتاح مش محطوط على Railway. ضيف متغير GEMINI_API_KEY"; exit; }
-    // اختبار اتصال فعلي
     $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" . urlencode($apiKey);
     $ch = curl_init($testUrl);
     curl_setopt_array($ch, [
@@ -36,6 +34,7 @@ if (isset($_GET['debug'])) {
     exit;
 }
 
+if ($message === '') out(false, ['msg' => 'اكتب سؤالك']);
 if ($apiKey === '') {
     out(false, ['msg' => 'المساعد الذكي غير مفعّل حالياً. تواصل معنا عبر واتساب.']);
 }
