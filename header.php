@@ -38,6 +38,7 @@ $U = current_user();
     <a href="/assistant.php">🤖 المساعد الذكي</a>
     <?php if ($U): ?>
       <a href="/orders.php">🧾 طلباتي</a>
+      <a href="/notifications.php">🔔 الإشعارات</a>
       <a href="/index.php?page=favs">❤ المفضلة</a>
       <a href="/wallet.php">💳 المحفظة</a>
       <a href="/coupon.php">🎁 كود الخصم</a>
@@ -68,6 +69,7 @@ $U = current_user();
   <div class="top-actions">
     <a class="icon-btn" href="/index.php?page=search" title="بحث">🔍</a>
     <?php if ($U): ?>
+      <a class="icon-btn notif-bell" href="/notifications.php" title="الإشعارات">🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span></a>
       <a class="balance-pill" href="/wallet.php">💳 <?= number_format($U['balance']) ?> ل.س</a>
     <?php else: ?>
       <a class="btn btn-sm" href="/auth.php">دخول</a>

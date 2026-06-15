@@ -106,6 +106,12 @@ function init_db($pdo) {
         image TEXT, link TEXT, sort INTEGER DEFAULT 0, active INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT $now
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS notifications (
+        id $pk,
+        user_id INTEGER, title TEXT, body TEXT, icon TEXT DEFAULT '🔔',
+        is_read INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT $now
+    )");
     // عمود الكوبون بجدول الإيداع (للقواعد القديمة)
     if (is_pg()) {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN IF NOT EXISTS coupon TEXT"); } catch (Exception $e) {}

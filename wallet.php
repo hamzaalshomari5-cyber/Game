@@ -141,6 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($bonus > 0) $msg .= ' (منها ' . number_format($bonus) . ' مكافأة كود الخصم 🎁)';
                 elseif ($couponMsg) $msg .= ' — ملاحظة: ' . $couponMsg;
                 $U = current_user();
+                // إشعار المستخدم بنجاح الإيداع
+                notify_user($U['id'], 'تم شحن محفظتك 💰',
+                    'أُضيف ' . number_format($total) . ' ل.س' . ($bonus > 0 ? ' (منها ' . number_format($bonus) . ' مكافأة)' : '') . ' لمحفظتك.', '💰');
                 // إشعار الأدمن
                 notify_admin("💰 <b>إيداع جديد</b>\nالمستخدم: " . e($U['name']) . "\nالمبلغ: " . number_format($total) . " ل.س\nالطريقة: " . ($method === 'shamcash' ? 'شام كاش' : 'سيرياتيل كاش') . "\nرقم العملية: $txId");
             }

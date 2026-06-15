@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ok = true;
                     $msg = 'تم تفعيل الكود! أُضيف ' . number_format($bonus) . ' ل.س لمحفظتك 🎁';
                     $U = current_user();
+                    notify_user($U['id'], 'تم تفعيل كود الخصم 🎁', 'أُضيف ' . number_format($bonus) . ' ل.س لمحفظتك.', '🎁');
                     notify_admin("🎁 <b>تفعيل كود خصم</b>\nالمستخدم: " . e($U['name']) . "\nالكود: $code\nالمبلغ: " . number_format($bonus) . " ل.س");
                 }
             }

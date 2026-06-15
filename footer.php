@@ -10,3 +10,30 @@
 <script src="/app.js"></script>
 </body>
 </html>
+<?php /* تتبّع الطلبات تلقائياً بالخلفية لو المستخدم مسجّل دخول */ ?>
+<?php if (current_user()): ?>
+<script>
+(function () {
+  // تتبّع الطلبات المعلّقة كل 35 ثانية
+  function trackOrders() {
+    fetch('/track.php', { credentials: 'same-origin' }).catch(function(){});
+  }
+  setTimeout(trackOrders, 8000);
+  setInterval(trackOrders, 35000);
+
+  // تحديث جرس الإشعارات
+  function updateBell() {
+    fetch('/notif_count.php', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => {
+        const badge = document.getElementById('notifBadge');
+        if (!badge) return;
+        if (d.count > 0) { badge.textContent = d.count > 99 ? '99+' : d.count; badge.style.display = ''; }
+        else { badge.style.display = 'none'; }
+      }).catch(function(){});
+  }
+  updateBell();
+  setInterval(updateBell, 20000);
+})();
+</script>
+<?php endif; ?>

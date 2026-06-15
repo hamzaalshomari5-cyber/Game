@@ -131,3 +131,12 @@ function notify_admin($text) {
     @curl_exec($ch);
     @curl_close($ch);
 }
+
+// ===== إشعارات المستخدم (داخل الموقع) =====
+function notify_user($userId, $title, $body = '', $icon = '🔔') {
+    if (!$userId) return;
+    try {
+        db()->prepare("INSERT INTO notifications (user_id,title,body,icon) VALUES (?,?,?,?)")
+            ->execute([$userId, $title, $body, $icon]);
+    } catch (Exception $e) {}
+}
