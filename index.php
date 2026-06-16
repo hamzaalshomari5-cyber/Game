@@ -221,6 +221,14 @@ include __DIR__ . '/header.php'; ?>
 </div>
 <?php endif; ?>
 
+<!-- شريط البحث الرئيسي (بالعرض، فوق الأقسام) -->
+<form method="get" action="/index.php" class="home-search">
+  <input type="hidden" name="page" value="search">
+  <span class="hs-icon">🔍</span>
+  <input type="text" name="q" placeholder="ابحث عن لعبة، شحن، بطاقة..." autocomplete="off">
+  <button type="submit" class="hs-btn">بحث</button>
+</form>
+
 <h2 class="section-title">الأقسام</h2>
 <?php if (!$root['categories'] && !$root['products']): ?>
   <p class="empty">لم يتم تحميل المنتجات بعد — تأكد من توكن FastCard في الإعدادات.</p>

@@ -1135,3 +1135,70 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
   content-visibility: auto;
   contain-intrinsic-size: 0 500px;
 }
+
+/* ===== اللوغو الجديد ===== */
+.logo-txt { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.logo-img { width: 30px; height: 30px; flex-shrink: 0; }
+.logo-name {
+  font-weight: 900; font-size: 1.05rem;
+  background: linear-gradient(135deg, var(--accent), #ff8a00);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: var(--accent);
+  letter-spacing: .3px;
+}
+@media (max-width: 600px) {
+  .logo-img { width: 26px; height: 26px; }
+  .logo-name { font-size: .92rem; }
+}
+
+/* ===== إحصائيات محسّنة ===== */
+.stat.highlight {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--card)), var(--card));
+  border-color: var(--accent);
+}
+.stat.warn {
+  background: color-mix(in srgb, var(--no, #ef4444) 12%, var(--card));
+  border-color: var(--no, #ef4444);
+}
+.stat.warn .n { color: var(--no, #ef4444); }
+.stats-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.stat .n { font-size: 1.5rem; font-weight: 900; }
+.stat > div:last-child { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+
+/* ===== شريط البحث الرئيسي (بالعرض، فوق الأقسام) ===== */
+.home-search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 6px 8px 6px 14px;
+  margin: 0 0 20px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.home-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.home-search .hs-icon { font-size: 1.1rem; flex-shrink: 0; opacity: .8; }
+.home-search input {
+  flex: 1; border: none; background: transparent;
+  color: var(--text); font-family: inherit; font-size: 1rem;
+  padding: 8px 4px; outline: none; min-width: 0;
+}
+.home-search input::placeholder { color: var(--muted); }
+.home-search .hs-btn {
+  flex-shrink: 0; border: none; cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), #ffa516);
+  color: #1a1a1a; font-weight: 800; font-family: inherit;
+  padding: 9px 20px; border-radius: 10px; font-size: .95rem;
+  box-shadow: 0 3px 10px rgba(255,185,56,.3);
+  transition: all .12s;
+}
+.home-search .hs-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.home-search .hs-btn:active { transform: translateY(0); }
+
+@media (max-width: 600px) {
+  .home-search { padding: 5px 6px 5px 12px; }
+  .home-search input { font-size: .92rem; padding: 7px 2px; }
+  .home-search .hs-btn { padding: 8px 16px; font-size: .88rem; }
+}

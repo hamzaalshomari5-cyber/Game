@@ -20,7 +20,7 @@ $U = current_user();
 
 <aside class="sidebar" id="sidebar">
   <div class="sb-head">
-    <div class="logo-txt"><?= e(STORE_NAME) ?> <span>⚡</span></div>
+    <div class="logo-txt"><img src="/logo.svg?v=1" class="logo-img" alt=""><span class="logo-name"><?= e(STORE_NAME) ?></span></div>
   </div>
   <?php if ($U): ?>
     <div class="sb-user">
@@ -68,7 +68,7 @@ $U = current_user();
                 || (strpos($_uri, '/index.php') === 0 && strpos($_uri, 'page=') === false && strpos($_uri, 'cat=') === false));
   ?>
   <?php if (!$_isHome): ?><button class="back-btn" onclick="goBack()" title="رجوع">‹</button><?php endif; ?>
-  <a class="logo-txt" href="/index.php"><?= e(STORE_NAME) ?> <span>⚡</span></a>
+  <a class="logo-txt" href="/index.php"><img src="/logo.svg?v=1" class="logo-img" alt=""><span class="logo-name"><?= e(STORE_NAME) ?></span></a>
   <div class="top-actions">
     <a class="icon-btn" href="/index.php?page=search" title="بحث">🔍</a>
     <?php if ($U): ?>

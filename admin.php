@@ -62,12 +62,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$today = date('Y-m-d');
+$weekAgo = date('Y-m-d', strtotime('-7 days'));
+$monthAgo = date('Y-m-d', strtotime('-30 days'));
+$dateCol = is_pg() ? "created_at::date" : "date(created_at)";
 $stats = [
     'users'   => db()->query("SELECT COUNT(*) FROM users")->fetchColumn(),
     'orders'  => db()->query("SELECT COUNT(*) FROM orders")->fetchColumn(),
     'sales'   => db()->query("SELECT COALESCE(SUM(total),0) FROM orders WHERE status='accept'")->fetchColumn(),
     'pending' => db()->query("SELECT COUNT(*) FROM orders WHERE status='pending'")->fetchColumn(),
 ];
+// مبيعات زمنية (الطلبات المنفّذة)
+$salesToday = db()->query("SELECT COALESCE(SUM(total),0) FROM orders WHERE status='accept' AND $dateCol = '$today'")->fetchColumn();
+$salesWeek  = db()->query("SELECT COALESCE(SUM(total),0) FROM orders WHERE status='accept' AND $dateCol >= '$weekAgo'")->fetchColumn();
+$salesMonth = db()->query("SELECT COALESCE(SUM(total),0) FROM orders WHERE status='accept' AND $dateCol >= '$monthAgo'")->fetchColumn();
+$ordersToday = db()->query("SELECT COUNT(*) FROM orders WHERE $dateCol = '$today'")->fetchColumn();
+$topupsTotal = db()->query("SELECT COALESCE(SUM(amount),0) FROM topups")->fetchColumn();
+$topupsToday = db()->query("SELECT COALESCE(SUM(amount),0) FROM topups WHERE $dateCol = '$today'")->fetchColumn();
+// أكثر 5 منتجات مبيعاً
+$topProducts = db()->query("SELECT product_name, COUNT(*) cnt, COALESCE(SUM(total),0) revenue FROM orders WHERE status='accept' GROUP BY product_name ORDER BY cnt DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
 $fcProfile = $tab === 'stats' ? fc_profile() : null;
 $fcBalance = is_array($fcProfile) ? ($fcProfile['balance'] ?? $fcProfile['data']['balance'] ?? null) : null;
 
@@ -78,6 +91,7 @@ include __DIR__ . '/header.php'; ?>
 <div class="tabs">
   <a class="<?= $tab === 'stats' ? 'on' : '' ?>" href="?tab=stats">إحصائيات</a>
   <a class="<?= $tab === 'orders' ? 'on' : '' ?>" href="?tab=orders">الطلبات</a>
+  <a class="<?= $tab === 'topups' ? 'on' : '' ?>" href="?tab=topups">الإيداعات</a>
   <a class="<?= $tab === 'users' ? 'on' : '' ?>" href="?tab=users">المستخدمين</a>
   <a class="<?= $tab === 'coupons' ? 'on' : '' ?>" href="?tab=coupons">كوبونات</a>
   <a class="<?= $tab === 'slides' ? 'on' : '' ?>" href="?tab=slides">السلايدر</a>
@@ -86,33 +100,103 @@ include __DIR__ . '/header.php'; ?>
 <?php if ($msg): ?><div class="alert ok"><?= e($msg) ?></div><?php endif; ?>
 
 <?php if ($tab === 'stats'): ?>
+  <!-- الأرباح الزمنية -->
   <div class="grid stats-grid">
-    <div class="card stat"><div class="n"><?= $stats['users'] ?></div><div>مستخدم</div></div>
-    <div class="card stat"><div class="n"><?= $stats['orders'] ?></div><div>طلب</div></div>
-    <div class="card stat"><div class="n"><?= number_format($stats['sales']) ?></div><div>مبيعات (ل.س)</div></div>
-    <div class="card stat"><div class="n"><?= $stats['pending'] ?></div><div>قيد التنفيذ</div></div>
+    <div class="card stat highlight"><div class="n"><?= number_format($salesToday) ?></div><div>💰 مبيعات اليوم (ل.س)</div></div>
+    <div class="card stat"><div class="n"><?= number_format($salesWeek) ?></div><div>📅 آخر 7 أيام</div></div>
+    <div class="card stat"><div class="n"><?= number_format($salesMonth) ?></div><div>📆 آخر 30 يوم</div></div>
+    <div class="card stat"><div class="n"><?= $ordersToday ?></div><div>🛒 طلبات اليوم</div></div>
+  </div>
+
+  <!-- إجماليات -->
+  <div class="grid stats-grid" style="margin-top:14px">
+    <div class="card stat"><div class="n"><?= $stats['users'] ?></div><div>👥 مستخدم</div></div>
+    <div class="card stat"><div class="n"><?= $stats['orders'] ?></div><div>📦 إجمالي الطلبات</div></div>
+    <div class="card stat"><div class="n"><?= number_format($stats['sales']) ?></div><div>✅ إجمالي المبيعات</div></div>
+    <div class="card stat"><div class="n"><?= $stats['pending'] ?></div><div>⏳ قيد التنفيذ</div></div>
+    <div class="card stat"><div class="n"><?= number_format($topupsTotal) ?></div><div>💳 إجمالي الإيداعات</div></div>
+    <div class="card stat"><div class="n"><?= number_format($topupsToday) ?></div><div>💵 إيداعات اليوم</div></div>
     <?php if ($fcBalance !== null): ?>
-      <div class="card stat"><div class="n"><?= number_format((float)$fcBalance) ?></div><div>رصيدك في FastCard</div></div>
+      <div class="card stat <?= (float)$fcBalance < 5 ? 'warn' : '' ?>"><div class="n"><?= number_format((float)$fcBalance, 2) ?></div><div>🔋 رصيدك في FastCard ($)</div></div>
     <?php endif; ?>
   </div>
 
-<?php elseif ($tab === 'orders'):
-  $orders = db()->query("SELECT o.*, u.name uname FROM orders o LEFT JOIN users u ON u.id=o.user_id ORDER BY o.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC); ?>
-  <div class="card">
+  <!-- أكثر المنتجات مبيعاً -->
+  <?php if ($topProducts): ?>
+  <div class="card" style="margin-top:14px">
+    <h3>🏆 أكثر المنتجات مبيعاً</h3>
     <table class="tbl">
+      <tr><th>المنتج</th><th>عدد المبيعات</th><th>الإيرادات</th></tr>
+      <?php foreach ($topProducts as $i => $tp): ?>
+        <tr>
+          <td><?= ['🥇','🥈','🥉','4️⃣','5️⃣'][$i] ?? '' ?> <?= e($tp['product_name']) ?></td>
+          <td><b><?= $tp['cnt'] ?></b></td>
+          <td><?= number_format($tp['revenue']) ?> ل.س</td>
+        </tr>
+      <?php endforeach; ?>
+    </table>
+  </div>
+  <?php endif; ?>
+
+<?php elseif ($tab === 'orders'):
+  $orders = db()->query("SELECT o.*, u.name uname FROM orders o LEFT JOIN users u ON u.id=o.user_id ORDER BY o.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
+  $statusLabels = ['accept' => '✅ تم', 'pending' => '⏳ قيد التنفيذ', 'reject' => '❌ مرفوض']; ?>
+  <div class="card">
+    <h3>الطلبات (<?= count($orders) ?>)</h3>
+    <input type="text" id="ordSearch" placeholder="🔍 ابحث بالاسم أو المنتج أو ID..." onkeyup="filterRows('ordSearch','ordersTable')" style="margin-bottom:12px">
+    <table class="tbl" id="ordersTable">
       <tr><th>#</th><th>المستخدم</th><th>المنتج</th><th>ID</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th></tr>
       <?php foreach ($orders as $o): ?>
         <tr>
           <td><?= $o['id'] ?></td><td><?= e($o['uname']) ?></td>
           <td><?= e($o['product_name']) ?> ×<?= $o['qty'] ?></td>
-          <td><?= e($o['player_id']) ?></td>
-          <td><?= number_format($o['total']) ?></td>
-          <td><?= e($o['status']) ?></td>
+          <td class="small"><?= e($o['player_id']) ?></td>
+          <td><b><?= number_format($o['total']) ?></b></td>
+          <td><?= $statusLabels[$o['status']] ?? e($o['status']) ?></td>
           <td class="small"><?= e($o['created_at']) ?></td>
         </tr>
       <?php endforeach; ?>
     </table>
   </div>
+  <script>
+  function filterRows(inputId, tableId) {
+    const q = document.getElementById(inputId).value.toLowerCase();
+    document.querySelectorAll('#' + tableId + ' tr').forEach((row, i) => {
+      if (i === 0) return;
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  </script>
+
+<?php elseif ($tab === 'topups'):
+  $topups = db()->query("SELECT t.*, u.name uname, u.email FROM topups t LEFT JOIN users u ON u.id=t.user_id ORDER BY t.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
+  $totalIn = db()->query("SELECT COALESCE(SUM(amount),0) FROM topups")->fetchColumn(); ?>
+  <div class="card">
+    <h3>الإيداعات — إجمالي: <?= number_format($totalIn) ?> ل.س</h3>
+    <input type="text" id="topupSearch" placeholder="🔍 ابحث بالاسم أو رقم العملية..." onkeyup="filterRows('topupSearch','topupsTable')" style="margin-bottom:12px">
+    <table class="tbl" id="topupsTable">
+      <tr><th>#</th><th>المستخدم</th><th>رقم العملية</th><th>المبلغ</th><th>كوبون</th><th>التاريخ</th></tr>
+      <?php foreach ($topups as $t): ?>
+        <tr>
+          <td><?= $t['id'] ?></td>
+          <td><?= e($t['uname']) ?></td>
+          <td class="small"><?= e($t['tx_id']) ?></td>
+          <td><b><?= number_format($t['amount']) ?></b></td>
+          <td><?= e($t['coupon'] ?? '') ?></td>
+          <td class="small"><?= e($t['created_at']) ?></td>
+        </tr>
+      <?php endforeach; ?>
+    </table>
+  </div>
+  <script>
+  function filterRows(inputId, tableId) {
+    const q = document.getElementById(inputId).value.toLowerCase();
+    document.querySelectorAll('#' + tableId + ' tr').forEach((row, i) => {
+      if (i === 0) return;
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  </script>
 
 <?php elseif ($tab === 'users'):
   $users = db()->query("SELECT * FROM users ORDER BY id DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC); ?>
