@@ -7,6 +7,15 @@ $msg = ''; $ok = false;
 // وضع تشخيص: /wallet.php?apidebug=TXID&m=syriatel  (احذفه بعد الحل)
 if (isset($_GET['apidebug'])) {
     header('Content-Type: text/plain; charset=utf-8');
+    // جلب الحسابات المربوطة: /wallet.php?apidebug=accounts
+    if ($_GET['apidebug'] === 'accounts') {
+        $url = 'https://apisyria.com/api/v1?' . http_build_query(['resource'=>'accounts','action'=>'list','api_key'=>apisyria_key()]);
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_HTTPHEADER => ['Accept: application/json']]);
+        $res = curl_exec($ch); curl_close($ch);
+        echo "حساباتك المربوطة بـ apisyria:\nانسخ account_address الخاص بشام كاش (يبدأ بـ 251aw) وحطّه بمتغير SHAMCASH_TOKEN على Railway\n\n$res";
+        exit;
+    }
     $txId = preg_replace('/\D/', '', $_GET['apidebug']);
     $method = ($_GET['m'] ?? 'syriatel') === 'shamcash' ? 'shamcash' : 'syriatel';
     $base = 'https://apisyria.com/api/v1';
