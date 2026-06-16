@@ -1091,3 +1091,47 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
   border-radius: 10px; padding: 8px 12px; margin: 8px 0;
   font-size: .85rem; font-weight: 700;
 }
+
+/* =====================================================
+   تسريع الموقع — أداء وسرعة استجابة
+   ===================================================== */
+
+/* الأزرار تستجيب فوراً للمس (يشيل تأخير 300ms على الموبايل) */
+* { touch-action: manipulation; }
+
+/* تسريع كل الحركات (أسرع وأخف) */
+.btn, .icon-btn, .back-btn, .cat-card, .product-card, .card,
+.pay-method, .tabs a, .feat, .contact-card, .notif-item,
+.sb-nav a, a, button {
+  transition-duration: .12s !important;
+}
+
+/* استجابة لمس فورية للأزرار */
+.btn:active, .icon-btn:active, .back-btn:active,
+.cat-card:active, .product-card:active, .pay-method:active {
+  transition-duration: .05s !important;
+}
+
+/* تحسين أداء الرسم (GPU) للعناصر المتحركة */
+.cat-card, .product-card, .btn, .modal-box, .slides, .sidebar {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* الصور تحمّل بسلاسة بدون قفزات */
+.product-card img, .cat-img, .slide img {
+  content-visibility: auto;
+}
+
+/* تقليل إعادة الرسم عند التمرير */
+.topbar { will-change: transform; }
+
+/* إزالة أي تأخير بالنقر على الروابط */
+a, button, .clickable { -webkit-tap-highlight-color: transparent; }
+
+/* تحميل الأقسام البعيدة عند الحاجة فقط (أسرع تحميل أولي) */
+.products-grid, .cats-grid {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}

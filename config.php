@@ -38,7 +38,7 @@ define('INSTAGRAM', '');
 define('DB_PATH', getenv('DB_PATH') ?: __DIR__ . '/data/store.db');
 
 // كاش المنتجات (ثواني)
-define('PRODUCTS_CACHE_TTL', 300);
+define('PRODUCTS_CACHE_TTL', 3600); // ساعة — تحميل أسرع (المنتجات نادراً تتغير)
 
 function env_or($name, $const) {
     $v = getenv($name);

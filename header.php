@@ -9,8 +9,11 @@ $U = current_user();
 <title><?= e(STORE_NAME) ?> | <?= e($pageTitle ?? 'الرئيسية') ?></title>
 <meta name="description" content="<?= e(STORE_NAME . ' - ' . STORE_TAGLINE) ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/style.css?v=2">
+<!-- الخط يحمّل بدون حجب الصفحة (أسرع ظهور) -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet"></noscript>
 </head>
 <body>
 <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>

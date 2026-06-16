@@ -211,3 +211,24 @@ async function toggleFav(ev, pid, btn) {
     if (d.ok) btn.classList.toggle('on', d.fav);
   } catch (e) {}
 }
+
+// ===== تسريع التنقل: preload الصفحات عند لمس الرابط =====
+(function () {
+  const prefetched = new Set();
+  function prefetch(url) {
+    if (!url || prefetched.has(url) || url.indexOf('#') === 0) return;
+    if (url.indexOf(location.origin) !== 0 && url.indexOf('/') !== 0) return;
+    prefetched.add(url);
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = url;
+    document.head.appendChild(link);
+  }
+  // عند لمس/تحويم على رابط، نحمّل الصفحة مسبقاً (تفتح فوراً عند النقر)
+  ['touchstart', 'mouseover'].forEach(function (evt) {
+    document.addEventListener(evt, function (e) {
+      const a = e.target.closest('a');
+      if (a && a.href) prefetch(a.href);
+    }, { passive: true, capture: true });
+  });
+})();
