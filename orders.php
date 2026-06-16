@@ -1,26 +1,10 @@
 <?php
-require_once __DIR__ . '/fastcard_api.php';
+require_once __DIR__ . '/order_tracker.php';
 require_login();
 $U = current_user();
 
-// تحديث حالات الطلبات المعلقة (آخر 20)
-$st = db()->prepare("SELECT * FROM orders WHERE user_id=? AND status='pending' ORDER BY id DESC LIMIT 20");
-$st->execute([$U['id']]);
-foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $o) {
-    $chk = fc_check_uuid($o['uuid']);
-    if (!$chk || !$chk['status']) continue;
-    $s = $chk['status'];
-    $codes = !empty($chk['codes']) ? json_encode(array_filter($chk['codes']), JSON_UNESCAPED_UNICODE) : $o['codes'];
-    if ($s === 'accept' || $s === 'completed') {
-        db()->prepare("UPDATE orders SET status='accept', codes=?, fc_order_id=COALESCE(fc_order_id,?), updated_at=" . NOW_FN() . " WHERE id=?")
-            ->execute([$codes, $chk['id'], $o['id']]);
-    } elseif ($s === 'reject' || $s === 'rejected') {
-        db()->beginTransaction();
-        db()->prepare("UPDATE orders SET status='reject', updated_at=" . NOW_FN() . " WHERE id=?")->execute([$o['id']]);
-        db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")->execute([$o['total'], $o['user_id']]);
-        db()->commit();
-    }
-}
+// تحديث حالات الطلبات المعلقة (مع إشعار الأدمن عند التنفيذ)
+track_pending_orders($U['id'], 20);
 
 $st = db()->prepare("SELECT * FROM orders WHERE user_id=? ORDER BY id DESC LIMIT 50");
 $st->execute([$U['id']]);
@@ -45,12 +29,23 @@ include __DIR__ . '/header.php'; ?>
       <div class="o-body">
         <div><?= e($o['product_name']) ?> × <?= $o['qty'] ?></div>
         <?php if ($o['player_id']): ?><div class="muted">ID: <?= e($o['player_id']) ?></div><?php endif; ?>
+        <?php if ($o['status'] === 'pending'): ?>
+          <div class="eta-note">⏱ الوقت المتوقع للتنفيذ: من دقيقة إلى 10 دقائق</div>
+        <?php endif; ?>
         <?php
           $codes = $o['codes'] ? json_decode($o['codes'], true) : [];
-          if ($codes): ?>
+          // تسطيح أي قيم متداخلة وتحويلها لنصوص
+          $flatCodes = [];
+          if (is_array($codes)) {
+              array_walk_recursive($codes, function($v) use (&$flatCodes) {
+                  $v = trim((string)$v);
+                  if ($v !== '') $flatCodes[] = $v;
+              });
+          }
+          if ($flatCodes): ?>
           <div class="codes-box">
             🎟 الكود:
-            <?php foreach ($codes as $c): ?>
+            <?php foreach ($flatCodes as $c): ?>
               <b class="copyable" onclick="copyText('<?= e($c) ?>')"><?= e($c) ?> 📋</b>
             <?php endforeach; ?>
           </div>

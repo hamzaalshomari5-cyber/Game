@@ -56,7 +56,7 @@ include __DIR__ . '/header.php'; ?>
 <div class="coupon-page">
   <div class="card balance-card">
     <div class="muted">رصيد محفظتك</div>
-    <div class="big-balance"><?= number_format($U['balance']) ?> <span>ل.س</span></div>
+    <div class="big-balance bal-amount-big" data-syp="<?= (int)$U['balance'] ?>"><?= number_format($U['balance']) ?> <span>ل.س</span></div>
   </div>
 
   <div class="card">

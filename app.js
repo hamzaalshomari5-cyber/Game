@@ -48,6 +48,24 @@ function copyText(t) {
   navigator.clipboard && navigator.clipboard.writeText(t);
 }
 
+// تحديث عرض الرصيد حسب العملة المختارة
+function updateBalanceDisplay() {
+  const usd = (typeof CUR !== 'undefined' && CUR === 'usd');
+  document.querySelectorAll('.bal-amount').forEach(function(el) {
+    const syp = parseFloat(el.dataset.syp || '0');
+    el.textContent = usd
+      ? (syp / USD_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' $'
+      : Number(syp).toLocaleString() + ' ل.س';
+  });
+  document.querySelectorAll('.bal-amount-big').forEach(function(el) {
+    const syp = parseFloat(el.dataset.syp || '0');
+    el.innerHTML = usd
+      ? (syp / USD_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span>$</span>'
+      : Number(syp).toLocaleString() + ' <span>ل.س</span>';
+  });
+}
+document.addEventListener('DOMContentLoaded', updateBalanceDisplay);
+
 // ===== مودال الشراء =====
 let curPrice = 0, qMin = 1, qMax = 0, needVerify = false, verified = false, softPass = false;
 
@@ -172,9 +190,9 @@ async function submitBuy() {
     });
     const d = await res.json();
     if (d.login) { location.href = '/auth.php'; return; }
-    msg.textContent = d.msg;
+    msg.textContent = d.msg + (d.eta ? ' — ' + d.eta : '');
     msg.className = 'm-msg ' + (d.ok ? 'ok' : 'no');
-    if (d.ok) setTimeout(() => location.href = '/orders.php', 1800);
+    if (d.ok) setTimeout(() => location.href = '/orders.php', 2600);
   } catch (err) {
     msg.textContent = 'خطأ في الاتصال — حاول مرة ثانية';
     msg.className = 'm-msg no';

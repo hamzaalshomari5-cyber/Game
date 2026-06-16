@@ -28,15 +28,23 @@ function track_pending_orders($userId = null, $limit = 30) {
         if (!$chk || !$chk['status']) continue;
         $checked++;
         $s = strtolower($chk['status']);
-        $codes = !empty($chk['codes']) ? json_encode(array_filter($chk['codes']), JSON_UNESCAPED_UNICODE) : $o['codes'];
+        // تسطيح الأكواد لنصوص بسيطة
+        $codeArr = [];
+        if (!empty($chk['codes']) && is_array($chk['codes'])) {
+            array_walk_recursive($chk['codes'], function($v) use (&$codeArr) {
+                $v = trim((string)$v);
+                if ($v !== '') $codeArr[] = $v;
+            });
+        }
+        $codes = $codeArr ? json_encode($codeArr, JSON_UNESCAPED_UNICODE) : $o['codes'];
 
         if ($s === 'accept' || $s === 'completed') {
             db()->prepare("UPDATE orders SET status='accept', codes=?, fc_order_id=COALESCE(fc_order_id,?), updated_at=" . NOW_FN() . " WHERE id=?")
                 ->execute([$codes, $chk['id'], $o['id']]);
             $accepted++;
             // إشعار المستخدم بتنفيذ طلبه
-            $codeText = !empty($chk['codes']) ? ' الكود متوفر بصفحة طلباتي.' : '';
-            notify_user($o['user_id'], 'تم تنفيذ طلبك ✅',
+            $codeText = $codeArr ? ' الكود متوفر بصفحة طلباتي.' : '';
+            notify_user($o['user_id'], 'تم تنفيذ طلبك بنجاح ✅',
                 $o['product_name'] . ' ×' . $o['qty'] . ' — تم بنجاح.' . $codeText, '✅');
             // معلومات المستخدم للإشعار
             $u = db()->prepare("SELECT name,email FROM users WHERE id=?");
@@ -47,7 +55,7 @@ function track_pending_orders($userId = null, $limit = 30) {
                 . "المنتج: " . e($o['product_name']) . " ×" . $o['qty'] . "\n"
                 . ($o['player_id'] ? "ID: " . $o['player_id'] . "\n" : "")
                 . "رقم الطلب: #" . $o['id']
-                . (!empty($chk['codes']) ? "\nالكود: " . implode(' | ', array_filter($chk['codes'])) : ""));
+                . ($codeArr ? "\nالكود: " . implode(' | ', $codeArr) : ""));
         } elseif ($s === 'reject' || $s === 'rejected') {
             db()->beginTransaction();
             db()->prepare("UPDATE orders SET status='reject', updated_at=" . NOW_FN() . " WHERE id=?")->execute([$o['id']]);

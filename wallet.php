@@ -46,13 +46,15 @@ $res";
 function verify_tx($txId, $method) {
     $base = 'https://apisyria.com/api/v1';
     if ($method === 'shamcash') {
+        // tx = رقم العملية (tran_id) أرقام فقط. account_address اختياري (نتركه ليبحث بكل الحسابات)
         $params = [
-            'resource'        => 'shamcash',
-            'action'          => 'find_tx',
-            'tx'              => $txId,
-            'account_address' => shamcash_account(),
-            'api_key'         => apisyria_key(),
+            'resource' => 'shamcash',
+            'action'   => 'find_tx',
+            'tx'       => $txId,
+            'api_key'  => apisyria_key(),
         ];
+        $addr = shamcash_account();
+        if ($addr !== '') $params['account_address'] = $addr;
     } else {
         $params = [
             'resource' => 'syriatel',
@@ -162,7 +164,7 @@ include __DIR__ . '/header.php'; ?>
 <div class="wallet-wrap">
   <div class="card balance-card">
     <div class="muted">رصيد محفظتك</div>
-    <div class="big-balance"><?= number_format($U['balance']) ?> <span>ل.س</span></div>
+    <div class="big-balance bal-amount-big" data-syp="<?= (int)$U['balance'] ?>"><?= number_format($U['balance']) ?> <span>ل.س</span></div>
   </div>
 
   <div class="card">

@@ -22,7 +22,7 @@ $U = current_user();
   <?php if ($U): ?>
     <div class="sb-user">
       <div class="sb-name">👤 <?= e($U['name']) ?></div>
-      <div class="sb-balance">المحفظة: <b><?= number_format($U['balance']) ?></b> ل.س</div>
+      <div class="sb-balance">المحفظة: <b class="bal-amount" data-syp="<?= (int)$U['balance'] ?>"><?= number_format($U['balance']) ?> ل.س</b></div>
       <a class="btn btn-sm" href="/wallet.php">شحن المحفظة</a>
     </div>
   <?php else: ?>
@@ -70,7 +70,7 @@ $U = current_user();
     <a class="icon-btn" href="/index.php?page=search" title="بحث">🔍</a>
     <?php if ($U): ?>
       <a class="icon-btn notif-bell" href="/notifications.php" title="الإشعارات">🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span></a>
-      <a class="balance-pill" href="/wallet.php">💳 <?= number_format($U['balance']) ?> ل.س</a>
+      <a class="balance-pill" href="/wallet.php">💳 <span class="bal-amount" data-syp="<?= (int)$U['balance'] ?>"><?= number_format($U['balance']) ?> ل.س</span></a>
     <?php else: ?>
       <a class="btn btn-sm" href="/auth.php">دخول</a>
     <?php endif; ?>

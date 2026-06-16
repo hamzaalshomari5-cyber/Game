@@ -52,10 +52,9 @@ function syriatel_gsm() {
     $g = env_or('SYRIATEL_GSM', SYRIATEL_GSM);
     return $g !== '' ? $g : SYRIATEL_NUMBER;
 }
-// عنوان شام كاش المربوط بـ apisyria (يرجع للعنوان المعروض إذا ما تحدد)
+// عنوان شام كاش المربوط بـ apisyria (فارغ = البحث بكل الحسابات المربوطة)
 function shamcash_account() {
-    $a = env_or('SHAMCASH_ADDRESS', SHAMCASH_ADDRESS);
-    return $a !== '' ? $a : shamcash_number();
+    return env_or('SHAMCASH_ADDRESS', SHAMCASH_ADDRESS);
 }
 
 date_default_timezone_set('Asia/Damascus');
