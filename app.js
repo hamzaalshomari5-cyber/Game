@@ -232,3 +232,24 @@ async function toggleFav(ev, pid, btn) {
     }, { passive: true, capture: true });
   });
 })();
+
+// ===== عدّاد العرض التنازلي =====
+(function () {
+  const banner = document.querySelector('.promo-banner[data-end]');
+  if (!banner) return;
+  const end = parseInt(banner.dataset.end) * 1000;
+  const timerEl = document.getElementById('promoTimer');
+  if (!timerEl) return;
+  const span = timerEl.querySelector('span');
+  function tick() {
+    const diff = end - Date.now();
+    if (diff <= 0) { banner.style.display = 'none'; return; }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor(diff % 86400000 / 3600000);
+    const m = Math.floor(diff % 3600000 / 60000);
+    const s = Math.floor(diff % 60000 / 1000);
+    span.textContent = (d > 0 ? d + ' يوم ' : '') + h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+  tick();
+  setInterval(tick, 1000);
+})();

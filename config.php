@@ -141,3 +141,31 @@ function notify_user($userId, $title, $body = '', $icon = '🔔') {
             ->execute([$userId, $title, $body, $icon]);
     } catch (Exception $e) {}
 }
+
+// ===== نظام العرض بوقت محدود =====
+// يُدار من إعدادات الأدمن. الإعدادات مخزّنة في جدول settings:
+//   promo_active (0/1), promo_type (discount/deposit/banner),
+//   promo_value (نسبة), promo_title, promo_end (timestamp أو فارغ ليدوي)
+function promo_get() {
+    $active = setting('promo_active', '0');
+    if ($active !== '1') return null;
+    $end = setting('promo_end', '');
+    // إذا في وقت نهاية وانتهى، العرض متوقف
+    if ($end !== '' && (int)$end > 0 && time() > (int)$end) return null;
+    return [
+        'type'  => setting('promo_type', 'banner'),
+        'value' => (float)setting('promo_value', '0'),
+        'title' => setting('promo_title', 'عرض خاص'),
+        'end'   => $end !== '' ? (int)$end : 0,
+    ];
+}
+// نسبة خصم المنتجات الحالية (0 إذا ما في عرض خصم)
+function promo_discount_pct() {
+    $p = promo_get();
+    return ($p && $p['type'] === 'discount') ? $p['value'] : 0;
+}
+// نسبة بونص الإيداع الحالية (0 إذا ما في عرض بونص)
+function promo_deposit_pct() {
+    $p = promo_get();
+    return ($p && $p['type'] === 'deposit') ? $p['value'] : 0;
+}

@@ -135,6 +135,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         else $bonus = $couponObj['amount'];
                     }
                 }
+                // بونص العرض بوقت محدود (يُضاف فوق أي كوبون)
+                $promoBonus = 0;
+                $promoPct = promo_deposit_pct();
+                if ($promoPct > 0) $promoBonus = round($amount * $promoPct / 100);
+                $bonus += $promoBonus;
                 $total = $amount + $bonus;
                 db()->beginTransaction();
                 db()->prepare("INSERT INTO topups (user_id,tx_id,amount,coupon) VALUES (?,?,?,?)")
@@ -149,8 +154,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 db()->commit();
                 $ok = true;
                 $msg = 'تم شحن محفظتك بمبلغ ' . number_format($total) . ' ل.س ✅';
-                if ($bonus > 0) $msg .= ' (منها ' . number_format($bonus) . ' مكافأة كود الخصم 🎁)';
-                elseif ($couponMsg) $msg .= ' — ملاحظة: ' . $couponMsg;
+                if ($bonus > 0) {
+                    $parts = [];
+                    if ($promoBonus > 0) $parts[] = number_format($promoBonus) . ' بونص العرض 🎉';
+                    if ($bonus - $promoBonus > 0) $parts[] = number_format($bonus - $promoBonus) . ' كود الخصم 🎁';
+                    $msg .= ' (منها ' . implode(' + ', $parts) . ')';
+                } elseif ($couponMsg) $msg .= ' — ملاحظة: ' . $couponMsg;
                 $U = current_user();
                 // إشعار المستخدم بنجاح الإيداع
                 notify_user($U['id'], 'تم شحن محفظتك 💰',

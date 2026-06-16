@@ -46,6 +46,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->prepare("DELETE FROM coupons WHERE id=?")->execute([(int)$_POST['del_coupon']]);
         $msg = 'تم حذف الكود ✅';
     }
+    // حفظ العرض
+    if (isset($_POST['save_promo'])) {
+        set_setting('promo_active', isset($_POST['promo_active']) ? '1' : '0');
+        set_setting('promo_type', in_array($_POST['promo_type'] ?? '', ['discount','deposit','banner']) ? $_POST['promo_type'] : 'banner');
+        set_setting('promo_value', (string)(float)($_POST['promo_value'] ?? 0));
+        set_setting('promo_title', trim($_POST['promo_title'] ?? 'عرض خاص'));
+        $mode = $_POST['promo_time_mode'] ?? 'manual';
+        if ($mode === 'datetime' && !empty($_POST['promo_end_date'])) {
+            set_setting('promo_end', (string)strtotime($_POST['promo_end_date']));
+        } elseif ($mode === 'hours' && !empty($_POST['promo_hours'])) {
+            set_setting('promo_end', (string)(time() + (int)$_POST['promo_hours'] * 3600));
+        } else {
+            set_setting('promo_end', '');
+        }
+        $msg = 'تم حفظ إعدادات العرض ✅';
+    }
+    if (isset($_POST['stop_promo'])) {
+        set_setting('promo_active', '0');
+        $msg = 'تم إيقاف العرض ✅';
+    }
     // إضافة سلايد
     if (isset($_POST['add_slide'])) {
         $img = trim($_POST['slide_image'] ?? '');
@@ -95,6 +115,7 @@ include __DIR__ . '/header.php'; ?>
   <a class="<?= $tab === 'users' ? 'on' : '' ?>" href="?tab=users">المستخدمين</a>
   <a class="<?= $tab === 'coupons' ? 'on' : '' ?>" href="?tab=coupons">كوبونات</a>
   <a class="<?= $tab === 'slides' ? 'on' : '' ?>" href="?tab=slides">السلايدر</a>
+  <a class="<?= $tab === 'promo' ? 'on' : '' ?>" href="?tab=promo">العروض</a>
   <a class="<?= $tab === 'settings' ? 'on' : '' ?>" href="?tab=settings">الإعدادات</a>
 </div>
 <?php if ($msg): ?><div class="alert ok"><?= e($msg) ?></div><?php endif; ?>
@@ -301,6 +322,61 @@ include __DIR__ . '/header.php'; ?>
         <?php endforeach; ?>
       </div>
     <?php endif; ?>
+  </div>
+
+<?php elseif ($tab === 'promo'):
+  $pActive = setting('promo_active','0') === '1';
+  $pType = setting('promo_type','banner');
+  $pValue = setting('promo_value','0');
+  $pTitle = setting('promo_title','عرض خاص');
+  $pEnd = setting('promo_end','');
+  $endText = ($pEnd !== '' && (int)$pEnd > 0) ? date('Y-m-d H:i', (int)$pEnd) : 'يدوي (بدون وقت نهاية)';
+  $isLive = promo_get() !== null; ?>
+  <div class="card">
+    <h3>🎉 العرض بوقت محدود</h3>
+    <p class="muted small">الحالة الآن:
+      <?php if ($isLive): ?><b style="color:var(--ok,#22c55e)">🟢 يعمل الآن</b> — ينتهي: <?= e($endText) ?>
+      <?php elseif ($pActive): ?><b style="color:var(--no,#ef4444)">🔴 مفعّل لكن انتهى وقته</b>
+      <?php else: ?><b style="color:var(--muted)">⚫ متوقف</b><?php endif; ?>
+    </p>
+
+    <form method="post">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" name="promo_active" value="1" <?= $pActive ? 'checked' : '' ?> style="width:auto">
+        تفعيل العرض
+      </label>
+
+      <label>نوع العرض</label>
+      <select name="promo_type">
+        <option value="discount" <?= $pType==='discount'?'selected':'' ?>>خصم على كل المنتجات (نسبة %)</option>
+        <option value="deposit" <?= $pType==='deposit'?'selected':'' ?>>بونص على الإيداع (نسبة %)</option>
+        <option value="banner" <?= $pType==='banner'?'selected':'' ?>>بانر إعلاني فقط (بدون خصم)</option>
+      </select>
+
+      <label>قيمة النسبة % (للخصم أو البونص)</label>
+      <input name="promo_value" type="number" step="any" value="<?= e($pValue) ?>" placeholder="مثال: 20">
+
+      <label>نص العرض (يظهر للزبائن)</label>
+      <input name="promo_title" value="<?= e($pTitle) ?>" placeholder="مثال: خصم 20% على كل المنتجات!">
+
+      <label>توقيت انتهاء العرض</label>
+      <select name="promo_time_mode" onchange="document.getElementById('pdt').style.display=this.value==='datetime'?'block':'none';document.getElementById('phr').style.display=this.value==='hours'?'block':'none'">
+        <option value="manual">يدوي (يضل شغال حتى توقفه)</option>
+        <option value="datetime">تاريخ ووقت محدد</option>
+        <option value="hours">عدد ساعات من الآن</option>
+      </select>
+      <div id="pdt" style="display:none;margin-top:8px">
+        <input name="promo_end_date" type="datetime-local">
+      </div>
+      <div id="phr" style="display:none;margin-top:8px">
+        <input name="promo_hours" type="number" placeholder="عدد الساعات (مثلاً 24)">
+      </div>
+
+      <button class="btn full" name="save_promo" value="1" style="margin-top:14px">حفظ العرض</button>
+    </form>
+    <form method="post" style="margin-top:8px">
+      <button class="btn full ghost" name="stop_promo" value="1">إيقاف العرض فوراً</button>
+    </form>
   </div>
 
 <?php else: ?>

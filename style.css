@@ -1202,3 +1202,28 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
   .home-search input { font-size: .92rem; padding: 7px 2px; }
   .home-search .hs-btn { padding: 8px 16px; font-size: .88rem; }
 }
+
+/* ===== بانر العرض بوقت محدود ===== */
+.promo-banner {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #ff3d7f, #ff8a00);
+  border-radius: 14px; padding: 14px 18px; margin: 0 0 16px;
+  box-shadow: 0 6px 22px rgba(255,61,127,.3);
+  animation: promoPulse 2.5s ease-in-out infinite;
+}
+@keyframes promoPulse { 0%,100% { box-shadow: 0 6px 22px rgba(255,61,127,.3); } 50% { box-shadow: 0 6px 30px rgba(255,138,0,.45); } }
+.promo-icon { font-size: 2rem; flex-shrink: 0; }
+.promo-text { flex: 1; }
+.promo-title { color: #fff; font-weight: 900; font-size: 1.05rem; text-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.promo-timer { color: #fff; font-size: .85rem; font-weight: 700; margin-top: 4px; opacity: .95; }
+
+/* ===== سعر مخصوم ===== */
+.p-price-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.p-price-old { text-decoration: line-through; color: var(--muted); font-size: .78rem; opacity: .7; }
+.p-price.discounted { color: #ff3d7f; }
+.p-disc-badge {
+  position: absolute; top: 6px; inset-inline-end: 6px;
+  background: #ff3d7f; color: #fff; font-size: .68rem; font-weight: 800;
+  padding: 2px 7px; border-radius: 999px; box-shadow: 0 2px 6px rgba(255,61,127,.4);
+}
+.product-card { position: relative; }

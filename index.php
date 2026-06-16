@@ -64,7 +64,16 @@ function product_card($p, $favs, $ctx = '') {
       <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>
       <?php if (!fc_img($p['image'], '')): ?><div class="ph">🎮</div><?php endif; ?>
       <div class="p-name"><?= e($p['name']) ?></div>
-      <div class="p-price"><?= fmt_price($p['price']) ?></div>
+      <?php $disc = promo_discount_pct(); if ($disc > 0 && $p['available']):
+        $newPrice = $p['price'] * (1 - $disc/100); ?>
+        <div class="p-price-wrap">
+          <span class="p-price-old"><?= fmt_price($p['price']) ?></span>
+          <span class="p-price discounted"><?= fmt_price($newPrice) ?></span>
+        </div>
+        <span class="p-disc-badge">-<?= rtrim(rtrim(number_format($disc,1),'0'),'.') ?>%</span>
+      <?php else: ?>
+        <div class="p-price"><?= fmt_price($p['price']) ?></div>
+      <?php endif; ?>
       <?php if (!$p['available']): ?><div class="oos-badge">غير متوفر حالياً ❌</div><?php endif; ?>
     </div>
 <?php }
@@ -218,6 +227,17 @@ include __DIR__ . '/header.php'; ?>
 <!-- لو ما في صور بالسلايدر، نعرض شريط بسيط فيه النص -->
 <div class="mini-banner">
   <div class="slider-caption"><span class="cap-line">⚡ تسليم فوري ودعم 24/7</span><span class="cap-dot">•</span><span class="cap-line">💰 أفضل الأسعار وأسرع خدمة</span></div>
+</div>
+<?php endif; ?>
+
+<!-- بانر العرض بوقت محدود -->
+<?php $promo = promo_get(); if ($promo): ?>
+<div class="promo-banner" <?= $promo['end'] > 0 ? 'data-end="'.$promo['end'].'"' : '' ?>>
+  <div class="promo-icon">🎉</div>
+  <div class="promo-text">
+    <div class="promo-title"><?= e($promo['title']) ?></div>
+    <?php if ($promo['end'] > 0): ?><div class="promo-timer" id="promoTimer">⏳ <span></span></div><?php endif; ?>
+  </div>
 </div>
 <?php endif; ?>
 
