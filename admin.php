@@ -14,10 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         cache_set('fc_products', cache_get('fc_products') ?? [], 0); // إبطال الكاش
         $msg = 'تم حفظ هامش الربح ✅';
     }
-    if (isset($_POST['bday_gift'])) {
-        set_setting('bday_gift', (float)$_POST['bday_gift']);
-        $msg = 'تم حفظ هدية عيد الميلاد ✅';
-    }
     if (isset($_POST['add_balance_user'], $_POST['add_balance_amount'])) {
         db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")
             ->execute([(float)$_POST['add_balance_amount'], (int)$_POST['add_balance_user']]);
@@ -423,14 +419,6 @@ include __DIR__ . '/header.php'; ?>
     <form method="post" class="inline-form">
       <input name="profit_percent" type="number" step="any" value="<?= e(setting('profit_percent', DEFAULT_PROFIT)) ?>" required>
       <span class="muted">% فوق سعر FastCard</span>
-      <button class="btn">حفظ</button>
-    </form>
-  </div>
-  <div class="card">
-    <h3>🎂 هدية عيد الميلاد</h3>
-    <form method="post" class="inline-form">
-      <input name="bday_gift" type="number" step="any" value="<?= e(setting('bday_gift', '0')) ?>">
-      <span class="muted">ل.س تُمنح تلقائياً بعيد ميلاد الزبون (0 = معطّل)</span>
       <button class="btn">حفظ</button>
     </form>
   </div>

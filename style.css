@@ -1317,3 +1317,11 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
   font-family: inherit; cursor: pointer; transition: all .12s;
 }
 .reorder-btn:hover { border-color: var(--accent); }
+
+/* ===== توثيق الموبايل ===== */
+.phone-verified {
+  background: color-mix(in srgb, var(--ok, #22c55e) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ok, #22c55e) 35%, transparent);
+  color: var(--ok, #22c55e); border-radius: 10px; padding: 12px 14px;
+  font-size: .92rem; font-weight: 700;
+}

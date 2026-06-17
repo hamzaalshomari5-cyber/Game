@@ -283,3 +283,54 @@ async function toggleFav(ev, pid, btn) {
     if (!e.target.closest('.home-search-wrap')) box.style.display = 'none';
   });
 })();
+
+// ===== توثيق الموبايل OTP =====
+function otpShowMsg(text, ok) {
+  const m = document.getElementById('otpMsg');
+  if (!m) return;
+  m.textContent = text;
+  m.className = 'alert ' + (ok ? 'ok' : '');
+  m.style.display = 'block';
+}
+async function otpSend() {
+  const phone = (document.getElementById('otpPhone').value || '').trim();
+  if (phone.length < 9) { otpShowMsg('أدخل رقم موبايل صحيح', false); return; }
+  const btn = document.getElementById('otpSendBtn');
+  btn.disabled = true; btn.textContent = 'جاري الإرسال...';
+  try {
+    const r = await fetch('/otp.php', {
+      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      credentials: 'same-origin',
+      body: 'action=send&phone=' + encodeURIComponent(phone),
+    });
+    const d = await r.json();
+    otpShowMsg(d.msg, d.ok);
+    if (d.ok) {
+      document.getElementById('otpStep1').style.display = 'none';
+      document.getElementById('otpStep2').style.display = 'block';
+    }
+  } catch (e) { otpShowMsg('خطأ بالاتصال، حاول مجدداً', false); }
+  btn.disabled = false; btn.textContent = 'إرسال رمز التحقق';
+}
+async function otpVerify() {
+  const code = (document.getElementById('otpCode').value || '').trim();
+  if (code.length !== 6) { otpShowMsg('الرمز 6 أرقام', false); return; }
+  const btn = document.getElementById('otpVerifyBtn');
+  btn.disabled = true; btn.textContent = 'جاري التحقق...';
+  try {
+    const r = await fetch('/otp.php', {
+      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      credentials: 'same-origin',
+      body: 'action=verify&code=' + encodeURIComponent(code),
+    });
+    const d = await r.json();
+    otpShowMsg(d.msg, d.ok);
+    if (d.ok) setTimeout(() => location.reload(), 1200);
+  } catch (e) { otpShowMsg('خطأ بالاتصال، حاول مجدداً', false); }
+  btn.disabled = false; btn.textContent = 'تأكيد الرمز';
+}
+function otpReset() {
+  document.getElementById('otpStep1').style.display = 'block';
+  document.getElementById('otpStep2').style.display = 'none';
+  const m = document.getElementById('otpMsg'); if (m) m.style.display = 'none';
+}

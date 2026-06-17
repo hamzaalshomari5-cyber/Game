@@ -112,6 +112,12 @@ function init_db($pdo) {
         is_read INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT $now
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS otp_codes (
+        id $pk,
+        user_id INTEGER, phone TEXT, code TEXT,
+        expires_at TIMESTAMP, attempts INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT $now
+    )");
     // عمود الكوبون بجدول الإيداع (للقواعد القديمة)
     if (is_pg()) {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN IF NOT EXISTS coupon TEXT"); } catch (Exception $e) {}
@@ -121,6 +127,7 @@ function init_db($pdo) {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bday_gift TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified INTEGER DEFAULT 0"); } catch (Exception $e) {}
     } else {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN coupon TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
@@ -129,6 +136,7 @@ function init_db($pdo) {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN birthday TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN last_bday_gift TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN phone TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN phone_verified INTEGER DEFAULT 0"); } catch (Exception $e) {}
     }
     // أدمن افتراضي
     $st = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role='admin'");

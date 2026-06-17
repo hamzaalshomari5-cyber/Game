@@ -220,24 +220,47 @@ function vip_badge($level) {
     return $badges[$level] ?? '🥉 VIP 1';
 }
 
-// ===== هدية عيد الميلاد =====
-// مبلغ الهدية (ل.س) — قابل للتعديل من إعدادات الأدمن (setting: bday_gift)
-function bday_gift_amount() { return (float)setting('bday_gift', '0'); }
-// يفحص ويمنح الهدية إذا اليوم عيد ميلاد المستخدم ولم يأخذها هذه السنة
-function check_birthday_gift($user) {
-    if (empty($user['birthday'])) return null;
-    $gift = bday_gift_amount();
-    if ($gift <= 0) return null;
-    $today = date('m-d');
-    $bday = date('m-d', strtotime($user['birthday']));
-    if ($today !== $bday) return null;
-    $thisYear = date('Y');
-    if (($user['last_bday_gift'] ?? '') === $thisYear) return null; // أخذها هذه السنة
-    // منح الهدية
-    db()->beginTransaction();
-    db()->prepare("UPDATE users SET balance = balance + ?, last_bday_gift = ? WHERE id=?")
-        ->execute([$gift, $thisYear, $user['id']]);
-    db()->commit();
-    notify_user($user['id'], '🎂 عيد ميلاد سعيد!', 'أهديناك ' . number_format($gift) . ' ل.س بمناسبة عيد ميلادك. كل عام وأنت بخير! 🎉', '🎂');
-    return $gift;
+// ===== توثيق رقم الموبايل عبر Aman Gate OTP =====
+function aman_token()       { return env_or('AMAN_TOKEN', ''); }
+function aman_template_id()  { return (int)env_or('AMAN_TEMPLATE_ID', '1'); }
+function otp_enabled()       { return aman_token() !== ''; }
+
+// تحويل الرقم لصيغة دولية 963xxxxxxxxx
+function normalize_gsm($phone) {
+    $p = preg_replace('/\D/', '', $phone);
+    if (strpos($p, '963') === 0) return $p;
+    if (strpos($p, '0') === 0) return '963' . substr($p, 1);
+    if (strlen($p) === 9) return '963' . $p;
+    return $p;
+}
+
+// إرسال رمز OTP عبر Aman Gate. يرجّع [نجاح(bool), رسالة]
+function aman_send_otp($gsm, $code) {
+    $token = aman_token();
+    if ($token === '') return [false, 'خدمة التوثيق غير مفعّلة'];
+    $body = json_encode([
+        'gsm'         => $gsm,
+        'template_id' => aman_template_id(),
+        'code'        => (string)$code,
+        'language'    => 0,
+    ]);
+    $ch = curl_init('https://aman-gate.com/otp/send/');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $body,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Token ' . $token,
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ],
+    ]);
+    $res = curl_exec($ch);
+    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($http === 201) return [true, 'تم إرسال الرمز'];
+    if ($http === 402) return [false, 'خدمة الرسائل غير متوفرة حالياً، حاول لاحقاً'];
+    if ($http === 401) return [false, 'خطأ بإعدادات خدمة التوثيق'];
+    return [false, 'تعذّر إرسال الرمز، تأكد من الرقم وحاول مجدداً'];
 }

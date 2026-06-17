@@ -4,20 +4,6 @@ require_login();
 $U = current_user();
 $msg = ''; $ok = false;
 
-// فحص هدية عيد الميلاد
-check_birthday_gift($U);
-$U = current_user();
-
-// حفظ البيانات
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_profile'])) {
-    $birthday = trim($_POST['birthday'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
-    db()->prepare("UPDATE users SET birthday=?, phone=? WHERE id=?")
-        ->execute([$birthday ?: null, $phone ?: null, $U['id']]);
-    $ok = true; $msg = 'تم حفظ بياناتك ✅';
-    $U = current_user();
-}
-
 $vip = user_vip_info($U['id']);
 
 // سجل النشاط: آخر الطلبات والإيداعات مدمجة
@@ -64,17 +50,34 @@ include __DIR__ . '/header.php'; ?>
     </div>
   </div>
 
-  <!-- تعديل البيانات -->
+  <!-- توثيق رقم الموبايل -->
   <div class="card">
-    <h3>بياناتي الشخصية</h3>
-    <?php if ($msg): ?><div class="alert <?= $ok ? 'ok' : '' ?>"><?= e($msg) ?></div><?php endif; ?>
-    <form method="post">
-      <label>📱 رقم الموبايل</label>
-      <input name="phone" value="<?= e($U['phone'] ?? '') ?>" placeholder="مثال: 0991234567">
-      <label>🎂 تاريخ ميلادك <?= bday_gift_amount() > 0 ? '(تربح ' . number_format(bday_gift_amount()) . ' ل.س هدية كل عيد ميلاد!)' : '' ?></label>
-      <input name="birthday" type="date" value="<?= e($U['birthday'] ?? '') ?>">
-      <button class="btn full" name="save_profile" value="1">حفظ</button>
-    </form>
+    <h3>📱 رقم الموبايل</h3>
+    <?php if (!empty($U['phone_verified'])): ?>
+      <div class="phone-verified">
+        ✅ رقمك موثّق: <b dir="ltr"><?= e($U['phone']) ?></b>
+      </div>
+    <?php elseif (!otp_enabled()): ?>
+      <p class="muted">خدمة التوثيق غير مفعّلة حالياً.</p>
+    <?php else: ?>
+      <p class="muted small">وثّق رقم موبايلك ليصبح حسابك أكثر أماناً. رح يوصلك رمز تحقق على رقمك.</p>
+      <div id="otpMsg" class="alert" style="display:none"></div>
+
+      <!-- خطوة 1: إدخال الرقم -->
+      <div id="otpStep1">
+        <label>رقم الموبايل</label>
+        <input id="otpPhone" type="tel" dir="ltr" value="<?= e($U['phone'] ?? '') ?>" placeholder="0991234567">
+        <button class="btn full" id="otpSendBtn" onclick="otpSend()">إرسال رمز التحقق</button>
+      </div>
+
+      <!-- خطوة 2: إدخال الرمز -->
+      <div id="otpStep2" style="display:none">
+        <label>أدخل الرمز المرسل (6 أرقام)</label>
+        <input id="otpCode" type="tel" dir="ltr" inputmode="numeric" maxlength="6" placeholder="123456">
+        <button class="btn full" id="otpVerifyBtn" onclick="otpVerify()">تأكيد الرمز</button>
+        <button class="btn full ghost" onclick="otpReset()" style="margin-top:8px">تغيير الرقم</button>
+      </div>
+    <?php endif; ?>
   </div>
 
   <!-- سجل النشاط -->
