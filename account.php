@@ -6,6 +6,11 @@ $msg = ''; $ok = false;
 
 $vip = user_vip_info($U['id']);
 
+// حالة توثيق الهوية
+$st = db()->prepare("SELECT status FROM id_verifications WHERE user_id=? ORDER BY id DESC LIMIT 1");
+$st->execute([$U['id']]);
+$idvStatus = $st->fetchColumn(); // pending / rejected / approved / false
+
 // سجل النشاط: آخر الطلبات والإيداعات مدمجة
 $acts = [];
 $st = db()->prepare("SELECT 'order' typ, product_name title, total amount, status, created_at FROM orders WHERE user_id=? ORDER BY id DESC LIMIT 15");
@@ -77,6 +82,28 @@ include __DIR__ . '/header.php'; ?>
         <button class="btn full" id="otpVerifyBtn" onclick="otpVerify()">تأكيد الرمز</button>
         <button class="btn full ghost" onclick="otpReset()" style="margin-top:8px">تغيير الرقم</button>
       </div>
+    <?php endif; ?>
+  </div>
+
+  <!-- توثيق الهوية -->
+  <div class="card">
+    <h3>🪪 توثيق الهوية</h3>
+    <?php if (!empty($U['id_verified'])): ?>
+      <div class="phone-verified">✅ هويتك موثّقة</div>
+    <?php elseif ($idvStatus === 'pending'): ?>
+      <div class="alert" style="display:block">🪪 طلب التوثيق قيد المراجعة، رح يوصلك إشعار عند الموافقة.</div>
+    <?php else: ?>
+      <p class="muted small">
+        ارفع صورة واضحة لهويتك أو بطاقتك الشخصية ليتم توثيق حسابك.
+        <?= $idvStatus === 'rejected' ? '<br><span style="color:var(--no,#ef4444)">⚠️ طلبك السابق مرفوض، حاول بصورة أوضح.</span>' : '' ?>
+      </p>
+      <div id="idvMsg" class="alert" style="display:none"></div>
+      <input type="file" id="idImage" accept="image/*" style="display:none" onchange="idPreview(event)">
+      <div id="idPreviewWrap" style="display:none; margin-bottom:10px">
+        <img id="idPreviewImg" style="max-width:100%; border-radius:10px; border:1px solid var(--border)">
+      </div>
+      <button class="btn full ghost" onclick="document.getElementById('idImage').click()" id="idPickBtn">📷 اختر صورة الهوية</button>
+      <button class="btn full" onclick="idUpload()" id="idUploadBtn" style="display:none; margin-top:8px">إرسال للمراجعة</button>
     <?php endif; ?>
   </div>
 

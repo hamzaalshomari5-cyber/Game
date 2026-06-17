@@ -87,6 +87,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->prepare("DELETE FROM slides WHERE id=?")->execute([(int)$_POST['del_slide']]);
         $msg = 'تم حذف الصورة ✅';
     }
+    if (isset($_POST['approve_id'])) {
+        $vid = (int)$_POST['approve_id'];
+        $row = db()->prepare("SELECT user_id FROM id_verifications WHERE id=?");
+        $row->execute([$vid]);
+        $uid = (int)$row->fetchColumn();
+        if ($uid) {
+            db()->prepare("UPDATE id_verifications SET status='approved' WHERE id=?")->execute([$vid]);
+            db()->prepare("UPDATE users SET id_verified=1 WHERE id=?")->execute([$uid]);
+            notify_user($uid, 'تم توثيق هويتك ✅', 'تمت الموافقة على طلب التوثيق. حسابك الآن موثّق بالهوية.', '✅');
+            $msg = 'تمت الموافقة على التوثيق ✅';
+        }
+    }
+    if (isset($_POST['reject_id'])) {
+        $vid = (int)$_POST['reject_id'];
+        $row = db()->prepare("SELECT user_id FROM id_verifications WHERE id=?");
+        $row->execute([$vid]);
+        $uid = (int)$row->fetchColumn();
+        if ($uid) {
+            db()->prepare("UPDATE id_verifications SET status='rejected' WHERE id=?")->execute([$vid]);
+            notify_user($uid, 'طلب التوثيق مرفوض ❌', 'لم تتم الموافقة على صورة هويتك. يرجى رفع صورة أوضح والمحاولة مجدداً.', '🪪');
+            $msg = 'تم رفض الطلب';
+        }
+    }
 }
 
 $today = date('Y-m-d');
@@ -122,6 +145,7 @@ include __DIR__ . '/header.php'; ?>
   <a class="<?= $tab === 'users' ? 'on' : '' ?>" href="?tab=users">المستخدمين</a>
   <a class="<?= $tab === 'coupons' ? 'on' : '' ?>" href="?tab=coupons">كوبونات</a>
   <a class="<?= $tab === 'slides' ? 'on' : '' ?>" href="?tab=slides">السلايدر</a>
+  <a class="<?= $tab === 'idverify' ? 'on' : '' ?>" href="?tab=idverify">توثيق الهوية</a>
   <a class="<?= $tab === 'promo' ? 'on' : '' ?>" href="?tab=promo">العروض</a>
   <a class="<?= $tab === 'settings' ? 'on' : '' ?>" href="?tab=settings">الإعدادات</a>
 </div>
@@ -336,6 +360,39 @@ include __DIR__ . '/header.php'; ?>
             <form method="post" onsubmit="return confirm('حذف الصورة؟')" style="margin-top:6px">
               <button class="btn-mini danger full" name="del_slide" value="<?= $s['id'] ?>">حذف</button>
             </form>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+
+<?php elseif ($tab === 'idverify'):
+  $idvs = db()->query("SELECT v.*, u.name AS uname, u.email AS uemail FROM id_verifications v LEFT JOIN users u ON u.id = v.user_id WHERE v.status='pending' ORDER BY v.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+?>
+  <div class="card">
+    <h3>🪪 طلبات توثيق الهوية</h3>
+    <?php if (!$idvs): ?>
+      <p class="empty">ما في طلبات توثيق معلّقة.</p>
+    <?php else: ?>
+      <div class="idv-grid">
+        <?php foreach ($idvs as $v): ?>
+          <div class="idv-card">
+            <div class="idv-user">
+              <b><?= e($v['uname'] ?? 'مستخدم') ?></b>
+              <span class="muted small"><?= e($v['uemail'] ?? '') ?></span>
+              <span class="muted small">رقم الحساب: <?= (int)$v['user_id'] ?></span>
+            </div>
+            <a href="<?= e($v['image']) ?>" target="_blank">
+              <img src="<?= e($v['image']) ?>" class="idv-img" alt="صورة الهوية">
+            </a>
+            <div class="idv-actions">
+              <form method="post" style="flex:1">
+                <button class="btn-mini full" name="approve_id" value="<?= (int)$v['id'] ?>">✅ موافقة</button>
+              </form>
+              <form method="post" style="flex:1" onsubmit="return confirm('رفض هذا الطلب؟')">
+                <button class="btn-mini danger full" name="reject_id" value="<?= (int)$v['id'] ?>">❌ رفض</button>
+              </form>
+            </div>
           </div>
         <?php endforeach; ?>
       </div>

@@ -1325,3 +1325,18 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
   color: var(--ok, #22c55e); border-radius: 10px; padding: 12px 14px;
   font-size: .92rem; font-weight: 700;
 }
+
+/* ===== لوحة توثيق الهوية (أدمن) ===== */
+.idv-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 600px) { .idv-grid { grid-template-columns: 1fr 1fr; } }
+.idv-card {
+  background: var(--card2, rgba(255,255,255,.03));
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+  border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+}
+.idv-user { display: flex; flex-direction: column; gap: 2px; }
+.idv-img {
+  width: 100%; border-radius: 10px; border: 1px solid var(--border, rgba(255,255,255,.08));
+  max-height: 240px; object-fit: contain; background: #0008;
+}
+.idv-actions { display: flex; gap: 8px; }

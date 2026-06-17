@@ -334,3 +334,51 @@ function otpReset() {
   document.getElementById('otpStep2').style.display = 'none';
   const m = document.getElementById('otpMsg'); if (m) m.style.display = 'none';
 }
+
+// ===== توثيق الهوية =====
+let idImageData = null;
+function idMsg(text, ok) {
+  const m = document.getElementById('idvMsg');
+  if (!m) return;
+  m.textContent = text; m.className = 'alert ' + (ok ? 'ok' : ''); m.style.display = 'block';
+}
+function idPreview(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const img = new Image();
+    img.onload = function () {
+      // ضغط الصورة: أقصى عرض 1000px
+      const max = 1000;
+      let w = img.width, h = img.height;
+      if (w > max) { h = h * max / w; w = max; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      idImageData = canvas.toDataURL('image/jpeg', 0.7);
+      document.getElementById('idPreviewImg').src = idImageData;
+      document.getElementById('idPreviewWrap').style.display = 'block';
+      document.getElementById('idUploadBtn').style.display = 'block';
+      document.getElementById('idPickBtn').textContent = '📷 تغيير الصورة';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+async function idUpload() {
+  if (!idImageData) { idMsg('اختر صورة أولاً', false); return; }
+  const btn = document.getElementById('idUploadBtn');
+  btn.disabled = true; btn.textContent = 'جاري الإرسال...';
+  try {
+    const r = await fetch('/verify_id.php', {
+      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      credentials: 'same-origin',
+      body: 'image=' + encodeURIComponent(idImageData),
+    });
+    const d = await r.json();
+    idMsg(d.msg, d.ok);
+    if (d.ok) setTimeout(() => location.reload(), 1400);
+  } catch (e) { idMsg('خطأ بالاتصال، حاول مجدداً', false); }
+  btn.disabled = false; btn.textContent = 'إرسال للمراجعة';
+}
