@@ -253,3 +253,33 @@ async function toggleFav(ev, pid, btn) {
   tick();
   setInterval(tick, 1000);
 })();
+
+// ===== اقتراحات البحث الذكي =====
+(function () {
+  const input = document.getElementById('homeSearchInput');
+  const box = document.getElementById('searchSuggest');
+  if (!input || !box) return;
+  let timer = null;
+  input.addEventListener('input', function () {
+    const q = input.value.trim();
+    clearTimeout(timer);
+    if (q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    timer = setTimeout(function () {
+      fetch('/search_suggest.php?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(list => {
+          if (!list.length) { box.style.display = 'none'; return; }
+          box.innerHTML = list.map(function (item) {
+            return '<a class="suggest-item" href="/index.php?page=search&q=' + encodeURIComponent(item.name) + '">' +
+              '<span class="sg-name">' + item.name + '</span>' +
+              '<span class="sg-cat">' + (item.cat || '') + '</span></a>';
+          }).join('');
+          box.style.display = 'block';
+        }).catch(function(){ box.style.display = 'none'; });
+    }, 250);
+  });
+  // إخفاء عند الضغط برّا
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.home-search-wrap')) box.style.display = 'none';
+  });
+})();

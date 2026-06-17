@@ -102,6 +102,10 @@ function check_coupon($code, $userId) {
     $c = $st->fetch(PDO::FETCH_ASSOC);
     if (!$c) return [0, 'كود الخصم غير صحيح'];
     if ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses']) return [0, 'انتهت صلاحية كود الخصم'];
+    // كوبون مربوط بمستخدم محدد (كود VIP خاص)
+    if (!empty($c['user_id']) && (int)$c['user_id'] !== (int)$userId) {
+        return [0, 'هذا الكود خاص بحساب آخر'];
+    }
     // مرة واحدة لكل مستخدم
     $st = db()->prepare("SELECT COUNT(*) FROM coupon_uses WHERE coupon_id=? AND user_id=?");
     $st->execute([$c['id'], $userId]);

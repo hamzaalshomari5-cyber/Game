@@ -40,6 +40,7 @@ $U = current_user();
     <a href="/index.php?page=search">🔍 بحث عن منتج</a>
     <a href="/assistant.php">🤖 المساعد الذكي</a>
     <?php if ($U): ?>
+      <a href="/account.php">👤 حسابي</a>
       <a href="/orders.php">🧾 طلباتي</a>
       <a href="/notifications.php">🔔 الإشعارات</a>
       <a href="/index.php?page=favs">❤ المفضلة</a>
@@ -50,6 +51,7 @@ $U = current_user();
     <?php endif; ?>
     <a href="/index.php?page=about">ℹ️ من نحن</a>
     <a href="/contact.php">📞 تواصل معنا</a>
+    <a href="/faq.php">❓ الأسئلة الشائعة</a>
     <a href="/index.php?page=terms">📄 سياسة الاسترجاع</a>
   </nav>
   <button class="theme-toggle" onclick="toggleTheme()">🌙 / ☀️ تبديل الوضع</button>

@@ -18,6 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 db()->prepare("INSERT INTO users (name,email,password) VALUES (?,?,?)")
                     ->execute([$name, $email, password_hash($pass, PASSWORD_DEFAULT)]);
                 $_SESSION['uid'] = last_id('users');
+                notify_user($_SESSION['uid'], '🎉 أهلاً بك في ' . STORE_NAME . '!',
+                    'سعداء بانضمامك. اشحن محفظتك وابدأ بشراء شحن الألعاب والبطاقات بأسرع وأأمن طريقة. الدعم والمساعد الذكي جاهزين لخدمتك 24/7.', '🎉');
                 header('Location: /index.php'); exit;
             } catch (Exception $ex) { $err = 'الإيميل مستخدم مسبقاً'; $mode = 'register'; }
         }

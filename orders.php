@@ -16,6 +16,25 @@ $pageTitle = 'طلباتي';
 include __DIR__ . '/header.php'; ?>
 
 <h1 class="section-title">طلباتي</h1>
+
+<?php $vip = user_vip_info($U['id']); ?>
+<div class="vip-card vip-<?= $vip['level'] ?>">
+  <div class="vip-top">
+    <div class="vip-badge-big"><?= vip_badge($vip['level']) ?></div>
+    <div class="vip-spent">أنفقت: $<?= number_format($vip['spent_usd'], 2) ?></div>
+  </div>
+  <?php if ($vip['next_level']): ?>
+    <?php $th = vip_thresholds(); $cur = $th[$vip['level']] ?? 0; $target = $th[$vip['next_level']];
+      $prog = $target > 0 ? min(100, ($vip['spent_usd'] / $target) * 100) : 0; ?>
+    <div class="vip-progress"><div class="vip-progress-bar" style="width:<?= $prog ?>%"></div></div>
+    <div class="vip-next">باقي <b>$<?= number_format($vip['need_usd'], 2) ?></b> للوصول إلى <?= vip_badge($vip['next_level']) ?></div>
+    <?php if ($vip['level'] >= 2): ?>
+      <div class="vip-perk">🎁 تواصل مع الدعم للحصول على كود الخصم الخاص بك</div>
+    <?php endif; ?>
+  <?php else: ?>
+    <div class="vip-next">🏆 وصلت لأعلى مستوى! تواصل مع الدعم لكود الخصم الخاص بك</div>
+  <?php endif; ?>
+</div>
 <?php if (!$orders): ?>
   <p class="empty">ما عندك طلبات بعد — تصفّح <a href="/index.php">الأقسام</a> واطلب أول منتج.</p>
 <?php else: ?>

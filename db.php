@@ -116,9 +116,19 @@ function init_db($pdo) {
     if (is_pg()) {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN IF NOT EXISTS coupon TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS codes TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS banned INTEGER DEFAULT 0"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE coupons ADD COLUMN IF NOT EXISTS user_id INTEGER DEFAULT 0"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bday_gift TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT"); } catch (Exception $e) {}
     } else {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN coupon TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE coupons ADD COLUMN user_id INTEGER DEFAULT 0"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN birthday TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN last_bday_gift TEXT"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN phone TEXT"); } catch (Exception $e) {}
     }
     // أدمن افتراضي
     $st = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role='admin'");
@@ -212,7 +222,14 @@ function current_user() {
     if (empty($_SESSION['uid'])) return null;
     $st = db()->prepare("SELECT * FROM users WHERE id=?");
     $st->execute([$_SESSION['uid']]);
-    return $st->fetch(PDO::FETCH_ASSOC) ?: null;
+    $u = $st->fetch(PDO::FETCH_ASSOC) ?: null;
+    // المستخدم المحظور: تسجيل خروج فوري
+    if ($u && !empty($u['banned'])) {
+        $_SESSION = [];
+        if (session_status() === PHP_SESSION_ACTIVE) @session_destroy();
+        return null;
+    }
+    return $u;
 }
 function require_login() {
     if (!current_user()) { header('Location: /auth.php'); exit; }

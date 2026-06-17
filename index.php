@@ -177,7 +177,20 @@ if ($page === 'products') {
     <?php endif; ?>
 
     <?php if ($products): ?>
+      <?php
+      // ترتيب المنتجات
+      $sort = $_GET['sort'] ?? '';
+      if ($sort === 'price_asc') usort($products, fn($a,$b) => $a['price'] <=> $b['price']);
+      elseif ($sort === 'price_desc') usort($products, fn($a,$b) => $b['price'] <=> $a['price']);
+      $catQ = urlencode($cat); $nameQ = urlencode($catName);
+      ?>
       <?php if ($subs): ?><h2 class="section-title">المنتجات</h2><?php endif; ?>
+      <div class="sort-bar">
+        <span class="sort-label">ترتيب:</span>
+        <a href="/index.php?page=products&cat=<?= $catQ ?>&name=<?= $nameQ ?>" class="sort-btn <?= $sort===''?'on':'' ?>">الافتراضي</a>
+        <a href="/index.php?page=products&cat=<?= $catQ ?>&name=<?= $nameQ ?>&sort=price_asc" class="sort-btn <?= $sort==='price_asc'?'on':'' ?>">الأرخص ↑</a>
+        <a href="/index.php?page=products&cat=<?= $catQ ?>&name=<?= $nameQ ?>&sort=price_desc" class="sort-btn <?= $sort==='price_desc'?'on':'' ?>">الأغلى ↓</a>
+      </div>
       <div class="grid products-grid"><?php foreach ($products as $p) product_card($p, $favs, $catName); ?></div>
     <?php elseif (!$subs): ?>
       <p class="empty">لا توجد منتجات في هذا القسم حالياً.</p>
@@ -242,12 +255,15 @@ include __DIR__ . '/header.php'; ?>
 <?php endif; ?>
 
 <!-- شريط البحث الرئيسي (بالعرض، فوق الأقسام) -->
-<form method="get" action="/index.php" class="home-search">
+<div class="home-search-wrap">
+<form method="get" action="/index.php" class="home-search" autocomplete="off">
   <input type="hidden" name="page" value="search">
   <span class="hs-icon">🔍</span>
-  <input type="text" name="q" placeholder="ابحث عن لعبة، شحن، بطاقة..." autocomplete="off">
+  <input type="text" name="q" id="homeSearchInput" placeholder="ابحث عن لعبة، شحن، بطاقة..." autocomplete="off">
   <button type="submit" class="hs-btn">بحث</button>
 </form>
+<div class="search-suggest" id="searchSuggest"></div>
+</div>
 
 <h2 class="section-title">الأقسام</h2>
 <?php if (!$root['categories'] && !$root['products']): ?>

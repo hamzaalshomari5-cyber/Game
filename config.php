@@ -169,3 +169,75 @@ function promo_deposit_pct() {
     $p = promo_get();
     return ($p && $p['type'] === 'deposit') ? $p['value'] : 0;
 }
+
+// ===== نظام مستويات VIP =====
+// VIP1 افتراضي، VIP2 عند إنفاق 1000$، VIP3 عند 5000$ (الإنفاق = مجموع الطلبات المنفّذة)
+function vip_thresholds() {
+    // العتبات بالدولار — تُحوّل لليرة حسب سعر الصرف
+    return [2 => 1000, 3 => 5000];
+}
+// مجموع إنفاق المستخدم بالليرة (الطلبات المنفّذة)
+function user_spent($userId) {
+    $st = db()->prepare("SELECT COALESCE(SUM(total),0) FROM orders WHERE user_id=? AND status='accept'");
+    $st->execute([$userId]);
+    return (float)$st->fetchColumn();
+}
+// مستوى VIP الحالي للمستخدم (1/2/3)
+function user_vip_level($userId) {
+    $spentSyp = user_spent($userId);
+    $rate = usd_rate();
+    $spentUsd = $rate > 0 ? $spentSyp / $rate : 0;
+    $level = 1;
+    foreach (vip_thresholds() as $lvl => $minUsd) {
+        if ($spentUsd >= $minUsd) $level = $lvl;
+    }
+    return $level;
+}
+// معلومات VIP كاملة (للعرض)
+function user_vip_info($userId) {
+    $spentSyp = user_spent($userId);
+    $rate = usd_rate();
+    $spentUsd = $rate > 0 ? $spentSyp / $rate : 0;
+    $level = user_vip_level($userId);
+    $th = vip_thresholds();
+    // المتبقي للمستوى التالي
+    $next = null; $needUsd = 0;
+    if ($level < 3) {
+        $nextLevel = $level + 1;
+        $needUsd = $th[$nextLevel] - $spentUsd;
+        $next = $nextLevel;
+    }
+    return [
+        'level' => $level,
+        'spent_usd' => $spentUsd,
+        'spent_syp' => $spentSyp,
+        'next_level' => $next,
+        'need_usd' => max(0, $needUsd),
+    ];
+}
+function vip_badge($level) {
+    $badges = [1 => '🥉 VIP 1', 2 => '🥈 VIP 2', 3 => '🥇 VIP 3'];
+    return $badges[$level] ?? '🥉 VIP 1';
+}
+
+// ===== هدية عيد الميلاد =====
+// مبلغ الهدية (ل.س) — قابل للتعديل من إعدادات الأدمن (setting: bday_gift)
+function bday_gift_amount() { return (float)setting('bday_gift', '0'); }
+// يفحص ويمنح الهدية إذا اليوم عيد ميلاد المستخدم ولم يأخذها هذه السنة
+function check_birthday_gift($user) {
+    if (empty($user['birthday'])) return null;
+    $gift = bday_gift_amount();
+    if ($gift <= 0) return null;
+    $today = date('m-d');
+    $bday = date('m-d', strtotime($user['birthday']));
+    if ($today !== $bday) return null;
+    $thisYear = date('Y');
+    if (($user['last_bday_gift'] ?? '') === $thisYear) return null; // أخذها هذه السنة
+    // منح الهدية
+    db()->beginTransaction();
+    db()->prepare("UPDATE users SET balance = balance + ?, last_bday_gift = ? WHERE id=?")
+        ->execute([$gift, $thisYear, $user['id']]);
+    db()->commit();
+    notify_user($user['id'], '🎂 عيد ميلاد سعيد!', 'أهديناك ' . number_format($gift) . ' ل.س بمناسبة عيد ميلادك. كل عام وأنت بخير! 🎉', '🎂');
+    return $gift;
+}

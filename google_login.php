@@ -55,6 +55,8 @@ if (isset($_GET['code'])) {
         db()->prepare("INSERT INTO users (name,email,password) VALUES (?,?,?)")
             ->execute([$name, $email, $randPass]);
         $_SESSION['uid'] = last_id('users');
+        notify_user($_SESSION['uid'], '🎉 أهلاً بك في ' . STORE_NAME . '!',
+            'سعداء بانضمامك. اشحن محفظتك وابدأ بشراء شحن الألعاب والبطاقات بأسرع وأأمن طريقة. الدعم والمساعد الذكي جاهزين لخدمتك 24/7.', '🎉');
     } else {
         $_SESSION['uid'] = $u['id'];
     }

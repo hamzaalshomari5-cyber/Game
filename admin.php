@@ -14,10 +14,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         cache_set('fc_products', cache_get('fc_products') ?? [], 0); // إبطال الكاش
         $msg = 'تم حفظ هامش الربح ✅';
     }
+    if (isset($_POST['bday_gift'])) {
+        set_setting('bday_gift', (float)$_POST['bday_gift']);
+        $msg = 'تم حفظ هدية عيد الميلاد ✅';
+    }
     if (isset($_POST['add_balance_user'], $_POST['add_balance_amount'])) {
         db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")
             ->execute([(float)$_POST['add_balance_amount'], (int)$_POST['add_balance_user']]);
         $msg = 'تم تعديل الرصيد ✅';
+    }
+    // حظر / فك حظر مستخدم (ما عدا الأدمن)
+    if (isset($_POST['toggle_ban'])) {
+        $uid = (int)$_POST['toggle_ban'];
+        db()->prepare("UPDATE users SET banned = 1 - COALESCE(banned,0) WHERE id=? AND role <> 'admin'")->execute([$uid]);
+        $msg = 'تم تحديث حالة المستخدم ✅';
     }
     if (isset($_POST['sync_products'])) {
         store_products(true); fc_content(0, true);
@@ -29,11 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $type = ($_POST['coupon_type'] ?? 'percent') === 'fixed' ? 'fixed' : 'percent';
         $amt = (float)($_POST['coupon_amount'] ?? 0);
         $maxu = (int)($_POST['coupon_maxuses'] ?? 0);
+        $forUser = (int)($_POST['coupon_user'] ?? 0); // 0 = للجميع، رقم = خاص بمستخدم
         if ($code && $amt > 0) {
             try {
-                db()->prepare("INSERT INTO coupons (code,type,amount,max_uses) VALUES (?,?,?,?)")
-                    ->execute([$code, $type, $amt, $maxu]);
-                $msg = 'تم إضافة كود الخصم ✅';
+                db()->prepare("INSERT INTO coupons (code,type,amount,max_uses,user_id) VALUES (?,?,?,?,?)")
+                    ->execute([$code, $type, $amt, $maxu, $forUser]);
+                $msg = 'تم إضافة كود الخصم ✅' . ($forUser ? " (خاص بالمستخدم #$forUser)" : '');
             } catch (Exception $e) { $msg = 'الكود موجود مسبقاً'; }
         } else { $msg = 'تأكد من الكود والقيمة'; }
     }
@@ -234,7 +245,7 @@ include __DIR__ . '/header.php'; ?>
     <h3>المستخدمين (<?= count($users) ?>)</h3>
     <input type="text" id="userSearch" placeholder="🔍 ابحث بالاسم أو الإيميل..." onkeyup="filterUsers()" style="margin-bottom:12px">
     <table class="tbl" id="usersTable">
-      <tr><th>#</th><th>الاسم</th><th>الإيميل</th><th>الرصيد</th><th>الدور</th></tr>
+      <tr><th>#</th><th>الاسم</th><th>الإيميل</th><th>الرصيد</th><th>الدور</th><th>الحالة</th><th>إجراء</th></tr>
       <?php foreach ($users as $u): ?>
         <tr>
           <td><b><?= $u['id'] ?></b></td>
@@ -242,6 +253,16 @@ include __DIR__ . '/header.php'; ?>
           <td class="small"><?= e($u['email']) ?></td>
           <td><b><?= number_format($u['balance']) ?></b></td>
           <td><?= $u['role'] === 'admin' ? '👑 أدمن' : 'مستخدم' ?></td>
+          <td><?= !empty($u['banned']) ? '🚫 محظور' : '✅ نشط' ?></td>
+          <td>
+            <?php if ($u['role'] !== 'admin'): ?>
+            <form method="post" style="display:inline">
+              <button class="btn-mini <?= !empty($u['banned']) ? '' : 'danger' ?>" name="toggle_ban" value="<?= $u['id'] ?>">
+                <?= !empty($u['banned']) ? 'فك الحظر' : 'حظر' ?>
+              </button>
+            </form>
+            <?php else: ?>—<?php endif; ?>
+          </td>
         </tr>
       <?php endforeach; ?>
     </table>
@@ -269,6 +290,7 @@ include __DIR__ . '/header.php'; ?>
       </select>
       <input name="coupon_amount" type="number" step="any" placeholder="القيمة" required>
       <input name="coupon_maxuses" type="number" placeholder="حد الاستخدام (0=لا نهائي)">
+      <input name="coupon_user" type="number" placeholder="خاص بمستخدم رقم (0=للجميع)">
       <button class="btn" name="add_coupon" value="1">إضافة</button>
     </form>
   </div>
@@ -401,6 +423,14 @@ include __DIR__ . '/header.php'; ?>
     <form method="post" class="inline-form">
       <input name="profit_percent" type="number" step="any" value="<?= e(setting('profit_percent', DEFAULT_PROFIT)) ?>" required>
       <span class="muted">% فوق سعر FastCard</span>
+      <button class="btn">حفظ</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>🎂 هدية عيد الميلاد</h3>
+    <form method="post" class="inline-form">
+      <input name="bday_gift" type="number" step="any" value="<?= e(setting('bday_gift', '0')) ?>">
+      <span class="muted">ل.س تُمنح تلقائياً بعيد ميلاد الزبون (0 = معطّل)</span>
       <button class="btn">حفظ</button>
     </form>
   </div>

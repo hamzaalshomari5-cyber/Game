@@ -16,6 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = 'كود الخصم غير صحيح أو غير فعّال';
         } elseif ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses']) {
             $msg = 'انتهت صلاحية كود الخصم (تم استخدامه بالكامل)';
+        } elseif (!empty($c['user_id']) && (int)$c['user_id'] !== (int)$U['id']) {
+            $msg = 'هذا الكود خاص بحساب آخر';
         } else {
             // مرة واحدة لكل مستخدم
             $st = db()->prepare("SELECT COUNT(*) FROM coupon_uses WHERE coupon_id=? AND user_id=?");
