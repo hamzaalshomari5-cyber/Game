@@ -74,6 +74,7 @@ $U = current_user();
   <div class="top-actions">
     <a class="icon-btn" href="/index.php?page=search" title="بحث">🔍</a>
     <?php if ($U): ?>
+      <a class="icon-btn cart-icon" href="/index.php?page=cart" title="السلة">🛒<span class="cart-badge" id="cartBadge" style="display:none">0</span></a>
       <a class="icon-btn notif-bell" href="/notifications.php" title="الإشعارات">🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span></a>
       <a class="balance-pill" href="/wallet.php">💳 <span class="bal-amount" data-syp="<?= (int)$U['balance'] ?>"><?= number_format($U['balance']) ?> ل.س</span></a>
     <?php else: ?>

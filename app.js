@@ -200,7 +200,105 @@ async function submitBuy() {
   btn.disabled = false;
 }
 
-// المفضلة ❤
+// ===== سلة المشتريات =====
+async function addToCart() {
+  const modal = document.getElementById('buyModal');
+  const msg = document.getElementById('mMsg');
+  const btn = document.getElementById('mCartBtn');
+  if (typeof IS_LOGGED !== 'undefined' && !IS_LOGGED) { location.href = '/auth.php'; return; }
+  // إذا المنتج بيطلب تحقق اسم، لازم يتحقق قبل الإضافة
+  if (needVerify && !verified && !softPass) { verifyName(); return; }
+  btn.disabled = true;
+  const oldTxt = btn.textContent;
+  btn.textContent = '...';
+  try {
+    const res = await fetch('/cart.php', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'add',
+        product_id: modal.dataset.pid,
+        qty: parseInt(document.getElementById('mQty').value) || 1,
+        player_id: document.getElementById('mPlayer').value.trim(),
+      }),
+    });
+    const d = await res.json();
+    if (d.login) { location.href = '/auth.php'; return; }
+    msg.textContent = d.msg;
+    msg.className = 'm-msg ' + (d.ok ? 'ok' : 'no');
+    if (d.ok) { updateCartBadge(d.count); setTimeout(closeBuy, 900); }
+  } catch (e) {
+    msg.textContent = 'خطأ بالاتصال';
+    msg.className = 'm-msg no';
+  }
+  btn.disabled = false; btn.textContent = oldTxt;
+}
+
+async function cartQty(key, delta) {
+  const row = document.querySelector('.cart-item[data-key="' + key + '"]');
+  if (!row) return;
+  const cur = parseInt(row.querySelector('.ci-qnum').textContent) || 1;
+  const next = cur + delta;
+  if (next < 1) return;
+  try {
+    const res = await fetch('/cart.php', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update', key: key, qty: next }),
+    });
+    const d = await res.json();
+    if (d.ok) location.reload();
+    else { const m = document.getElementById('cartMsg'); if (m) { m.textContent = d.msg; m.className = 'alert no'; m.style.display = 'block'; } }
+  } catch (e) {}
+}
+
+async function cartRemove(key) {
+  try {
+    const res = await fetch('/cart.php', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'remove', key: key }),
+    });
+    const d = await res.json();
+    if (d.ok) location.reload();
+  } catch (e) {}
+}
+
+async function cartCheckout() {
+  const btn = document.getElementById('checkoutBtn');
+  const msg = document.getElementById('cartMsg');
+  btn.disabled = true; btn.textContent = 'جارٍ التنفيذ...';
+  try {
+    const res = await fetch('/cart.php', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'checkout' }),
+    });
+    const d = await res.json();
+    if (d.login) { location.href = '/auth.php'; return; }
+    msg.textContent = d.msg;
+    msg.className = 'alert ' + (d.ok ? 'ok' : 'no');
+    msg.style.display = 'block';
+    if (d.ok) setTimeout(() => location.href = '/orders.php', 2600);
+    else { btn.disabled = false; btn.textContent = 'إتمام الشراء 💳'; }
+  } catch (e) {
+    msg.textContent = 'خطأ بالاتصال، حاول مجدداً';
+    msg.className = 'alert no'; msg.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'إتمام الشراء 💳';
+  }
+}
+
+function updateCartBadge(count) {
+  const b = document.getElementById('cartBadge');
+  if (!b) return;
+  if (count > 0) { b.textContent = count > 99 ? '99+' : count; b.style.display = ''; }
+  else b.style.display = 'none';
+}
+
+// تحديث عداد السلة عند فتح أي صفحة
+(function () {
+  if (typeof IS_LOGGED !== 'undefined' && !IS_LOGGED) return;
+  fetch('/cart.php', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'count' }), credentials: 'same-origin',
+  }).then(r => r.json()).then(d => { if (d.ok) updateCartBadge(d.count); }).catch(function(){});
+})();
 async function toggleFav(ev, pid, btn) {
   ev.stopPropagation();
   if (typeof IS_LOGGED !== 'undefined' && !IS_LOGGED) { location.href = '/auth.php'; return; }

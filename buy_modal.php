@@ -18,6 +18,7 @@
     <div class="m-msg" id="mMsg"></div>
     <div class="m-actions">
       <button class="btn ghost" onclick="closeBuy()">إلغاء</button>
+      <button class="btn ghost cart-add-btn" id="mCartBtn" onclick="addToCart()">🛒 للسلة</button>
       <button class="btn" id="mBuyBtn" onclick="submitBuy()">شراء</button>
     </div>
   </div>

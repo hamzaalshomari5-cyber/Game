@@ -104,6 +104,9 @@ if ($page === 'about' || $page === 'terms') {
 /* ===== صفحة البحث ===== */
 if ($page === 'search') {
     $q = trim($_GET['q'] ?? '');
+    $minP = $_GET['min'] !== '' && isset($_GET['min']) ? (float)$_GET['min'] : null;
+    $maxP = $_GET['max'] !== '' && isset($_GET['max']) ? (float)$_GET['max'] : null;
+    $sortBy = $_GET['sort'] ?? '';
     $favs = user_favs($U);
     $results = [];
     if ($q !== '' && mb_strlen($q) >= 2) {
@@ -111,22 +114,45 @@ if ($page === 'search') {
         foreach (store_products() as $p) {
             if (mb_strpos(mb_strtolower($p['name']), $ql) !== false
                 || mb_strpos(mb_strtolower($p['category']), $ql) !== false) {
+                // فلترة بالسعر
+                if ($minP !== null && $p['price'] < $minP) continue;
+                if ($maxP !== null && $p['price'] > $maxP) continue;
                 $results[] = $p;
             }
         }
+        // الترتيب
+        if ($sortBy === 'price_asc') usort($results, fn($a,$b) => $a['price'] <=> $b['price']);
+        elseif ($sortBy === 'price_desc') usort($results, fn($a,$b) => $b['price'] <=> $a['price']);
+        elseif ($sortBy === 'name') usort($results, fn($a,$b) => strcmp($a['name'], $b['name']));
     }
     $pageTitle = 'بحث';
     include __DIR__ . '/header.php'; ?>
     <h1 class="section-title">🔍 بحث عن منتج</h1>
-    <form method="get" class="search-form">
+    <form method="get" class="search-form-adv">
       <input type="hidden" name="page" value="search">
-      <input type="text" name="q" value="<?= e($q) ?>" placeholder="اكتب اسم المنتج أو القسم..." autofocus>
-      <button class="btn" type="submit">بحث</button>
+      <div class="sf-row">
+        <input type="text" name="q" value="<?= e($q) ?>" placeholder="اكتب اسم المنتج أو القسم..." autofocus>
+        <button class="btn" type="submit">بحث</button>
+      </div>
+      <div class="sf-filters">
+        <div class="sf-price">
+          <span class="sf-lbl">السعر (ل.س):</span>
+          <input type="number" name="min" value="<?= e($_GET['min'] ?? '') ?>" placeholder="من" inputmode="numeric">
+          <span>—</span>
+          <input type="number" name="max" value="<?= e($_GET['max'] ?? '') ?>" placeholder="إلى" inputmode="numeric">
+        </div>
+        <select name="sort" class="sf-sort">
+          <option value="">الترتيب: الافتراضي</option>
+          <option value="price_asc" <?= $sortBy==='price_asc'?'selected':'' ?>>الأرخص أولاً ↑</option>
+          <option value="price_desc" <?= $sortBy==='price_desc'?'selected':'' ?>>الأغلى أولاً ↓</option>
+          <option value="name" <?= $sortBy==='name'?'selected':'' ?>>أبجدياً</option>
+        </select>
+      </div>
     </form>
     <?php if ($q !== '' && mb_strlen($q) < 2): ?>
       <p class="empty">اكتب حرفين على الأقل للبحث.</p>
     <?php elseif ($q !== '' && !$results): ?>
-      <p class="empty">ما في نتائج لـ "<?= e($q) ?>" — جرّب كلمة ثانية.</p>
+      <p class="empty">ما في نتائج لـ "<?= e($q) ?>"<?= ($minP!==null||$maxP!==null) ? ' ضمن نطاق السعر المحدّد' : '' ?> — جرّب كلمة ثانية أو وسّع نطاق السعر.</p>
     <?php elseif ($results): ?>
       <p class="muted" style="margin-bottom:14px"><?= count($results) ?> نتيجة لـ "<?= e($q) ?>"</p>
       <div class="grid products-grid"><?php foreach (array_slice($results, 0, 60) as $p) product_card($p, $favs); ?></div>
@@ -148,6 +174,57 @@ if ($page === 'favs') {
       <div class="grid products-grid"><?php foreach ($products as $p) product_card($p, $favs); ?></div>
     <?php endif; ?>
     <?php include __DIR__ . '/buy_modal.php'; ?>
+    <script>const IS_LOGGED = <?= $U ? 'true' : 'false' ?>;</script>
+    <?php include __DIR__ . '/footer.php'; exit;
+}
+
+/* ===== صفحة السلة ===== */
+if ($page === 'cart') {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $cart = $_SESSION['cart'] ?? [];
+    $favs = user_favs($U);
+    $items = []; $total = 0;
+    $disc = promo_discount_pct();
+    foreach ($cart as $key => $c) {
+        $p = store_product($c['product_id']);
+        if (!$p) continue;
+        $unit = $p['price'];
+        if ($disc > 0) $unit = round($p['price'] * (1 - $disc/100));
+        $sub = $unit * $c['qty'];
+        $total += $sub;
+        $items[] = ['key'=>$key,'name'=>$p['name'],'qty'=>$c['qty'],'player_id'=>$c['player_id'],'unit'=>$unit,'subtotal'=>$sub,'available'=>$p['available']];
+    }
+    $pageTitle = 'سلة المشتريات';
+    include __DIR__ . '/header.php'; ?>
+    <h1 class="section-title">🛒 سلة المشتريات</h1>
+    <?php if (!$items): ?>
+      <p class="empty">سلتك فارغة — تصفّح <a href="/index.php">الأقسام</a> وأضف منتجات.</p>
+    <?php else: ?>
+      <div class="cart-list" id="cartList">
+        <?php foreach ($items as $it): ?>
+          <div class="cart-item" data-key="<?= e($it['key']) ?>">
+            <div class="ci-info">
+              <b><?= e($it['name']) ?></b>
+              <?php if ($it['player_id']): ?><span class="muted small">ID: <?= e($it['player_id']) ?></span><?php endif; ?>
+              <?php if (!$it['available']): ?><span class="ci-unavail">⚠️ غير متوفر حالياً</span><?php endif; ?>
+              <span class="ci-unit"><?= number_format($it['unit']) ?> ل.س / وحدة</span>
+            </div>
+            <div class="ci-qty">
+              <button onclick="cartQty('<?= e($it['key']) ?>',-1)">−</button>
+              <span class="ci-qnum"><?= $it['qty'] ?></span>
+              <button onclick="cartQty('<?= e($it['key']) ?>',1)">+</button>
+            </div>
+            <div class="ci-sub"><b class="ci-subval"><?= number_format($it['subtotal']) ?></b> ل.س</div>
+            <button class="ci-del" onclick="cartRemove('<?= e($it['key']) ?>')" title="حذف">🗑</button>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <div class="cart-footer">
+        <div class="cart-total">الإجمالي: <b id="cartTotal"><?= number_format($total) ?></b> ل.س</div>
+        <button class="btn full" id="checkoutBtn" onclick="cartCheckout()">إتمام الشراء 💳</button>
+      </div>
+      <div id="cartMsg" class="alert" style="display:none;margin-top:12px"></div>
+    <?php endif; ?>
     <script>const IS_LOGGED = <?= $U ? 'true' : 'false' ?>;</script>
     <?php include __DIR__ . '/footer.php'; exit;
 }
