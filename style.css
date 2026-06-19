@@ -1359,3 +1359,27 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
   max-width: 100%; border-radius: 10px;
   border: 1px solid var(--border, rgba(255,255,255,.08));
 }
+
+/* ===== توثيق الموبايل عبر واتساب ===== */
+.otp-code-box {
+  background: color-mix(in srgb, var(--accent, #d4af37) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #d4af37) 35%, transparent);
+  border-radius: 10px; padding: 14px; text-align: center;
+  font-size: 1rem; margin-bottom: 10px;
+}
+.otp-code-box b { font-size: 1.6rem; letter-spacing: 4px; color: var(--accent, #d4af37); }
+.wa-btn {
+  background: #25D366 !important; color: #fff !important;
+  display: block; text-align: center; text-decoration: none;
+}
+/* لوحة توثيق الأرقام (أدمن) */
+.pv-list { display: flex; flex-direction: column; gap: 12px; }
+.pv-card {
+  background: var(--card2, rgba(255,255,255,.03));
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+  border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+}
+.pv-info { display: flex; flex-direction: column; gap: 4px; }
+.pv-row { font-size: .92rem; }
+.pv-code { font-size: 1.2rem; letter-spacing: 3px; color: var(--accent, #d4af37); }
+.pv-actions { display: flex; gap: 8px; }

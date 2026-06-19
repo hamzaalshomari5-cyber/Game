@@ -11,56 +11,44 @@ function jout($ok, $msg, $extra = []) {
 
 $action = $_POST['action'] ?? '';
 
-// ===== إرسال الرمز =====
-if ($action === 'send') {
-    if (!otp_enabled()) jout(false, 'خدمة التوثيق غير مفعّلة حالياً');
+// ===== بدء التوثيق: توليد رمز + رابط واتساب =====
+if ($action === 'start') {
     $phone = trim($_POST['phone'] ?? '');
     $gsm = normalize_gsm($phone);
     if (strlen($gsm) < 12) jout(false, 'رقم الموبايل غير صحيح');
 
-    // منع الإرسال المتكرر السريع (مرة كل 60 ثانية)
-    $st = db()->prepare("SELECT created_at FROM otp_codes WHERE user_id=? ORDER BY id DESC LIMIT 1");
+    // منع طلب جديد إذا في طلب pending حديث (آخر 3 دقائق)
+    $st = db()->prepare("SELECT code, created_at FROM otp_codes WHERE user_id=? AND status='pending' ORDER BY id DESC LIMIT 1");
     $st->execute([$U['id']]);
-    $last = $st->fetchColumn();
-    if ($last && (time() - strtotime($last)) < 60) {
-        jout(false, 'انتظر دقيقة قبل إعادة الإرسال');
-    }
+    $existing = $st->fetch(PDO::FETCH_ASSOC);
 
-    // raselSMS هو من يولّد الرمز ويرسله — نحن نخزّن verificationId فقط
-    [$sent, $smsg, $vid] = rasel_send_otp($gsm);
-    if (!$sent) jout(false, $smsg);
-    if (!$vid)  jout(false, 'تعذّر بدء عملية التحقق، حاول مجدداً');
+    // توليد رمز 4 أرقام
+    $code = (string)random_int(1000, 9999);
 
-    // حذف القديم وتخزين verificationId الجديد (نخزّنه بحقل code مؤقتاً)
+    // حذف القديم وإنشاء طلب جديد
     db()->prepare("DELETE FROM otp_codes WHERE user_id=?")->execute([$U['id']]);
-    db()->prepare("INSERT INTO otp_codes (user_id,phone,code,expires_at) VALUES (?,?,?,?)")
-        ->execute([$U['id'], $gsm, $vid, date('Y-m-d H:i:s', time() + 600)]);
+    db()->prepare("INSERT INTO otp_codes (user_id,phone,code,status,expires_at) VALUES (?,?,?,'pending',?)")
+        ->execute([$U['id'], $gsm, $code, date('Y-m-d H:i:s', time() + 1800)]); // 30 دقيقة
 
-    jout(true, 'تم إرسال رمز التحقق إلى رقمك 📱');
+    // رابط واتساب مع رسالة جاهزة
+    $localPhone = $phone; // الرقم كما أدخله المستخدم للعرض
+    $link = wa_verify_link($localPhone, $code);
+
+    jout(true, 'تم تجهيز طلب التوثيق', ['code' => $code, 'link' => $link]);
 }
 
-// ===== تأكيد الرمز =====
-if ($action === 'verify') {
-    $code = preg_replace('/\D/', '', $_POST['code'] ?? '');
-    if (strlen($code) < 4) jout(false, 'الرمز غير صحيح');
-
+// ===== تأكيد أن المستخدم أرسل الرسالة (تنتقل لحالة بانتظار الأدمن) =====
+if ($action === 'sent') {
     $st = db()->prepare("SELECT * FROM otp_codes WHERE user_id=? ORDER BY id DESC LIMIT 1");
     $st->execute([$U['id']]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$row) jout(false, 'لم يتم إرسال رمز، اطلب رمزاً جديداً');
+    if (!$row) jout(false, 'لا يوجد طلب توثيق، ابدأ من جديد');
 
-    $verificationId = $row['code']; // خزّنا verificationId هنا
-    $phone = $row['phone'];
+    // إشعار الأدمن لمراجعة الطلب
+    notify_admin("📱 <b>طلب توثيق رقم جديد</b>\nالزبون: " . e($U['name']) . "\nالرقم: " . e($row['phone']) . "\nالرمز: " . e($row['code']) . "\nراجع رسائل واتساب وأكّد الطلب من لوحة الأدمن.");
+    notify_user($U['id'], 'تم استلام طلب التوثيق 📱', 'طلبك قيد المراجعة، رح يوصلك إشعار عند الموافقة.', '📱');
 
-    [$ok, $vmsg] = rasel_verify_otp($verificationId, $code);
-    if (!$ok) jout(false, $vmsg);
-
-    // نجح: توثيق الرقم
-    db()->prepare("UPDATE users SET phone=?, phone_verified=1 WHERE id=?")
-        ->execute([$phone, $U['id']]);
-    db()->prepare("DELETE FROM otp_codes WHERE user_id=?")->execute([$U['id']]);
-    notify_user($U['id'], 'تم توثيق رقمك ✅', 'تم توثيق رقم موبايلك بنجاح. حسابك الآن أكثر أماناً.', '✅');
-    jout(true, 'تم توثيق رقمك بنجاح ✅');
+    jout(true, 'تم إرسال طلبك للمراجعة ✅');
 }
 
 jout(false, 'طلب غير صحيح');

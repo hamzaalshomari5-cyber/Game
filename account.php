@@ -11,6 +11,11 @@ $st = db()->prepare("SELECT status FROM id_verifications WHERE user_id=? ORDER B
 $st->execute([$U['id']]);
 $idvStatus = $st->fetchColumn(); // pending / rejected / approved / false
 
+// حالة توثيق رقم الموبايل (آخر طلب)
+$st = db()->prepare("SELECT status FROM otp_codes WHERE user_id=? ORDER BY id DESC LIMIT 1");
+$st->execute([$U['id']]);
+$otpStatus = $st->fetchColumn(); // pending / false
+
 // سجل النشاط: آخر الطلبات والإيداعات مدمجة
 $acts = [];
 $st = db()->prepare("SELECT 'order' typ, product_name title, total amount, status, created_at FROM orders WHERE user_id=? ORDER BY id DESC LIMIT 15");
@@ -62,24 +67,27 @@ include __DIR__ . '/header.php'; ?>
       <div class="phone-verified">
         ✅ رقمك موثّق: <b dir="ltr"><?= e($U['phone']) ?></b>
       </div>
-    <?php elseif (!otp_enabled()): ?>
-      <p class="muted">خدمة التوثيق غير مفعّلة حالياً.</p>
+    <?php elseif ($otpStatus === 'pending'): ?>
+      <div class="alert" style="display:block">📱 طلب التوثيق قيد المراجعة، رح يوصلك إشعار عند الموافقة.</div>
     <?php else: ?>
-      <p class="muted small">وثّق رقم موبايلك ليصبح حسابك أكثر أماناً. رح يوصلك رمز تحقق على رقمك.</p>
+      <p class="muted small">وثّق رقم موبايلك عبر واتساب. اضغط الزر، وبيفتحلك واتساب برسالة جاهزة، أرسلها لنا كما هي.</p>
       <div id="otpMsg" class="alert" style="display:none"></div>
 
       <!-- خطوة 1: إدخال الرقم -->
       <div id="otpStep1">
         <label>رقم الموبايل</label>
         <input id="otpPhone" type="tel" dir="ltr" value="<?= e($U['phone'] ?? '') ?>" placeholder="0991234567">
-        <button class="btn full" id="otpSendBtn" onclick="otpSend()">إرسال رمز التحقق</button>
+        <button class="btn full" id="otpStartBtn" onclick="otpStart()">توثيق عبر واتساب</button>
       </div>
 
-      <!-- خطوة 2: إدخال الرمز -->
+      <!-- خطوة 2: فتح واتساب وإرسال -->
       <div id="otpStep2" style="display:none">
-        <label>أدخل الرمز المُرسَل</label>
-        <input id="otpCode" type="tel" dir="ltr" inputmode="numeric" maxlength="8" placeholder="123456">
-        <button class="btn full" id="otpVerifyBtn" onclick="otpVerify()">تأكيد الرمز</button>
+        <div class="otp-code-box">
+          رمز التحقق الخاص بك: <b id="otpCodeShow">----</b>
+        </div>
+        <p class="muted small">اضغط الزر لفتح واتساب، ثم <b>أرسل الرسالة كما هي</b> (فيها الرمز). بعد الإرسال اضغط "أرسلت الرسالة".</p>
+        <a id="otpWaLink" href="#" target="_blank" class="btn full wa-btn">📲 فتح واتساب وإرسال الرسالة</a>
+        <button class="btn full" id="otpSentBtn" onclick="otpSent()" style="margin-top:8px">✅ أرسلت الرسالة</button>
         <button class="btn full ghost" onclick="otpReset()" style="margin-top:8px">تغيير الرقم</button>
       </div>
     <?php endif; ?>

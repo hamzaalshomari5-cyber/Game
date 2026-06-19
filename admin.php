@@ -110,6 +110,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = 'تم رفض الطلب';
         }
     }
+    if (isset($_POST['approve_phone'])) {
+        $oid = (int)$_POST['approve_phone'];
+        $row = db()->prepare("SELECT user_id, phone FROM otp_codes WHERE id=?");
+        $row->execute([$oid]);
+        $r = $row->fetch(PDO::FETCH_ASSOC);
+        if ($r) {
+            db()->prepare("UPDATE users SET phone=?, phone_verified=1 WHERE id=?")->execute([$r['phone'], $r['user_id']]);
+            db()->prepare("DELETE FROM otp_codes WHERE user_id=?")->execute([$r['user_id']]);
+            notify_user($r['user_id'], 'تم توثيق رقمك ✅', 'تمت الموافقة على توثيق رقم موبايلك. حسابك الآن أكثر أماناً.', '✅');
+            $msg = 'تم توثيق الرقم ✅';
+        }
+    }
+    if (isset($_POST['reject_phone'])) {
+        $oid = (int)$_POST['reject_phone'];
+        $row = db()->prepare("SELECT user_id FROM otp_codes WHERE id=?");
+        $row->execute([$oid]);
+        $uid = (int)$row->fetchColumn();
+        if ($uid) {
+            db()->prepare("DELETE FROM otp_codes WHERE user_id=?")->execute([$uid]);
+            notify_user($uid, 'طلب توثيق الرقم مرفوض ❌', 'لم نستلم رسالة تأكيد على واتساب. حاول مجدداً وأرسل الرسالة كما هي.', '📱');
+            $msg = 'تم رفض الطلب';
+        }
+    }
 }
 
 $today = date('Y-m-d');
@@ -146,6 +169,7 @@ include __DIR__ . '/header.php'; ?>
   <a class="<?= $tab === 'coupons' ? 'on' : '' ?>" href="?tab=coupons">كوبونات</a>
   <a class="<?= $tab === 'slides' ? 'on' : '' ?>" href="?tab=slides">السلايدر</a>
   <a class="<?= $tab === 'idverify' ? 'on' : '' ?>" href="?tab=idverify">توثيق الهوية</a>
+  <a class="<?= $tab === 'phoneverify' ? 'on' : '' ?>" href="?tab=phoneverify">توثيق الأرقام</a>
   <a class="<?= $tab === 'promo' ? 'on' : '' ?>" href="?tab=promo">العروض</a>
   <a class="<?= $tab === 'settings' ? 'on' : '' ?>" href="?tab=settings">الإعدادات</a>
 </div>
@@ -400,6 +424,38 @@ include __DIR__ . '/header.php'; ?>
               </form>
               <form method="post" style="flex:1" onsubmit="return confirm('رفض هذا الطلب؟')">
                 <button class="btn-mini danger full" name="reject_id" value="<?= (int)$v['id'] ?>">❌ رفض</button>
+              </form>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+
+<?php elseif ($tab === 'phoneverify'):
+  $pvs = db()->query("SELECT o.*, u.name AS uname, u.email AS uemail FROM otp_codes o LEFT JOIN users u ON u.id = o.user_id WHERE o.status='pending' ORDER BY o.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+?>
+  <div class="card">
+    <h3>📱 طلبات توثيق الأرقام</h3>
+    <p class="muted small">راجع رسائل واتساب على رقمك (<?= e(wa_verify_number()) ?>). إذا وصلتك رسالة من الزبون فيها نفس الرمز، اضغط موافقة.</p>
+    <?php if (!$pvs): ?>
+      <p class="empty">ما في طلبات توثيق أرقام معلّقة.</p>
+    <?php else: ?>
+      <div class="pv-list">
+        <?php foreach ($pvs as $p): ?>
+          <div class="pv-card">
+            <div class="pv-info">
+              <b><?= e($p['uname'] ?? 'مستخدم') ?></b>
+              <span class="muted small"><?= e($p['uemail'] ?? '') ?></span>
+              <span class="pv-row">📱 الرقم: <b dir="ltr"><?= e($p['phone']) ?></b></span>
+              <span class="pv-row">🔑 الرمز المتوقع: <b class="pv-code"><?= e($p['code']) ?></b></span>
+            </div>
+            <div class="pv-actions">
+              <form method="post" style="flex:1">
+                <button class="btn-mini full" name="approve_phone" value="<?= (int)$p['id'] ?>">✅ موافقة</button>
+              </form>
+              <form method="post" style="flex:1" onsubmit="return confirm('رفض هذا الطلب؟')">
+                <button class="btn-mini danger full" name="reject_phone" value="<?= (int)$p['id'] ?>">❌ رفض</button>
               </form>
             </div>
           </div>

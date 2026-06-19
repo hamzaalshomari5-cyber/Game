@@ -284,7 +284,7 @@ async function toggleFav(ev, pid, btn) {
   });
 })();
 
-// ===== توثيق الموبايل OTP =====
+// ===== توثيق الموبايل عبر واتساب =====
 function otpShowMsg(text, ok) {
   const m = document.getElementById('otpMsg');
   if (!m) return;
@@ -292,42 +292,44 @@ function otpShowMsg(text, ok) {
   m.className = 'alert ' + (ok ? 'ok' : '');
   m.style.display = 'block';
 }
-async function otpSend() {
+async function otpStart() {
   const phone = (document.getElementById('otpPhone').value || '').trim();
   if (phone.length < 9) { otpShowMsg('أدخل رقم موبايل صحيح', false); return; }
-  const btn = document.getElementById('otpSendBtn');
+  const btn = document.getElementById('otpStartBtn');
+  btn.disabled = true; btn.textContent = 'جاري التجهيز...';
+  try {
+    const r = await fetch('/otp.php', {
+      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      credentials: 'same-origin',
+      body: 'action=start&phone=' + encodeURIComponent(phone),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('otpCodeShow').textContent = d.code;
+      document.getElementById('otpWaLink').href = d.link;
+      document.getElementById('otpStep1').style.display = 'none';
+      document.getElementById('otpStep2').style.display = 'block';
+      const m = document.getElementById('otpMsg'); if (m) m.style.display = 'none';
+    } else {
+      otpShowMsg(d.msg, false);
+    }
+  } catch (e) { otpShowMsg('خطأ بالاتصال، حاول مجدداً', false); }
+  btn.disabled = false; btn.textContent = 'توثيق عبر واتساب';
+}
+async function otpSent() {
+  const btn = document.getElementById('otpSentBtn');
   btn.disabled = true; btn.textContent = 'جاري الإرسال...';
   try {
     const r = await fetch('/otp.php', {
       method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       credentials: 'same-origin',
-      body: 'action=send&phone=' + encodeURIComponent(phone),
+      body: 'action=sent',
     });
     const d = await r.json();
     otpShowMsg(d.msg, d.ok);
-    if (d.ok) {
-      document.getElementById('otpStep1').style.display = 'none';
-      document.getElementById('otpStep2').style.display = 'block';
-    }
+    if (d.ok) setTimeout(() => location.reload(), 1400);
   } catch (e) { otpShowMsg('خطأ بالاتصال، حاول مجدداً', false); }
-  btn.disabled = false; btn.textContent = 'إرسال رمز التحقق';
-}
-async function otpVerify() {
-  const code = (document.getElementById('otpCode').value || '').trim();
-  if (code.length < 4) { otpShowMsg('أدخل الرمز كاملاً', false); return; }
-  const btn = document.getElementById('otpVerifyBtn');
-  btn.disabled = true; btn.textContent = 'جاري التحقق...';
-  try {
-    const r = await fetch('/otp.php', {
-      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      credentials: 'same-origin',
-      body: 'action=verify&code=' + encodeURIComponent(code),
-    });
-    const d = await r.json();
-    otpShowMsg(d.msg, d.ok);
-    if (d.ok) setTimeout(() => location.reload(), 1200);
-  } catch (e) { otpShowMsg('خطأ بالاتصال، حاول مجدداً', false); }
-  btn.disabled = false; btn.textContent = 'تأكيد الرمز';
+  btn.disabled = false; btn.textContent = '✅ أرسلت الرسالة';
 }
 function otpReset() {
   document.getElementById('otpStep1').style.display = 'block';
