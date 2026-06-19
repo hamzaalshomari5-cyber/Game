@@ -552,3 +552,73 @@ async function idUpload() {
     initReveal();
   }
 })();
+
+// ===== عجلة الحظ =====
+async function spinWheel() {
+  const btn = document.getElementById('spinBtn');
+  const wheel = document.getElementById('wheel');
+  const msg = document.getElementById('wheelMsg');
+  if (!btn || !wheel) return;
+  btn.disabled = true;
+  msg.style.display = 'none';
+  try {
+    const res = await fetch('/wheel.php', {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      credentials: 'same-origin', body: 'action=spin',
+    });
+    const d = await res.json();
+    if (d.login) { location.href = '/auth.php'; return; }
+    if (!d.ok) {
+      msg.textContent = d.msg; msg.className = 'alert no'; msg.style.display = 'block';
+      btn.disabled = false;
+      if (d.wait) showWheelTimer(d.wait);
+      return;
+    }
+    // زاوية كل قطاع 60 درجة (6 قطاعات). نوقف عند منتصف القطاع الفائز
+    const segAngle = 360 / 6;
+    const target = d.index * segAngle + segAngle / 2;
+    const spins = 5; // عدد اللفات الكاملة
+    const finalRot = (spins * 360) + (360 - target);
+    wheel.style.transition = 'transform 4.5s cubic-bezier(.17,.67,.32,1.34)';
+    wheel.style.transform = 'rotate(' + finalRot + 'deg)';
+    setTimeout(function () {
+      msg.textContent = d.msg;
+      msg.className = 'alert ' + (d.value > 0 ? 'ok' : '');
+      msg.style.display = 'block';
+      if (d.value > 0) {
+        // تحديث الرصيد بالهيدر إن وجد
+        const bal = document.querySelector('.bal-amount');
+        if (bal) { const cur = parseInt(bal.dataset.syp || '0') + d.value; bal.dataset.syp = cur; bal.textContent = cur.toLocaleString() + ' ل.س'; }
+      }
+      showWheelTimer(86400);
+    }, 4700);
+  } catch (e) {
+    msg.textContent = 'خطأ بالاتصال، حاول مجدداً'; msg.className = 'alert no'; msg.style.display = 'block';
+    btn.disabled = false;
+  }
+}
+
+function showWheelTimer(secs) {
+  const t = document.getElementById('wheelTimer');
+  const btn = document.getElementById('spinBtn');
+  if (!t) return;
+  t.style.display = 'block';
+  if (btn) btn.style.display = 'none';
+  function tick() {
+    if (secs <= 0) { location.reload(); return; }
+    const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
+    t.textContent = '⏳ الدوران التالي بعد: ' + h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    secs--;
+    setTimeout(tick, 1000);
+  }
+  tick();
+}
+
+// عند فتح صفحة العجلة: فحص الحالة
+(function () {
+  if (!document.getElementById('wheel')) return;
+  fetch('/wheel.php?action=status', { credentials: 'same-origin' })
+    .then(r => r.json()).then(d => {
+      if (d.ok && !d.can_spin && d.wait > 0) showWheelTimer(d.wait);
+    }).catch(function(){});
+})();

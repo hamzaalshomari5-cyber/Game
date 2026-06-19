@@ -8,6 +8,7 @@
   </div>
 </footer>
 <script src="/app.js?v=3" defer></script>
+<script src="/i18n.js?v=1" defer></script>
 </body>
 </html>
 <?php /* تتبّع الطلبات تلقائياً بالخلفية لو المستخدم مسجّل دخول */ ?>

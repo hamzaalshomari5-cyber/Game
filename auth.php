@@ -24,14 +24,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } catch (Exception $ex) { $err = 'الإيميل مستخدم مسبقاً'; $mode = 'register'; }
         }
     } else {
-        $st = db()->prepare("SELECT * FROM users WHERE email=?");
-        $st->execute([$email]);
-        $u = $st->fetch(PDO::FETCH_ASSOC);
-        if ($u && password_verify($pass, $u['password'])) {
-            $_SESSION['uid'] = $u['id'];
-            header('Location: ' . ($u['role'] === 'admin' ? '/admin.php' : '/index.php')); exit;
+        // ===== الحماية من المحاولات المتكررة (حظر تلقائي مؤقت) =====
+        if (!isset($_SESSION['login_fails'])) $_SESSION['login_fails'] = 0;
+        if (!isset($_SESSION['login_lock'])) $_SESSION['login_lock'] = 0;
+
+        if ($_SESSION['login_lock'] > time()) {
+            $wait = ceil(($_SESSION['login_lock'] - time()) / 60);
+            $err = "محاولات كثيرة فاشلة. حاول بعد $wait دقيقة 🔒";
+        } else {
+            $st = db()->prepare("SELECT * FROM users WHERE email=?");
+            $st->execute([$email]);
+            $u = $st->fetch(PDO::FETCH_ASSOC);
+            if ($u && password_verify($pass, $u['password'])) {
+                // نجح — صفّر العدّاد
+                $_SESSION['login_fails'] = 0;
+                $_SESSION['login_lock'] = 0;
+                if (!empty($u['banned'])) {
+                    $err = 'هذا الحساب محظور. تواصل مع الدعم.';
+                } else {
+                    $_SESSION['uid'] = $u['id'];
+                    header('Location: ' . ($u['role'] === 'admin' ? '/admin.php' : '/index.php')); exit;
+                }
+            } else {
+                // فشل — زيد العدّاد
+                $_SESSION['login_fails']++;
+                $left = 5 - $_SESSION['login_fails'];
+                if ($_SESSION['login_fails'] >= 5) {
+                    $_SESSION['login_lock'] = time() + 900; // قفل 15 دقيقة
+                    $_SESSION['login_fails'] = 0;
+                    $err = 'تجاوزت عدد المحاولات المسموحة. الحساب مقفل 15 دقيقة 🔒';
+                } else {
+                    $err = 'بيانات الدخول غير صحيحة' . ($left <= 2 ? " (باقي $left محاولات)" : '');
+                }
+            }
         }
-        $err = 'بيانات الدخول غير صحيحة';
     }
 }
 

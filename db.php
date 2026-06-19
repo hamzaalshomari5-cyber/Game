@@ -125,6 +125,11 @@ function init_db($pdo) {
         status TEXT DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT $now
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS wheel_spins (
+        id $pk,
+        user_id INTEGER, prize INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT $now
+    )");
     // عمود الكوبون بجدول الإيداع (للقواعد القديمة)
     if (is_pg()) {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN IF NOT EXISTS coupon TEXT"); } catch (Exception $e) {}

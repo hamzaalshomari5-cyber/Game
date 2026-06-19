@@ -104,8 +104,8 @@ if ($page === 'about' || $page === 'terms') {
 /* ===== صفحة البحث ===== */
 if ($page === 'search') {
     $q = trim($_GET['q'] ?? '');
-    $minP = $_GET['min'] !== '' && isset($_GET['min']) ? (float)$_GET['min'] : null;
-    $maxP = $_GET['max'] !== '' && isset($_GET['max']) ? (float)$_GET['max'] : null;
+    $minP = (isset($_GET['min']) && $_GET['min'] !== '') ? (float)$_GET['min'] : null;
+    $maxP = (isset($_GET['max']) && $_GET['max'] !== '') ? (float)$_GET['max'] : null;
     $sortBy = $_GET['sort'] ?? '';
     $favs = user_favs($U);
     $results = [];
@@ -174,6 +174,40 @@ if ($page === 'favs') {
       <div class="grid products-grid"><?php foreach ($products as $p) product_card($p, $favs); ?></div>
     <?php endif; ?>
     <?php include __DIR__ . '/buy_modal.php'; ?>
+    <script>const IS_LOGGED = <?= $U ? 'true' : 'false' ?>;</script>
+    <?php include __DIR__ . '/footer.php'; exit;
+}
+
+/* ===== صفحة عجلة الحظ ===== */
+if ($page === 'wheel') {
+    $wheelActive = setting('wheel_active', '1') === '1';
+    $pageTitle = 'عجلة الحظ';
+    include __DIR__ . '/header.php'; ?>
+    <h1 class="section-title">🎡 عجلة الحظ</h1>
+    <?php if (!$U): ?>
+      <p class="empty"><a href="/auth.php">سجّل دخول</a> للعب عجلة الحظ المجانية كل يوم.</p>
+    <?php elseif (!$wheelActive): ?>
+      <p class="empty">عجلة الحظ غير متاحة حالياً، تابعنا قريباً 🎁</p>
+    <?php else: ?>
+      <p class="muted" style="text-align:center;margin-bottom:18px">لُف العجلة مرة كل يوم واربح رصيد مجاني! 🎁</p>
+      <div class="wheel-wrap">
+        <div class="wheel-pointer">▼</div>
+        <div class="wheel" id="wheel">
+          <div class="wheel-seg s0"><span>حظ أوفر</span></div>
+          <div class="wheel-seg s1"><span>100</span></div>
+          <div class="wheel-seg s2"><span>250</span></div>
+          <div class="wheel-seg s3"><span>500</span></div>
+          <div class="wheel-seg s4"><span>1000</span></div>
+          <div class="wheel-seg s5"><span>2500</span></div>
+        </div>
+        <div class="wheel-center">🎁</div>
+      </div>
+      <div class="wheel-action">
+        <button class="btn full" id="spinBtn" onclick="spinWheel()">🎡 لُف العجلة</button>
+        <div id="wheelMsg" class="alert" style="display:none;margin-top:12px"></div>
+        <div id="wheelTimer" class="muted small" style="text-align:center;margin-top:10px;display:none"></div>
+      </div>
+    <?php endif; ?>
     <script>const IS_LOGGED = <?= $U ? 'true' : 'false' ?>;</script>
     <?php include __DIR__ . '/footer.php'; exit;
 }

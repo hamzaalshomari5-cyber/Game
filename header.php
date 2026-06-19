@@ -44,6 +44,8 @@ $U = current_user();
       <a href="/orders.php">🧾 طلباتي</a>
       <a href="/notifications.php">🔔 الإشعارات</a>
       <a href="/index.php?page=favs">❤ المفضلة</a>
+      <a href="/index.php?page=cart">🛒 السلة</a>
+      <a href="/index.php?page=wheel">🎡 عجلة الحظ</a>
       <a href="/wallet.php">💳 المحفظة</a>
       <a href="/coupon.php">🎁 كود الخصم</a>
       <?php if ($U['role'] === 'admin'): ?><a href="/admin.php">🛠 لوحة الأدمن</a><?php endif; ?>
@@ -72,6 +74,7 @@ $U = current_user();
   <?php if (!$_isHome): ?><button class="back-btn" onclick="goBack()" title="رجوع">‹</button><?php endif; ?>
   <a class="logo-txt" href="/index.php"><img src="/logo.svg?v=1" class="logo-img" alt=""><span class="logo-name"><?= e(STORE_NAME) ?></span></a>
   <div class="top-actions">
+    <button class="icon-btn lang-btn" id="langToggle" onclick="toggleLang()" title="Language">EN</button>
     <a class="icon-btn" href="/index.php?page=search" title="بحث">🔍</a>
     <?php if ($U): ?>
       <a class="icon-btn cart-icon" href="/index.php?page=cart" title="السلة">🛒<span class="cart-badge" id="cartBadge" style="display:none">0</span></a>
