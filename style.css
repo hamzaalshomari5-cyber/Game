@@ -1459,3 +1459,124 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
 }
 .chart7-bar:hover { opacity: .8; }
 .chart7-lbl { font-size: .7rem; color: var(--muted, #888); }
+
+/* ========================================
+   نظام الأنميشن الاحترافي — LUXE CARD
+   ======================================== */
+
+/* احترام تفضيل تقليل الحركة */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ===== 1) ظهور تدريجي عند التمرير (Scroll Reveal) ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity .6s cubic-bezier(.22,.61,.36,1), transform .6s cubic-bezier(.22,.61,.36,1);
+  will-change: opacity, transform;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* ظهور متدرّج للعناصر المتتالية */
+.reveal.d1 { transition-delay: .05s; }
+.reveal.d2 { transition-delay: .10s; }
+.reveal.d3 { transition-delay: .15s; }
+.reveal.d4 { transition-delay: .20s; }
+.reveal.d5 { transition-delay: .25s; }
+.reveal.d6 { transition-delay: .30s; }
+
+/* ===== 2) دخول الصفحة (Page Enter) ===== */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+main, .page-wrap, .container > h1:first-child {
+  animation: pageIn .45s cubic-bezier(.22,.61,.36,1) both;
+}
+
+/* ===== 3) تأثيرات الكروت (Hover) ===== */
+.card, .product-card, .cat-card, .order-card, .stat {
+  transition: transform .25s cubic-bezier(.22,.61,.36,1),
+              box-shadow .25s ease,
+              border-color .25s ease;
+}
+.cat-card:hover, .product-card:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 12px 30px rgba(0,0,0,.28);
+}
+.cat-card:active, .product-card:active { transform: translateY(-1px) scale(.99); }
+.stat:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(0,0,0,.22); }
+
+/* ===== 4) الأزرار (Micro-interactions) ===== */
+.btn, .hs-btn, .sort-btn, .btn-mini {
+  transition: transform .15s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .2s ease, filter .2s ease, background .2s ease;
+  position: relative; overflow: hidden;
+}
+.btn:hover, .hs-btn:hover { transform: translateY(-2px); filter: brightness(1.05); }
+.btn:active, .hs-btn:active, .sort-btn:active, .btn-mini:active { transform: scale(.96); }
+/* موجة ضغط (ripple) */
+.btn::after, .hs-btn::after {
+  content: ''; position: absolute; inset: 0; margin: auto;
+  width: 0; height: 0; border-radius: 50%;
+  background: rgba(255,255,255,.35);
+  transform: translate(-50%,-50%); top: 50%; left: 50%;
+  opacity: 0; pointer-events: none;
+}
+.btn:active::after, .hs-btn:active::after {
+  width: 220px; height: 220px; opacity: 0; transition: width .5s, height .5s, opacity .8s;
+}
+
+/* ===== 5) اللوغو والعنوان ===== */
+.logo-img { transition: transform .4s cubic-bezier(.34,1.56,.64,1); }
+.logo-img:hover { transform: rotate(-6deg) scale(1.08); }
+
+/* ===== 6) الإشعارات والجرس ===== */
+.notif-bell { transition: transform .3s; }
+.notif-bell:hover { transform: rotate(12deg) scale(1.1); }
+@keyframes bellRing {
+  0%,100% { transform: rotate(0); }
+  20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); } 80% { transform: rotate(-6deg); }
+}
+.notif-bell.has-new { animation: bellRing 1.2s ease-in-out infinite; }
+
+/* ===== 7) شارات الحالة (نبض خفيف) ===== */
+.badge.st-pending {
+  animation: badgePulse 1.8s ease-in-out infinite;
+}
+@keyframes badgePulse { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+
+/* ===== 8) ظهور النوافذ المنبثقة (Modals) ===== */
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(.92) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-box, .buy-modal, .modal-content {
+  animation: modalPop .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+/* ===== 9) تأثير التحميل (Skeleton shimmer) ===== */
+@keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.12) 50%, rgba(255,255,255,.04) 75%);
+  background-size: 800px 100%; animation: shimmer 1.4s infinite linear; border-radius: 8px;
+}
+
+/* ===== 10) أيقونات الأقسام (دخول مرن) ===== */
+.cat-icon, .p-icon { transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+.cat-card:hover .cat-icon, .product-card:hover .p-icon { transform: scale(1.12) rotate(-4deg); }
+
+/* ===== 11) روابط القائمة ===== */
+.nav-link, .menu-item, header a { transition: color .2s, opacity .2s; }
+
+/* ===== 12) نجاح العملية (checkmark) ===== */
+@keyframes successPop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.success-icon, .alert.ok { animation: successPop .4s cubic-bezier(.34,1.56,.64,1) both; }

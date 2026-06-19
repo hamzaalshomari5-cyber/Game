@@ -397,3 +397,60 @@ async function idUpload() {
   } catch (e) { idMsg('خطأ بالاتصال، حاول مجدداً', false); }
   btn.disabled = false; btn.textContent = 'إرسال للمراجعة';
 }
+
+// ========================================
+// نظام الأنميشن الاحترافي — Scroll Reveal
+// ========================================
+(function() {
+  // احترام تفضيل تقليل الحركة
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  function initReveal() {
+    // العناصر اللي بدها ظهور تدريجي (تلقائياً، بدون لمس HTML)
+    const selectors = '.card, .product-card, .cat-card, .order-card, .stat, .section-title, .faq-item, .activity-item, .idv-card, .pv-card';
+    const els = document.querySelectorAll(selectors);
+    if (!els.length) return;
+
+    // إضافة كلاس reveal + تأخير متدرّج حسب المجموعة
+    let groupDelay = 0, lastTop = -999;
+    els.forEach(function(el) {
+      if (el.classList.contains('reveal')) return;
+      el.classList.add('reveal');
+      // تأخير متدرّج للعناصر القريبة من بعض (نفس الصف تقريباً)
+      const top = el.getBoundingClientRect().top;
+      if (Math.abs(top - lastTop) < 40) { groupDelay = Math.min(groupDelay + 1, 6); }
+      else { groupDelay = 1; }
+      lastTop = top;
+      if (groupDelay >= 1 && groupDelay <= 6) el.classList.add('d' + groupDelay);
+    });
+
+    // IntersectionObserver لإظهارها عند الوصول إليها
+    if (!('IntersectionObserver' in window)) {
+      els.forEach(function(el){ el.classList.add('in'); });
+      return;
+    }
+    const obs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    els.forEach(function(el) {
+      // العناصر الظاهرة فوراً بأعلى الصفحة تظهر بدون انتظار
+      if (el.getBoundingClientRect().top < window.innerHeight) {
+        setTimeout(function(){ el.classList.add('in'); }, 50);
+      } else {
+        obs.observe(el);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReveal);
+  } else {
+    initReveal();
+  }
+})();

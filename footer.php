@@ -7,7 +7,7 @@
     <?php if (INSTAGRAM): ?><a href="<?= e(INSTAGRAM) ?>" target="_blank">انستغرام</a><?php endif; ?>
   </div>
 </footer>
-<script src="/app.js?v=2" defer></script>
+<script src="/app.js?v=3" defer></script>
 </body>
 </html>
 <?php /* تتبّع الطلبات تلقائياً بالخلفية لو المستخدم مسجّل دخول */ ?>
@@ -28,8 +28,12 @@
       .then(d => {
         const badge = document.getElementById('notifBadge');
         if (!badge) return;
-        if (d.count > 0) { badge.textContent = d.count > 99 ? '99+' : d.count; badge.style.display = ''; }
-        else { badge.style.display = 'none'; }
+        const bell = document.querySelector('.notif-bell');
+        if (d.count > 0) {
+          badge.textContent = d.count > 99 ? '99+' : d.count; badge.style.display = '';
+          if (bell) bell.classList.add('has-new');
+        }
+        else { badge.style.display = 'none'; if (bell) bell.classList.remove('has-new'); }
       }).catch(function(){});
   }
   updateBell();
