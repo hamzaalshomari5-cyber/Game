@@ -16,7 +16,7 @@ if ($action === 'send') {
     if (!otp_enabled()) jout(false, 'خدمة التوثيق غير مفعّلة حالياً');
     $phone = trim($_POST['phone'] ?? '');
     $gsm = normalize_gsm($phone);
-    if (strlen($gsm) < 11) jout(false, 'رقم الموبايل غير صحيح');
+    if (strlen($gsm) < 12) jout(false, 'رقم الموبايل غير صحيح');
 
     // منع الإرسال المتكرر السريع (مرة كل 60 ثانية)
     $st = db()->prepare("SELECT created_at FROM otp_codes WHERE user_id=? ORDER BY id DESC LIMIT 1");
@@ -26,39 +26,38 @@ if ($action === 'send') {
         jout(false, 'انتظر دقيقة قبل إعادة الإرسال');
     }
 
-    // توليد رمز 6 أرقام
-    $code = (string)random_int(100000, 999999);
-    $expires = date('Y-m-d H:i:s', time() + 300); // 5 دقائق
+    // raselSMS هو من يولّد الرمز ويرسله — نحن نخزّن verificationId فقط
+    [$sent, $smsg, $vid] = rasel_send_otp($gsm);
+    if (!$sent) jout(false, $smsg);
+    if (!$vid)  jout(false, 'تعذّر بدء عملية التحقق، حاول مجدداً');
 
-    // حذف الرموز القديمة لنفس المستخدم
+    // حذف القديم وتخزين verificationId الجديد (نخزّنه بحقل code مؤقتاً)
     db()->prepare("DELETE FROM otp_codes WHERE user_id=?")->execute([$U['id']]);
     db()->prepare("INSERT INTO otp_codes (user_id,phone,code,expires_at) VALUES (?,?,?,?)")
-        ->execute([$U['id'], $gsm, $code, $expires]);
+        ->execute([$U['id'], $gsm, $vid, date('Y-m-d H:i:s', time() + 600)]);
 
-    [$sent, $smsg] = aman_send_otp($gsm, $code);
-    if (!$sent) jout(false, $smsg);
     jout(true, 'تم إرسال رمز التحقق إلى رقمك 📱');
 }
 
 // ===== تأكيد الرمز =====
 if ($action === 'verify') {
     $code = preg_replace('/\D/', '', $_POST['code'] ?? '');
-    if (strlen($code) !== 6) jout(false, 'الرمز يجب أن يكون 6 أرقام');
+    if (strlen($code) < 4) jout(false, 'الرمز غير صحيح');
 
     $st = db()->prepare("SELECT * FROM otp_codes WHERE user_id=? ORDER BY id DESC LIMIT 1");
     $st->execute([$U['id']]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
     if (!$row) jout(false, 'لم يتم إرسال رمز، اطلب رمزاً جديداً');
-    if (strtotime($row['expires_at']) < time()) jout(false, 'انتهت صلاحية الرمز، اطلب رمزاً جديداً');
-    if ((int)$row['attempts'] >= 5) jout(false, 'تجاوزت عدد المحاولات، اطلب رمزاً جديداً');
 
-    db()->prepare("UPDATE otp_codes SET attempts = attempts + 1 WHERE id=?")->execute([$row['id']]);
+    $verificationId = $row['code']; // خزّنا verificationId هنا
+    $phone = $row['phone'];
 
-    if (!hash_equals($row['code'], $code)) jout(false, 'الرمز غير صحيح');
+    [$ok, $vmsg] = rasel_verify_otp($verificationId, $code);
+    if (!$ok) jout(false, $vmsg);
 
     // نجح: توثيق الرقم
     db()->prepare("UPDATE users SET phone=?, phone_verified=1 WHERE id=?")
-        ->execute([$row['phone'], $U['id']]);
+        ->execute([$phone, $U['id']]);
     db()->prepare("DELETE FROM otp_codes WHERE user_id=?")->execute([$U['id']]);
     notify_user($U['id'], 'تم توثيق رقمك ✅', 'تم توثيق رقم موبايلك بنجاح. حسابك الآن أكثر أماناً.', '✅');
     jout(true, 'تم توثيق رقمك بنجاح ✅');

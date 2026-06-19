@@ -314,7 +314,7 @@ async function otpSend() {
 }
 async function otpVerify() {
   const code = (document.getElementById('otpCode').value || '').trim();
-  if (code.length !== 6) { otpShowMsg('الرمز 6 أرقام', false); return; }
+  if (code.length < 4) { otpShowMsg('أدخل الرمز كاملاً', false); return; }
   const btn = document.getElementById('otpVerifyBtn');
   btn.disabled = true; btn.textContent = 'جاري التحقق...';
   try {

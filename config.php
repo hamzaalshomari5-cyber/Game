@@ -220,38 +220,32 @@ function vip_badge($level) {
     return $badges[$level] ?? '🥉 VIP 1';
 }
 
-// ===== توثيق رقم الموبايل عبر Aman Gate OTP =====
-function aman_token()       { return env_or('AMAN_TOKEN', ''); }
-function aman_template_id()  { return (int)env_or('AMAN_TEMPLATE_ID', '1'); }
-function otp_enabled()       { return aman_token() !== ''; }
+// ===== توثيق رقم الموبايل عبر raselSMS =====
+function rasel_key()      { return env_or('RASEL_API_KEY', ''); }
+function rasel_base()     { return rtrim(env_or('RASEL_BASE_URL', 'https://raselsms.com'), '/'); }
+function rasel_channel()  { return env_or('RASEL_CHANNEL', 'sms_syria'); }
+function otp_enabled()    { return rasel_key() !== ''; }
 
-// تحويل الرقم لصيغة دولية 963xxxxxxxxx
+// تحويل الرقم لصيغة دولية +963xxxxxxxxx
 function normalize_gsm($phone) {
     $p = preg_replace('/\D/', '', $phone);
-    if (strpos($p, '963') === 0) return $p;
-    if (strpos($p, '0') === 0) return '963' . substr($p, 1);
-    if (strlen($p) === 9) return '963' . $p;
-    return $p;
+    if (strpos($p, '963') === 0) return '+' . $p;
+    if (strpos($p, '0') === 0) return '+963' . substr($p, 1);
+    if (strlen($p) === 9) return '+963' . $p;
+    return '+' . $p;
 }
 
-// إرسال رمز OTP عبر Aman Gate. يرجّع [نجاح(bool), رسالة]
-function aman_send_otp($gsm, $code) {
-    $token = aman_token();
-    if ($token === '') return [false, 'خدمة التوثيق غير مفعّلة'];
-    $body = json_encode([
-        'gsm'         => $gsm,
-        'template_id' => aman_template_id(),
-        'code'        => (string)$code,
-        'language'    => 0,
-    ]);
-    $ch = curl_init('https://aman-gate.com/otp/send/');
+// طلب curl عام لـ raselSMS. يرجّع [http_code, مصفوفة الرد]
+function rasel_request($path, $payload) {
+    $key = rasel_key();
+    $ch = curl_init(rasel_base() . $path);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $body,
+        CURLOPT_POSTFIELDS => json_encode($payload),
         CURLOPT_TIMEOUT => 30,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Token ' . $token,
+            'X-API-Key: ' . $key,
             'Content-Type: application/json',
             'Accept: application/json',
         ],
@@ -259,8 +253,46 @@ function aman_send_otp($gsm, $code) {
     $res = curl_exec($ch);
     $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    if ($http === 201) return [true, 'تم إرسال الرمز'];
-    if ($http === 402) return [false, 'خدمة الرسائل غير متوفرة حالياً، حاول لاحقاً'];
-    if ($http === 401) return [false, 'خطأ بإعدادات خدمة التوثيق'];
-    return [false, 'تعذّر إرسال الرمز، تأكد من الرقم وحاول مجدداً'];
+    $data = json_decode($res, true);
+    return [$http, is_array($data) ? $data : ['raw' => $res]];
+}
+
+// إرسال رمز التحقق. يرجّع [نجاح(bool), رسالة, verificationId]
+function rasel_send_otp($gsm) {
+    if (rasel_key() === '') return [false, 'خدمة التوثيق غير مفعّلة', null];
+    [$http, $data] = rasel_request('/api/v2/verification/send', [
+        'to'      => $gsm,
+        'channel' => rasel_channel(),
+    ]);
+    if ($http >= 200 && $http < 300) {
+        $vid = $data['verificationId'] ?? ($data['data']['verificationId'] ?? null);
+        return [true, 'تم إرسال الرمز', $vid];
+    }
+    $code = $data['code'] ?? ($data['error'] ?? '');
+    if ($code === 'VERIFICATION_RESEND_COOLDOWN') return [false, 'انتظر قليلاً قبل إعادة الإرسال', null];
+    if ($code === 'VERIFICATION_MAX_RESENDS_EXCEEDED') return [false, 'تجاوزت عدد مرات الإرسال، حاول لاحقاً', null];
+    if ($code === 'VERIFICATION_CHANNEL_NOT_AVAILABLE') return [false, 'قناة الإرسال غير متاحة حالياً', null];
+    return [false, 'تعذّر إرسال الرمز، تأكد من الرقم وحاول مجدداً', null];
+}
+
+// التحقق من الرمز. يرجّع [نجاح(bool), رسالة]
+function rasel_verify_otp($verificationId, $code) {
+    if (rasel_key() === '') return [false, 'خدمة التوثيق غير مفعّلة'];
+    [$http, $data] = rasel_request('/api/v2/verification/verify', [
+        'verificationId' => $verificationId,
+        'code'           => (string)$code,
+    ]);
+    if ($http >= 200 && $http < 300) {
+        $status = $data['status'] ?? ($data['data']['status'] ?? '');
+        if ($data === [] || $status === 'verified' || $status === 'approved' || !empty($data['verified']) || !empty($data['success'])) {
+            return [true, 'تم التحقق بنجاح'];
+        }
+        return [true, 'تم التحقق بنجاح'];
+    }
+    $ecode = $data['code'] ?? ($data['error'] ?? '');
+    if ($ecode === 'VERIFICATION_INVALID_CODE') return [false, 'الرمز غير صحيح'];
+    if ($ecode === 'VERIFICATION_EXPIRED') return [false, 'انتهت صلاحية الرمز، اطلب رمزاً جديداً'];
+    if ($ecode === 'VERIFICATION_MAX_ATTEMPTS_EXCEEDED') return [false, 'تجاوزت عدد المحاولات، اطلب رمزاً جديداً'];
+    if ($ecode === 'VERIFICATION_NOT_FOUND') return [false, 'لم يتم إرسال رمز، اطلب رمزاً جديداً'];
+    return [false, 'الرمز غير صحيح أو منتهي'];
 }

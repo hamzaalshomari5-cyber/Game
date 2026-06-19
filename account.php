@@ -77,8 +77,8 @@ include __DIR__ . '/header.php'; ?>
 
       <!-- خطوة 2: إدخال الرمز -->
       <div id="otpStep2" style="display:none">
-        <label>أدخل الرمز المرسل (6 أرقام)</label>
-        <input id="otpCode" type="tel" dir="ltr" inputmode="numeric" maxlength="6" placeholder="123456">
+        <label>أدخل الرمز المُرسَل</label>
+        <input id="otpCode" type="tel" dir="ltr" inputmode="numeric" maxlength="8" placeholder="123456">
         <button class="btn full" id="otpVerifyBtn" onclick="otpVerify()">تأكيد الرمز</button>
         <button class="btn full ghost" onclick="otpReset()" style="margin-top:8px">تغيير الرقم</button>
       </div>
