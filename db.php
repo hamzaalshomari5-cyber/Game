@@ -120,7 +120,7 @@ function init_db($pdo) {
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS id_verifications (
         id $pk,
-        user_id INTEGER, image TEXT,
+        user_id INTEGER, image TEXT, image_back TEXT,
         status TEXT DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT $now
     )");
@@ -135,6 +135,7 @@ function init_db($pdo) {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified INTEGER DEFAULT 0"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS id_verified INTEGER DEFAULT 0"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE id_verifications ADD COLUMN IF NOT EXISTS image_back TEXT"); } catch (Exception $e) {}
     } else {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN coupon TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
@@ -145,6 +146,7 @@ function init_db($pdo) {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN phone TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN phone_verified INTEGER DEFAULT 0"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN id_verified INTEGER DEFAULT 0"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE id_verifications ADD COLUMN image_back TEXT"); } catch (Exception $e) {}
     }
     // أدمن افتراضي
     $st = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role='admin'");

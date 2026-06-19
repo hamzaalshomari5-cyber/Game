@@ -336,13 +336,14 @@ function otpReset() {
 }
 
 // ===== توثيق الهوية =====
-let idImageData = null;
+let idFrontData = null;
+let idBackData = null;
 function idMsg(text, ok) {
   const m = document.getElementById('idvMsg');
   if (!m) return;
   m.textContent = text; m.className = 'alert ' + (ok ? 'ok' : ''); m.style.display = 'block';
 }
-function idPreview(ev) {
+function idPreview(ev, side) {
   const file = ev.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -356,25 +357,37 @@ function idPreview(ev) {
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      idImageData = canvas.toDataURL('image/jpeg', 0.7);
-      document.getElementById('idPreviewImg').src = idImageData;
-      document.getElementById('idPreviewWrap').style.display = 'block';
-      document.getElementById('idUploadBtn').style.display = 'block';
-      document.getElementById('idPickBtn').textContent = '📷 تغيير الصورة';
+      const data = canvas.toDataURL('image/jpeg', 0.7);
+      if (side === 'front') {
+        idFrontData = data;
+        document.getElementById('idPreviewFrontImg').src = data;
+        document.getElementById('idPreviewFront').style.display = 'block';
+        document.getElementById('idPickFront').textContent = '📷 تغيير الصورة الأمامية';
+      } else {
+        idBackData = data;
+        document.getElementById('idPreviewBackImg').src = data;
+        document.getElementById('idPreviewBack').style.display = 'block';
+        document.getElementById('idPickBack').textContent = '📷 تغيير الصورة الخلفية';
+      }
+      // زر الإرسال يظهر لما الصورتين جاهزتين
+      if (idFrontData && idBackData) {
+        document.getElementById('idUploadBtn').style.display = 'block';
+      }
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 async function idUpload() {
-  if (!idImageData) { idMsg('اختر صورة أولاً', false); return; }
+  if (!idFrontData) { idMsg('اختر الصورة الأمامية أولاً', false); return; }
+  if (!idBackData) { idMsg('اختر الصورة الخلفية أولاً', false); return; }
   const btn = document.getElementById('idUploadBtn');
   btn.disabled = true; btn.textContent = 'جاري الإرسال...';
   try {
     const r = await fetch('/verify_id.php', {
       method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       credentials: 'same-origin',
-      body: 'image=' + encodeURIComponent(idImageData),
+      body: 'image=' + encodeURIComponent(idFrontData) + '&image_back=' + encodeURIComponent(idBackData),
     });
     const d = await r.json();
     idMsg(d.msg, d.ok);

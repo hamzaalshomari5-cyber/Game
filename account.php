@@ -94,16 +94,32 @@ include __DIR__ . '/header.php'; ?>
       <div class="alert" style="display:block">🪪 طلب التوثيق قيد المراجعة، رح يوصلك إشعار عند الموافقة.</div>
     <?php else: ?>
       <p class="muted small">
-        ارفع صورة واضحة لهويتك أو بطاقتك الشخصية ليتم توثيق حسابك.
-        <?= $idvStatus === 'rejected' ? '<br><span style="color:var(--no,#ef4444)">⚠️ طلبك السابق مرفوض، حاول بصورة أوضح.</span>' : '' ?>
+        ارفع صورة واضحة للوجهين الأمامي والخلفي لهويتك أو بطاقتك الشخصية ليتم توثيق حسابك.
+        <?= $idvStatus === 'rejected' ? '<br><span style="color:var(--no,#ef4444)">⚠️ طلبك السابق مرفوض، حاول بصور أوضح.</span>' : '' ?>
       </p>
       <div id="idvMsg" class="alert" style="display:none"></div>
-      <input type="file" id="idImage" accept="image/*" style="display:none" onchange="idPreview(event)">
-      <div id="idPreviewWrap" style="display:none; margin-bottom:10px">
-        <img id="idPreviewImg" style="max-width:100%; border-radius:10px; border:1px solid var(--border)">
+
+      <!-- الوجه الأمامي -->
+      <div class="idv-upload-box">
+        <label class="idv-label">الوجه الأمامي</label>
+        <input type="file" id="idImageFront" accept="image/*" style="display:none" onchange="idPreview(event,'front')">
+        <div id="idPreviewFront" class="idv-preview" style="display:none">
+          <img id="idPreviewFrontImg">
+        </div>
+        <button class="btn full ghost" onclick="document.getElementById('idImageFront').click()" id="idPickFront">📷 اختر الصورة الأمامية</button>
       </div>
-      <button class="btn full ghost" onclick="document.getElementById('idImage').click()" id="idPickBtn">📷 اختر صورة الهوية</button>
-      <button class="btn full" onclick="idUpload()" id="idUploadBtn" style="display:none; margin-top:8px">إرسال للمراجعة</button>
+
+      <!-- الوجه الخلفي -->
+      <div class="idv-upload-box" style="margin-top:12px">
+        <label class="idv-label">الوجه الخلفي</label>
+        <input type="file" id="idImageBack" accept="image/*" style="display:none" onchange="idPreview(event,'back')">
+        <div id="idPreviewBack" class="idv-preview" style="display:none">
+          <img id="idPreviewBackImg">
+        </div>
+        <button class="btn full ghost" onclick="document.getElementById('idImageBack').click()" id="idPickBack">📷 اختر الصورة الخلفية</button>
+      </div>
+
+      <button class="btn full" onclick="idUpload()" id="idUploadBtn" style="display:none; margin-top:14px">إرسال للمراجعة</button>
     <?php endif; ?>
   </div>
 

@@ -1340,3 +1340,22 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
   max-height: 240px; object-fit: contain; background: #0008;
 }
 .idv-actions { display: flex; gap: 8px; }
+
+/* ===== صورتين الهوية (أدمن + زبون) ===== */
+.idv-imgs { display: flex; gap: 8px; }
+.idv-imgs a { flex: 1; position: relative; display: block; }
+.idv-cap {
+  position: absolute; bottom: 4px; inset-inline-start: 4px;
+  background: #000a; color: #fff; font-size: .7rem;
+  padding: 2px 6px; border-radius: 6px;
+}
+.idv-upload-box {
+  border: 1px dashed var(--border, rgba(255,255,255,.15));
+  border-radius: 12px; padding: 12px;
+}
+.idv-label { display: block; font-weight: 700; margin-bottom: 8px; font-size: .9rem; }
+.idv-preview { margin-bottom: 10px; }
+.idv-preview img {
+  max-width: 100%; border-radius: 10px;
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+}

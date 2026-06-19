@@ -382,9 +382,18 @@ include __DIR__ . '/header.php'; ?>
               <span class="muted small"><?= e($v['uemail'] ?? '') ?></span>
               <span class="muted small">رقم الحساب: <?= (int)$v['user_id'] ?></span>
             </div>
-            <a href="<?= e($v['image']) ?>" target="_blank">
-              <img src="<?= e($v['image']) ?>" class="idv-img" alt="صورة الهوية">
-            </a>
+            <div class="idv-imgs">
+              <a href="<?= e($v['image']) ?>" target="_blank">
+                <img src="<?= e($v['image']) ?>" class="idv-img" alt="الوجه الأمامي">
+                <span class="idv-cap">أمامي</span>
+              </a>
+              <?php if (!empty($v['image_back'])): ?>
+              <a href="<?= e($v['image_back']) ?>" target="_blank">
+                <img src="<?= e($v['image_back']) ?>" class="idv-img" alt="الوجه الخلفي">
+                <span class="idv-cap">خلفي</span>
+              </a>
+              <?php endif; ?>
+            </div>
             <div class="idv-actions">
               <form method="post" style="flex:1">
                 <button class="btn-mini full" name="approve_id" value="<?= (int)$v['id'] ?>">✅ موافقة</button>

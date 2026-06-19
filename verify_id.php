@@ -20,16 +20,19 @@ $st->execute([$U['id']]);
 $last = $st->fetchColumn();
 if ($last === 'pending') vout(false, 'لديك طلب توثيق قيد المراجعة بالفعل');
 
-// استقبال الصورة (base64 من المتصفح بعد الضغط)
+// استقبال الصورتين (base64 من المتصفح بعد الضغط)
 $img = $_POST['image'] ?? '';
-if (strpos($img, 'data:image/') !== 0) vout(false, 'الرجاء اختيار صورة صحيحة');
-// حد أقصى للحجم (~2MB بعد الترميز)
-if (strlen($img) > 2800000) vout(false, 'حجم الصورة كبير، حاول بصورة أصغر');
+$imgBack = $_POST['image_back'] ?? '';
+if (strpos($img, 'data:image/') !== 0) vout(false, 'الرجاء اختيار صورة الوجه الأمامي للهوية');
+if (strpos($imgBack, 'data:image/') !== 0) vout(false, 'الرجاء اختيار صورة الوجه الخلفي للهوية');
+// حد أقصى للحجم (~2MB لكل صورة بعد الترميز)
+if (strlen($img) > 2800000) vout(false, 'حجم الصورة الأمامية كبير، حاول بصورة أصغر');
+if (strlen($imgBack) > 2800000) vout(false, 'حجم الصورة الخلفية كبير، حاول بصورة أصغر');
 
 // حذف الطلبات المرفوضة القديمة
 db()->prepare("DELETE FROM id_verifications WHERE user_id=? AND status='rejected'")->execute([$U['id']]);
-db()->prepare("INSERT INTO id_verifications (user_id,image,status) VALUES (?,?,'pending')")
-    ->execute([$U['id'], $img]);
+db()->prepare("INSERT INTO id_verifications (user_id,image,image_back,status) VALUES (?,?,?,'pending')")
+    ->execute([$U['id'], $img, $imgBack]);
 
 notify_admin("🪪 <b>طلب توثيق هوية جديد</b>\nالزبون: " . e($U['name']) . "\nالإيميل: " . e($U['email']) . "\nراجع الطلب من لوحة الأدمن.");
 notify_user($U['id'], 'تم استلام طلب التوثيق 🪪', 'طلبك قيد المراجعة، رح يوصلك إشعار عند الموافقة.', '🪪');
