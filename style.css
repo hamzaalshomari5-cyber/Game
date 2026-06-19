@@ -1205,17 +1205,43 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
 
 /* ===== بانر العرض بوقت محدود ===== */
 .promo-banner {
+  position: relative; overflow: hidden;
   display: flex; align-items: center; gap: 14px;
   background: linear-gradient(135deg, #ff3d7f, #ff8a00);
-  border-radius: 14px; padding: 14px 18px; margin: 0 0 16px;
+  border-radius: 16px; padding: 16px 18px; margin: 0 0 16px;
   box-shadow: 0 6px 22px rgba(255,61,127,.3);
   animation: promoPulse 2.5s ease-in-out infinite;
 }
-@keyframes promoPulse { 0%,100% { box-shadow: 0 6px 22px rgba(255,61,127,.3); } 50% { box-shadow: 0 6px 30px rgba(255,138,0,.45); } }
-.promo-icon { font-size: 2rem; flex-shrink: 0; }
-.promo-text { flex: 1; }
-.promo-title { color: #fff; font-weight: 900; font-size: 1.05rem; text-shadow: 0 1px 4px rgba(0,0,0,.3); }
-.promo-timer { color: #fff; font-size: .85rem; font-weight: 700; margin-top: 4px; opacity: .95; }
+/* ألوان حسب نوع العرض */
+.promo-banner.promo-discount { background: linear-gradient(135deg, #ff3d7f, #ff8a00); box-shadow: 0 6px 22px rgba(255,61,127,.32); }
+.promo-banner.promo-deposit  { background: linear-gradient(135deg, #11998e, #38ef7d); box-shadow: 0 6px 22px rgba(17,153,142,.32); }
+.promo-banner.promo-banner   { background: linear-gradient(135deg, #6a11cb, #2575fc); box-shadow: 0 6px 22px rgba(106,17,203,.32); }
+@keyframes promoPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.012); } }
+/* لمعان متحرك يمر فوق البانر */
+.promo-shine {
+  position: absolute; top: 0; left: -60%; width: 50%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
+  transform: skewX(-20deg); animation: promoShine 3.5s ease-in-out infinite;
+}
+@keyframes promoShine { 0% { left: -60%; } 55%,100% { left: 130%; } }
+.promo-icon { font-size: 2.1rem; flex-shrink: 0; z-index: 1; animation: promoIconBounce 1.8s ease-in-out infinite; }
+@keyframes promoIconBounce { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-6deg); } }
+.promo-text { flex: 1; z-index: 1; }
+.promo-title { color: #fff; font-weight: 900; font-size: 1.08rem; text-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.promo-sub { color: #fff; font-size: .82rem; font-weight: 700; opacity: .95; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.promo-timer {
+  color: #fff; font-size: .85rem; font-weight: 800; margin-top: 6px;
+  background: rgba(0,0,0,.18); display: inline-block; padding: 3px 10px; border-radius: 20px;
+}
+.promo-badge {
+  z-index: 1; flex-shrink: 0;
+  background: #fff; color: #ff3d7f; font-weight: 900; font-size: 1rem;
+  padding: 8px 12px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,.2);
+  transform: rotate(6deg); animation: promoBadge 1.5s ease-in-out infinite;
+}
+.promo-deposit .promo-badge { color: #11998e; }
+.promo-banner.promo-banner .promo-badge { color: #6a11cb; }
+@keyframes promoBadge { 0%,100% { transform: rotate(6deg) scale(1); } 50% { transform: rotate(6deg) scale(1.08); } }
 
 /* ===== سعر مخصوم ===== */
 .p-price-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -1383,3 +1409,53 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
 .pv-row { font-size: .92rem; }
 .pv-code { font-size: 1.2rem; letter-spacing: 3px; color: var(--accent, #d4af37); }
 .pv-actions { display: flex; gap: 8px; }
+
+/* ===== الخط الزمني لحالة الطلب ===== */
+.otrack {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin: 14px 0 10px; padding: 0 4px;
+}
+.otrack-step { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 auto; width: 64px; }
+.otrack-dot {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; background: var(--card2, rgba(255,255,255,.06));
+  border: 2px solid var(--border, rgba(255,255,255,.12)); opacity: .5;
+  transition: all .3s;
+}
+.otrack-lbl { font-size: .72rem; color: var(--muted, #888); text-align: center; }
+.otrack-step.done .otrack-dot {
+  opacity: 1; border-color: var(--ok, #22c55e);
+  background: color-mix(in srgb, var(--ok, #22c55e) 18%, transparent);
+}
+.otrack-step.done .otrack-lbl { color: var(--ok, #22c55e); font-weight: 700; }
+.otrack-step.active .otrack-dot {
+  opacity: 1; border-color: var(--accent, #d4af37);
+  background: color-mix(in srgb, var(--accent, #d4af37) 18%, transparent);
+  animation: otrackPulse 1.5s infinite;
+}
+.otrack-step.active .otrack-lbl { color: var(--accent, #d4af37); font-weight: 700; }
+@keyframes otrackPulse {
+  0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent,#d4af37) 50%, transparent); }
+  50% { box-shadow: 0 0 0 6px transparent; }
+}
+.otrack-line {
+  flex: 1; height: 3px; background: var(--border, rgba(255,255,255,.12));
+  margin-top: 18px; border-radius: 2px; transition: all .3s;
+}
+.otrack-line.done { background: var(--ok, #22c55e); }
+
+/* ===== رسم بياني 7 أيام ===== */
+.chart7 {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 6px; height: 160px; padding: 10px 0 0;
+}
+.chart7-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; gap: 4px; }
+.chart7-val { font-size: .68rem; color: var(--muted, #888); white-space: nowrap; }
+.chart7-bar {
+  width: 100%; max-width: 32px; border-radius: 6px 6px 0 0;
+  background: linear-gradient(to top, var(--accent, #d4af37), color-mix(in srgb, var(--accent,#d4af37) 55%, #fff));
+  min-height: 4px; transition: opacity .2s;
+}
+.chart7-bar:hover { opacity: .8; }
+.chart7-lbl { font-size: .7rem; color: var(--muted, #888); }

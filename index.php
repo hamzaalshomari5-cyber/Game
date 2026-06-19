@@ -244,13 +244,27 @@ include __DIR__ . '/header.php'; ?>
 <?php endif; ?>
 
 <!-- بانر العرض بوقت محدود -->
-<?php $promo = promo_get(); if ($promo): ?>
-<div class="promo-banner" <?= $promo['end'] > 0 ? 'data-end="'.$promo['end'].'"' : '' ?>>
-  <div class="promo-icon">🎉</div>
+<?php $promo = promo_get(); if ($promo):
+  // أيقونة وشكل حسب نوع العرض
+  $promoIcons = ['discount' => '🔥', 'deposit' => '💰', 'banner' => '🎉'];
+  $pIcon = $promoIcons[$promo['type']] ?? '🎉';
+  $pVal = (float)($promo['value'] ?? 0);
+?>
+<div class="promo-banner promo-<?= e($promo['type']) ?>" <?= $promo['end'] > 0 ? 'data-end="'.$promo['end'].'"' : '' ?>>
+  <div class="promo-shine"></div>
+  <div class="promo-icon"><?= $pIcon ?></div>
   <div class="promo-text">
     <div class="promo-title"><?= e($promo['title']) ?></div>
+    <?php if ($promo['type'] === 'discount' && $pVal > 0): ?>
+      <div class="promo-sub">خصم <?= rtrim(rtrim(number_format($pVal,1),'0'),'.') ?>% على جميع المنتجات</div>
+    <?php elseif ($promo['type'] === 'deposit' && $pVal > 0): ?>
+      <div class="promo-sub">بونص <?= rtrim(rtrim(number_format($pVal,1),'0'),'.') ?>% على كل إيداع</div>
+    <?php endif; ?>
     <?php if ($promo['end'] > 0): ?><div class="promo-timer" id="promoTimer">⏳ <span></span></div><?php endif; ?>
   </div>
+  <?php if ($pVal > 0 && in_array($promo['type'], ['discount','deposit'])): ?>
+    <div class="promo-badge">-<?= rtrim(rtrim(number_format($pVal,1),'0'),'.') ?>%</div>
+  <?php endif; ?>
 </div>
 <?php endif; ?>
 

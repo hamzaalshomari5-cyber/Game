@@ -154,6 +154,20 @@ $topupsTotal = db()->query("SELECT COALESCE(SUM(amount),0) FROM topups")->fetchC
 $topupsToday = db()->query("SELECT COALESCE(SUM(amount),0) FROM topups WHERE $dateCol = '$today'")->fetchColumn();
 // أكثر 5 منتجات مبيعاً
 $topProducts = db()->query("SELECT product_name, COUNT(*) cnt, COALESCE(SUM(total),0) revenue FROM orders WHERE status='accept' GROUP BY product_name ORDER BY cnt DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+
+// مبيعات آخر 7 أيام (للرسم البياني)
+$daily = [];
+if ($tab === 'stats') {
+    for ($i = 6; $i >= 0; $i--) {
+        $d = date('Y-m-d', strtotime("-$i days"));
+        $sum = db()->query("SELECT COALESCE(SUM(total),0) FROM orders WHERE status='accept' AND $dateCol = '$d'")->fetchColumn();
+        $cnt = db()->query("SELECT COUNT(*) FROM orders WHERE status='accept' AND $dateCol = '$d'")->fetchColumn();
+        $daily[] = ['date' => $d, 'label' => date('m/d', strtotime($d)), 'sum' => (float)$sum, 'cnt' => (int)$cnt];
+    }
+}
+$dailyMax = 1;
+foreach ($daily as $dd) { if ($dd['sum'] > $dailyMax) $dailyMax = $dd['sum']; }
+
 $fcProfile = $tab === 'stats' ? fc_profile() : null;
 $fcBalance = is_array($fcProfile) ? ($fcProfile['balance'] ?? $fcProfile['data']['balance'] ?? null) : null;
 
@@ -196,6 +210,22 @@ include __DIR__ . '/header.php'; ?>
       <div class="card stat <?= (float)$fcBalance < 5 ? 'warn' : '' ?>"><div class="n"><?= number_format((float)$fcBalance, 2) ?></div><div>🔋 رصيدك في FastCard ($)</div></div>
     <?php endif; ?>
   </div>
+
+  <!-- رسم بياني: مبيعات آخر 7 أيام -->
+  <?php if ($daily): ?>
+  <div class="card" style="margin-top:14px">
+    <h3>📈 مبيعات آخر 7 أيام</h3>
+    <div class="chart7">
+      <?php foreach ($daily as $dd): $h = $dailyMax > 0 ? max(4, ($dd['sum'] / $dailyMax) * 100) : 4; ?>
+        <div class="chart7-col">
+          <div class="chart7-val"><?= $dd['sum'] > 0 ? number_format($dd['sum']/1000, 1).'k' : '0' ?></div>
+          <div class="chart7-bar" style="height:<?= $h ?>%" title="<?= number_format($dd['sum']) ?> ل.س — <?= $dd['cnt'] ?> طلب"></div>
+          <div class="chart7-lbl"><?= $dd['label'] ?></div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <!-- أكثر المنتجات مبيعاً -->
   <?php if ($topProducts): ?>

@@ -48,6 +48,33 @@ include __DIR__ . '/header.php'; ?>
       <div class="o-body">
         <div><?= e($o['product_name']) ?> × <?= $o['qty'] ?></div>
         <?php if ($o['player_id']): ?><div class="muted">ID: <?= e($o['player_id']) ?></div><?php endif; ?>
+
+        <?php
+          // الخط الزمني لحالة الطلب
+          $step = 1; // 1=استلام
+          if ($o['status'] === 'pending') $step = 2; // قيد التنفيذ
+          elseif ($o['status'] === 'accept') $step = 3; // تم
+          elseif ($o['status'] === 'reject') $step = -1; // مرفوض
+        ?>
+        <?php if ($step > 0): ?>
+        <div class="otrack">
+          <div class="otrack-step <?= $step >= 1 ? 'done' : '' ?>">
+            <div class="otrack-dot">📥</div>
+            <div class="otrack-lbl">استُلم</div>
+          </div>
+          <div class="otrack-line <?= $step >= 2 ? 'done' : '' ?>"></div>
+          <div class="otrack-step <?= $step >= 2 ? ($step == 2 ? 'active' : 'done') : '' ?>">
+            <div class="otrack-dot"><?= $step == 2 ? '⏳' : '⚙️' ?></div>
+            <div class="otrack-lbl">قيد التنفيذ</div>
+          </div>
+          <div class="otrack-line <?= $step >= 3 ? 'done' : '' ?>"></div>
+          <div class="otrack-step <?= $step >= 3 ? 'done' : '' ?>">
+            <div class="otrack-dot">✅</div>
+            <div class="otrack-lbl">تم</div>
+          </div>
+        </div>
+        <?php endif; ?>
+
         <?php if ($o['status'] === 'pending'): ?>
           <div class="eta-note">⏱ الوقت المتوقع للتنفيذ: من دقيقة إلى 10 دقائق</div>
         <?php endif; ?>
@@ -75,6 +102,18 @@ include __DIR__ . '/header.php'; ?>
     </div>
   <?php endforeach; ?>
 </div>
+<?php endif; ?>
+
+<?php
+  // هل في طلبات معلقة؟ نفعّل التحديث التلقائي
+  $hasPending = false;
+  foreach ($orders as $o) { if ($o['status'] === 'pending') { $hasPending = true; break; } }
+?>
+<?php if ($hasPending): ?>
+<script>
+  // تحديث تلقائي كل 30 ثانية طالما في طلب قيد التنفيذ
+  setTimeout(function(){ location.reload(); }, 30000);
+</script>
 <?php endif; ?>
 
 <?php include __DIR__ . '/footer.php';
