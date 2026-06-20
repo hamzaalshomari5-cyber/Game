@@ -1470,13 +1470,19 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
 }
 
 /* ===== 1) ظهور تدريجي عند التمرير (Scroll Reveal) ===== */
+/* fallback آمن: لو JS ما اشتغل، العناصر تظهر تلقائياً بعد ثانية */
 .reveal {
+  animation: revealFallback 0s linear 1.5s forwards;
+}
+@keyframes revealFallback { to { opacity: 1; transform: none; } }
+.js-reveal-on .reveal {
   opacity: 0;
   transform: translateY(22px);
   transition: opacity .6s cubic-bezier(.22,.61,.36,1), transform .6s cubic-bezier(.22,.61,.36,1);
   will-change: opacity, transform;
+  animation: none;
 }
-.reveal.in {
+.js-reveal-on .reveal.in {
   opacity: 1;
   transform: translateY(0);
 }
