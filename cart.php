@@ -103,16 +103,16 @@ if ($action === 'checkout') {
         cout(false, 'رصيد محفظتك غير كافٍ — المطلوب ' . number_format($s['total']) . ' ل.س. اشحن محفظتك أولاً.');
     }
 
-    $done = []; $failed = [];
+    $done = []; $failed = []; $failedKeys = [];
 
     foreach ($s['items'] as $it) {
         $p = store_product($it['product_id']);
-        if (!$p || !$p['available']) { $failed[] = $it['name'] . ' (غير متوفر)'; continue; }
+        if (!$p || !$p['available']) { $failed[] = $it['name'] . ' (غير متوفر)'; $failedKeys[] = $it['key']; continue; }
 
         $total = $it['subtotal'];
         // تأكد من الرصيد قبل كل عملية
         $cur = db()->query("SELECT balance FROM users WHERE id=" . (int)$U['id'])->fetchColumn();
-        if ($cur < $total) { $failed[] = $it['name'] . ' (رصيد غير كافٍ)'; continue; }
+        if ($cur < $total) { $failed[] = $it['name'] . ' (رصيد غير كافٍ)'; $failedKeys[] = $it['key']; continue; }
 
         // UUIDv4
         $b = random_bytes(16);
@@ -140,7 +140,7 @@ if ($action === 'checkout') {
             db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")->execute([$total, $U['id']]);
             db()->prepare("UPDATE orders SET status='reject', updated_at=" . NOW_FN() . " WHERE id=?")->execute([$orderId]);
             db()->commit();
-            $failed[] = $it['name'];
+            $failed[] = $it['name']; $failedKeys[] = $it['key'];
             notify_admin("⚠️ <b>فشل عنصر بطلب سلة</b>\nالمستخدم: " . e($U['name']) . "\nالمنتج: " . e($p['name']) . " ×{$it['qty']}\n💰 أُعيد المبلغ");
             continue;
         }
@@ -161,8 +161,12 @@ if ($action === 'checkout') {
         $done[] = $p['name'];
     }
 
-    // تفريغ السلة من العناصر اللي نجحت
-    $_SESSION['cart'] = [];
+    // إبقاء العناصر الفاشلة فقط بالسلة (نحذف الناجحة)
+    $newCart = [];
+    foreach ($_SESSION['cart'] as $k => $v) {
+        if (in_array($k, $failedKeys, true)) $newCart[$k] = $v;
+    }
+    $_SESSION['cart'] = $newCart;
 
     if (!$done && $failed) {
         cout(false, 'تعذّر تنفيذ الطلبات: ' . implode('، ', $failed) . '. تمت إعادة المبالغ.');
