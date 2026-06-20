@@ -1737,3 +1737,28 @@ body.ltr-mode { direction: ltr; text-align: left; }
 body.ltr-mode .section-title,
 body.ltr-mode h1, body.ltr-mode h2, body.ltr-mode h3 { text-align: left; }
 body.ltr-mode .cart-badge, body.ltr-mode .notif-badge { left: auto; right: -4px; }
+
+/* ===== إصلاح: ضمان إخفاء القائمة الجانبية إلا عند الفتح ===== */
+.sidebar {
+  right: -320px;
+  background: var(--bg2, #131730) !important;
+  z-index: 1000;
+}
+.sidebar.open { right: 0 !important; }
+body:not(.menu-open) .overlay:not(.show) { pointer-events: none; }
+
+/* ===== إصلاح القائمة الجانبية بوضع LTR (الإنجليزية) ===== */
+/* نثبّت اتجاه القائمة دائماً RTL بغض النظر عن لغة الموقع */
+.sidebar {
+  direction: rtl;
+  right: -340px !important;
+  left: auto !important;
+}
+.sidebar.open { right: 0 !important; left: auto !important; }
+/* بوضع LTR نخلي القائمة تطلع من اليسار بشكل صحيح */
+body.ltr-mode .sidebar {
+  direction: ltr;
+  right: auto !important;
+  left: -340px !important;
+}
+body.ltr-mode .sidebar.open { left: 0 !important; right: auto !important; }
