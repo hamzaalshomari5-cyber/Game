@@ -191,15 +191,32 @@ if ($page === 'wheel') {
     <?php else: ?>
       <p class="muted" style="text-align:center;margin-bottom:18px">لُف العجلة مرة كل يوم واربح رصيد مجاني! 🎁</p>
       <div class="wheel-wrap">
-        <div class="wheel-pointer">▼</div>
-        <div class="wheel" id="wheel">
-          <div class="wheel-seg s0"><span>حظ أوفر</span></div>
-          <div class="wheel-seg s1"><span>100</span></div>
-          <div class="wheel-seg s2"><span>250</span></div>
-          <div class="wheel-seg s3"><span>500</span></div>
-          <div class="wheel-seg s4"><span>1000</span></div>
-          <div class="wheel-seg s5"><span>2500</span></div>
-        </div>
+        <div class="wheel-pointer"></div>
+        <svg class="wheel" id="wheel" viewBox="0 0 200 200">
+          <!-- 6 قطاعات، كل واحد 60 درجة. القطاع 0 يبدأ من الأعلى -->
+          <g id="wheelG">
+            <!-- s0: 0-60 -->
+            <path d="M100,100 L100,5 A95,95 0 0,1 182.3,52.5 Z" fill="#e74c3c"/>
+            <!-- s1: 60-120 -->
+            <path d="M100,100 L182.3,52.5 A95,95 0 0,1 182.3,147.5 Z" fill="#3498db"/>
+            <!-- s2: 120-180 -->
+            <path d="M100,100 L182.3,147.5 A95,95 0 0,1 100,195 Z" fill="#2ecc71"/>
+            <!-- s3: 180-240 -->
+            <path d="M100,100 L100,195 A95,95 0 0,1 17.7,147.5 Z" fill="#f39c12"/>
+            <!-- s4: 240-300 -->
+            <path d="M100,100 L17.7,147.5 A95,95 0 0,1 17.7,52.5 Z" fill="#9b59b6"/>
+            <!-- s5: 300-360 -->
+            <path d="M100,100 L17.7,52.5 A95,95 0 0,1 100,5 Z" fill="#1abc9c"/>
+            <!-- النصوص: بمنتصف كل قطاع -->
+            <text x="100" y="38" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold" transform="rotate(30 100 100)">حظ أوفر</text>
+            <text x="100" y="38" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold" transform="rotate(90 100 100)">100</text>
+            <text x="100" y="38" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold" transform="rotate(150 100 100)">250</text>
+            <text x="100" y="38" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold" transform="rotate(210 100 100)">500</text>
+            <text x="100" y="38" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold" transform="rotate(270 100 100)">1000</text>
+            <text x="100" y="38" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold" transform="rotate(330 100 100)">2500</text>
+          </g>
+          <circle cx="100" cy="100" r="95" fill="none" stroke="#d4af37" stroke-width="5"/>
+        </svg>
         <div class="wheel-center">🎁</div>
       </div>
       <div class="wheel-action">
@@ -355,27 +372,13 @@ include __DIR__ . '/header.php'; ?>
 <?php endif; ?>
 
 <!-- بانر العرض بوقت محدود -->
-<?php $promo = promo_get(); if ($promo):
-  // أيقونة وشكل حسب نوع العرض
-  $promoIcons = ['discount' => '🔥', 'deposit' => '💰', 'banner' => '🎉'];
-  $pIcon = $promoIcons[$promo['type']] ?? '🎉';
-  $pVal = (float)($promo['value'] ?? 0);
-?>
-<div class="promo-banner promo-<?= e($promo['type']) ?>" <?= $promo['end'] > 0 ? 'data-end="'.$promo['end'].'"' : '' ?>>
-  <div class="promo-shine"></div>
-  <div class="promo-icon"><?= $pIcon ?></div>
+<?php $promo = promo_get(); if ($promo): ?>
+<div class="promo-banner" <?= $promo['end'] > 0 ? 'data-end="'.$promo['end'].'"' : '' ?>>
+  <div class="promo-icon">🎉</div>
   <div class="promo-text">
     <div class="promo-title"><?= e($promo['title']) ?></div>
-    <?php if ($promo['type'] === 'discount' && $pVal > 0): ?>
-      <div class="promo-sub">خصم <?= rtrim(rtrim(number_format($pVal,1),'0'),'.') ?>% على جميع المنتجات</div>
-    <?php elseif ($promo['type'] === 'deposit' && $pVal > 0): ?>
-      <div class="promo-sub">بونص <?= rtrim(rtrim(number_format($pVal,1),'0'),'.') ?>% على كل إيداع</div>
-    <?php endif; ?>
     <?php if ($promo['end'] > 0): ?><div class="promo-timer" id="promoTimer">⏳ <span></span></div><?php endif; ?>
   </div>
-  <?php if ($pVal > 0 && in_array($promo['type'], ['discount','deposit'])): ?>
-    <div class="promo-badge">-<?= rtrim(rtrim(number_format($pVal,1),'0'),'.') ?>%</div>
-  <?php endif; ?>
 </div>
 <?php endif; ?>
 

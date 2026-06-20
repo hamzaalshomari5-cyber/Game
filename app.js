@@ -576,24 +576,27 @@ async function spinWheel() {
       if (d.wait) showWheelTimer(d.wait);
       return;
     }
-    // زاوية كل قطاع 60 درجة (6 قطاعات). نوقف عند منتصف القطاع الفائز
-    const segAngle = 360 / 6;
-    const target = d.index * segAngle + segAngle / 2;
-    const spins = 5; // عدد اللفات الكاملة
-    const finalRot = (spins * 360) + (360 - target);
-    wheel.style.transition = 'transform 4.5s cubic-bezier(.17,.67,.32,1.34)';
-    wheel.style.transform = 'rotate(' + finalRot + 'deg)';
+    // عنصر الدوران: مجموعة القطاعات داخل SVG
+    const g = document.getElementById('wheelG') || wheel;
+    // كل قطاع 60°، منتصف القطاع index عند الزاوية (index*60 + 30)
+    // المؤشر بالأعلى (0°). لإيقاف منتصف القطاع تحت المؤشر ندوّر عكسياً
+    const segAngle = 60;
+    const mid = d.index * segAngle + segAngle / 2;
+    const spins = 6; // لفات كاملة قبل الوقوف
+    const finalRot = (spins * 360) + (360 - mid);
+    g.style.transition = 'transform 4.8s cubic-bezier(.15,.62,.28,1)';
+    g.style.transformOrigin = '50% 50%';
+    g.style.transform = 'rotate(' + finalRot + 'deg)';
     setTimeout(function () {
       msg.textContent = d.msg;
       msg.className = 'alert ' + (d.value > 0 ? 'ok' : '');
       msg.style.display = 'block';
       if (d.value > 0) {
-        // تحديث الرصيد بالهيدر إن وجد
         const bal = document.querySelector('.bal-amount');
         if (bal) { const cur = parseInt(bal.dataset.syp || '0') + d.value; bal.dataset.syp = cur; bal.textContent = cur.toLocaleString() + ' ل.س'; }
       }
       showWheelTimer(86400);
-    }, 4700);
+    }, 5000);
   } catch (e) {
     msg.textContent = 'خطأ بالاتصال، حاول مجدداً'; msg.className = 'alert no'; msg.style.display = 'block';
     btn.disabled = false;

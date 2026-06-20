@@ -1205,43 +1205,17 @@ a, button, .clickable { -webkit-tap-highlight-color: transparent; }
 
 /* ===== بانر العرض بوقت محدود ===== */
 .promo-banner {
-  position: relative; overflow: hidden;
   display: flex; align-items: center; gap: 14px;
   background: linear-gradient(135deg, #ff3d7f, #ff8a00);
-  border-radius: 16px; padding: 16px 18px; margin: 0 0 16px;
+  border-radius: 14px; padding: 14px 18px; margin: 0 0 16px;
   box-shadow: 0 6px 22px rgba(255,61,127,.3);
   animation: promoPulse 2.5s ease-in-out infinite;
 }
-/* ألوان حسب نوع العرض */
-.promo-banner.promo-discount { background: linear-gradient(135deg, #ff3d7f, #ff8a00); box-shadow: 0 6px 22px rgba(255,61,127,.32); }
-.promo-banner.promo-deposit  { background: linear-gradient(135deg, #11998e, #38ef7d); box-shadow: 0 6px 22px rgba(17,153,142,.32); }
-.promo-banner.promo-banner   { background: linear-gradient(135deg, #6a11cb, #2575fc); box-shadow: 0 6px 22px rgba(106,17,203,.32); }
-@keyframes promoPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.012); } }
-/* لمعان متحرك يمر فوق البانر */
-.promo-shine {
-  position: absolute; top: 0; left: -60%; width: 50%; height: 100%;
-  background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
-  transform: skewX(-20deg); animation: promoShine 3.5s ease-in-out infinite;
-}
-@keyframes promoShine { 0% { left: -60%; } 55%,100% { left: 130%; } }
-.promo-icon { font-size: 2.1rem; flex-shrink: 0; z-index: 1; animation: promoIconBounce 1.8s ease-in-out infinite; }
-@keyframes promoIconBounce { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-6deg); } }
-.promo-text { flex: 1; z-index: 1; }
-.promo-title { color: #fff; font-weight: 900; font-size: 1.08rem; text-shadow: 0 1px 4px rgba(0,0,0,.3); }
-.promo-sub { color: #fff; font-size: .82rem; font-weight: 700; opacity: .95; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.25); }
-.promo-timer {
-  color: #fff; font-size: .85rem; font-weight: 800; margin-top: 6px;
-  background: rgba(0,0,0,.18); display: inline-block; padding: 3px 10px; border-radius: 20px;
-}
-.promo-badge {
-  z-index: 1; flex-shrink: 0;
-  background: #fff; color: #ff3d7f; font-weight: 900; font-size: 1rem;
-  padding: 8px 12px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,.2);
-  transform: rotate(6deg); animation: promoBadge 1.5s ease-in-out infinite;
-}
-.promo-deposit .promo-badge { color: #11998e; }
-.promo-banner.promo-banner .promo-badge { color: #6a11cb; }
-@keyframes promoBadge { 0%,100% { transform: rotate(6deg) scale(1); } 50% { transform: rotate(6deg) scale(1.08); } }
+@keyframes promoPulse { 0%,100% { box-shadow: 0 6px 22px rgba(255,61,127,.3); } 50% { box-shadow: 0 6px 30px rgba(255,138,0,.45); } }
+.promo-icon { font-size: 2rem; flex-shrink: 0; }
+.promo-text { flex: 1; }
+.promo-title { color: #fff; font-weight: 900; font-size: 1.05rem; text-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.promo-timer { color: #fff; font-size: .85rem; font-weight: 700; margin-top: 4px; opacity: .95; }
 
 /* ===== سعر مخصوم ===== */
 .p-price-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -1676,51 +1650,29 @@ main, .page-wrap, .container > h1:first-child {
 
 /* ===== عجلة الحظ ===== */
 .wheel-wrap {
-  position: relative; width: 280px; height: 280px; margin: 0 auto 20px;
+  position: relative; width: 290px; height: 290px; margin: 0 auto 20px;
 }
 .wheel-pointer {
-  position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
-  font-size: 1.8rem; color: var(--accent, #d4af37); z-index: 5;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,.4));
+  position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; z-index: 6;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 24px solid var(--accent, #d4af37);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
 }
 .wheel {
-  width: 100%; height: 100%; border-radius: 50%; position: relative;
-  border: 6px solid var(--accent, #d4af37);
-  box-shadow: 0 8px 30px rgba(0,0,0,.4), inset 0 0 20px rgba(0,0,0,.3);
-  overflow: hidden;
-  background: conic-gradient(
-    #e74c3c 0deg 60deg,
-    #3498db 60deg 120deg,
-    #2ecc71 120deg 180deg,
-    #f39c12 180deg 240deg,
-    #9b59b6 240deg 300deg,
-    #1abc9c 300deg 360deg
-  );
-  transform: rotate(0deg);
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  display: block;
 }
-.wheel-seg {
-  position: absolute; width: 50%; height: 50%;
-  top: 0; left: 50%; transform-origin: 0% 100%;
-  display: flex; align-items: flex-start; justify-content: center;
-  pointer-events: none;
-}
-.wheel-seg span {
-  color: #fff; font-weight: 800; font-size: .72rem;
-  text-shadow: 0 1px 2px rgba(0,0,0,.5); margin-top: 18px;
-  transform: rotate(0deg); white-space: nowrap;
-}
-.wheel-seg.s0 { transform: rotate(30deg); }
-.wheel-seg.s1 { transform: rotate(90deg); }
-.wheel-seg.s2 { transform: rotate(150deg); }
-.wheel-seg.s3 { transform: rotate(210deg); }
-.wheel-seg.s4 { transform: rotate(270deg); }
-.wheel-seg.s5 { transform: rotate(330deg); }
-.wheel-seg span { transform: rotate(0deg); }
+#wheelG { transform-origin: 50% 50%; }
 .wheel-center {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-  width: 54px; height: 54px; border-radius: 50%;
+  width: 50px; height: 50px; border-radius: 50%;
   background: #fff; display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; z-index: 4; box-shadow: 0 2px 10px rgba(0,0,0,.3);
+  font-size: 1.4rem; z-index: 5; box-shadow: 0 2px 10px rgba(0,0,0,.3);
+  border: 3px solid var(--accent, #d4af37);
 }
 .wheel-action { max-width: 340px; margin: 0 auto; }
 
