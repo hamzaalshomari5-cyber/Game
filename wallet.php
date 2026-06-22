@@ -116,6 +116,7 @@ function check_coupon($code, $userId) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $txId = trim($_POST['tx_id'] ?? '');
     $method = ($_POST['method'] ?? 'syriatel') === 'shamcash' ? 'shamcash' : 'syriatel';
+    $currency = ($_POST['currency'] ?? 'syp') === 'usd' ? 'usd' : 'syp';
     $couponCode = trim($_POST['coupon'] ?? '');
     if (!$txId) {
         $msg = 'أدخل رقم عملية التحويل';
@@ -130,6 +131,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dest = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
                 $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . $dest;
             } else {
+                // إذا التحويل بالدولار (شام كاش فقط) نحوّله لليرة حسب سعر الصرف
+                if ($method === 'shamcash' && $currency === 'usd') {
+                    $amount = round($amount * usd_rate());
+                }
                 // تطبيق كود الخصم (مكافأة إضافية على الإيداع)
                 $bonus = 0; $couponObj = null; $couponMsg = null;
                 if ($couponCode !== '') {
@@ -216,15 +221,25 @@ include __DIR__ . '/header.php'; ?>
       <ol class="steps">
         <li>حوّل المبلغ المطلوب إلى محفظة شام كاش:
           <b class="copyable" onclick="copyText('<?= e(shamcash_number()) ?>')"><?= e(shamcash_number()) ?> 📋</b></li>
+        <li>اختر عملة تحويلك (سوري أو دولار)</li>
         <li>أدخل رقم عملية التحويل بالأسفل</li>
         <li>سيُضاف المبلغ تلقائياً بعد التحقق</li>
       </ol>
+      <div class="cur-choice">
+        <span class="cur-lbl">عملة التحويل:</span>
+        <div class="cur-btns">
+          <button type="button" class="cur-btn active" data-cur="syp" onclick="selectCur(this)">🇸🇾 ليرة سورية</button>
+          <button type="button" class="cur-btn" data-cur="usd" onclick="selectCur(this)">💵 دولار</button>
+        </div>
+        <p class="muted small" id="curNote" style="display:none;margin-top:6px">سيُحوّل مبلغ الدولار لليرة حسب سعر الصرف الحالي (<?= number_format(usd_rate()) ?> ل.س للدولar).</p>
+      </div>
     </div>
     <?php endif; ?>
 
     <?php if ($msg): ?><div class="alert <?= $ok ? 'ok' : '' ?>"><?= e($msg) ?></div><?php endif; ?>
     <form method="post">
       <input type="hidden" name="method" id="payMethod" value="syriatel">
+      <input type="hidden" name="currency" id="payCurrency" value="syp">
       <label>رقم عملية التحويل</label>
       <input name="tx_id" required placeholder="مثال: 600123456789">
       <label>كود البونص (اختياري) 🎁</label>
@@ -246,7 +261,35 @@ function selectMethod(btn) {
   document.querySelectorAll('.pay-box').forEach(b => b.style.display = 'none');
   const box = document.getElementById('box-' + m);
   if (box) box.style.display = '';
+  // إعادة العملة لليرة عند التبديل (الدولار خاص بشام كاش فقط)
+  if (m !== 'shamcash') {
+    document.getElementById('payCurrency').value = 'syp';
+  }
+}
+function selectCur(btn) {
+  document.querySelectorAll('.cur-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const c = btn.dataset.cur;
+  document.getElementById('payCurrency').value = c;
+  const note = document.getElementById('curNote');
+  if (note) note.style.display = (c === 'usd') ? 'block' : 'none';
 }
 </script>
+
+<style>
+.cur-choice { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border, rgba(255,255,255,.1)); }
+.cur-lbl { font-size: .85rem; color: var(--muted, #888); display: block; margin-bottom: 8px; }
+.cur-btns { display: flex; gap: 8px; }
+.cur-btn {
+  flex: 1; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--border, rgba(255,255,255,.15));
+  background: var(--card2, rgba(255,255,255,.04)); color: var(--text, #fff);
+  font-size: .88rem; font-weight: 700; cursor: pointer; transition: all .2s;
+}
+.cur-btn.active {
+  background: var(--accent, #d4af37); color: #1a1a1a;
+  border-color: var(--accent, #d4af37);
+}
+</style>
 
 <?php include __DIR__ . '/footer.php';
