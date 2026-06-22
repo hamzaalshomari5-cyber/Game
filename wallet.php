@@ -175,9 +175,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$st = db()->prepare("SELECT * FROM topups WHERE user_id=? ORDER BY id DESC LIMIT 10");
-$st->execute([$U['id']]);
-$history = $st->fetchAll(PDO::FETCH_ASSOC);
 $hasSham = shamcash_number() !== '';
 
 $pageTitle = 'المحفظة';
@@ -238,18 +235,6 @@ include __DIR__ . '/header.php'; ?>
       أو فعّل كود الخصم من <a href="/coupon.php" style="color:var(--accent)">صفحة الأكواد 🎁</a>
     </p>
   </div>
-
-  <?php if ($history): ?>
-  <div class="card">
-    <h3>آخر عمليات الشحن</h3>
-    <table class="tbl">
-      <tr><th>رقم العملية</th><th>المبلغ</th><th>التاريخ</th></tr>
-      <?php foreach ($history as $h): ?>
-        <tr><td><?= e($h['tx_id']) ?></td><td><?= number_format($h['amount']) ?> ل.س</td><td><?= e($h['created_at']) ?></td></tr>
-      <?php endforeach; ?>
-    </table>
-  </div>
-  <?php endif; ?>
 </div>
 
 <script>
