@@ -24,8 +24,8 @@ function cart_summary() {
         $p = store_product($c['product_id']);
         if (!$p) { unset($_SESSION['cart'][$key]); continue; }
         $unit = $p['price'];
-        if ($disc > 0) $unit = round($p['price'] * (1 - $disc/100));
-        $sub = $unit * $c['qty'];
+        if ($disc > 0) $unit = $p['price'] * (1 - $disc/100);
+        $sub = round($unit * $c['qty']);
         $total += $sub;
         $items[] = [
             'key' => $key,

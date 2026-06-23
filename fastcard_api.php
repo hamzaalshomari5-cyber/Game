@@ -36,11 +36,22 @@ function fc_profile() {
 
 function _map_product($p, $profit) {
     $rate = usd_rate();
+    $type = $p['product_type'] ?? '';
+    $costUsd = (float)($p['price'] ?? 0);
+    // السعر النهائي للوحدة بالليرة (قبل التقريب)
+    $rawPrice = $costUsd * $rate * (1 + $profit / 100);
+    // منتجات "amount" سعر وحدتها صغير جداً والكمية بالآلاف،
+    // فلا نقرّبه لصفر — نحتفظ بالكسور. باقي المنتجات نقرّبها لأقرب ليرة.
+    if ($type === 'amount') {
+        $price = round($rawPrice, 6); // دقة عشرية للوحدة
+    } else {
+        $price = round($rawPrice);
+    }
     return [
         'id'        => (string)($p['id'] ?? ''),
         'name'      => $p['name'] ?? '',
-        'cost'      => (float)($p['price'] ?? 0),
-        'price'     => round((float)($p['price'] ?? 0) * $rate * (1 + $profit / 100)),
+        'cost'      => $costUsd,
+        'price'     => $price,
         'category'  => $p['category_name'] ?? '',
         'parent_id' => (string)($p['parent_id'] ?? '0'),
         'image'     => $p['image'] ?? $p['img'] ?? '',
@@ -49,7 +60,7 @@ function _map_product($p, $profit) {
         'params'    => is_array($p['params'] ?? null) ? $p['params'] : [],
         'qty_min'   => (int)($p['qty_values']['min'] ?? 1),
         'qty_max'   => (int)($p['qty_values']['max'] ?? 0), // 0 = بلا حد
-        'type'      => $p['product_type'] ?? '',
+        'type'      => $type,
     ];
 }
 

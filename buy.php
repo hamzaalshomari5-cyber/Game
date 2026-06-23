@@ -28,8 +28,10 @@ if (!empty($p['params']) && $player === '') out(false, 'مطلوب: ' . $p['para
 // تطبيق خصم العرض بوقت محدود (إن وجد)
 $unitPrice = $p['price'];
 $disc = promo_discount_pct();
-if ($disc > 0) $unitPrice = round($p['price'] * (1 - $disc/100));
-$total = $unitPrice * $qty;
+if ($disc > 0) $unitPrice = $p['price'] * (1 - $disc/100);
+// نحسب الإجمالي ثم نقرّبه (مهم لمنتجات amount ذات سعر الوحدة العشري)
+$total = round($unitPrice * $qty);
+if ($total < 1) out(false, 'سعر هذا المنتج غير متوفر حالياً، حاول لاحقاً.');
 if ($U['balance'] < $total) out(false, 'رصيد محفظتك غير كافٍ — المطلوب ' . number_format($total) . ' ل.س. اشحن محفظتك أولاً.');
 
 // UUIDv4 حسب التوثيق (idempotency)

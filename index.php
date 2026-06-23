@@ -54,25 +54,29 @@ function needs_verify($p, $ctx = '') {
 
 function product_card($p, $favs, $ctx = '') {
     $isFav = in_array((string)$p['id'], $favs);
-    $label = $p['params'][0] ?? ''; ?>
+    $label = $p['params'][0] ?? '';
+    // منتجات amount: نعرض سعر الكمية الدنيا (سعر الوحدة صغير جداً)
+    $isAmount = ($p['type'] ?? '') === 'amount';
+    $displayPrice = $isAmount ? round($p['price'] * max(1, $p['qty_min'])) : $p['price']; ?>
     <div class="card product-card <?= $p['available'] ? '' : 'oos' ?>"
          data-id="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>"
          data-price="<?= e($p['price']) ?>" data-desc="<?= e($p['desc']) ?>"
          data-param="<?= e($label) ?>" data-qmin="<?= e($p['qty_min']) ?>" data-qmax="<?= e($p['qty_max']) ?>"
+         data-type="<?= e($p['type'] ?? '') ?>"
          data-verify="<?= (needs_verify($p, $ctx) && !empty($p['params'])) ? '1' : '0' ?>"
          onclick="openBuy(this)">
       <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>
       <?php if (!fc_img($p['image'], '')): ?><div class="ph">🎮</div><?php endif; ?>
       <div class="p-name"><?= e($p['name']) ?></div>
       <?php $disc = promo_discount_pct(); if ($disc > 0 && $p['available']):
-        $newPrice = $p['price'] * (1 - $disc/100); ?>
+        $newPrice = $displayPrice * (1 - $disc/100); ?>
         <div class="p-price-wrap">
-          <span class="p-price-old"><?= fmt_price($p['price']) ?></span>
-          <span class="p-price discounted"><?= fmt_price($newPrice) ?></span>
+          <span class="p-price-old"><?= fmt_price($displayPrice) ?></span>
+          <span class="p-price discounted"><?= $isAmount ? 'من ' : '' ?><?= fmt_price($newPrice) ?></span>
         </div>
         <span class="p-disc-badge">-<?= rtrim(rtrim(number_format($disc,1),'0'),'.') ?>%</span>
       <?php else: ?>
-        <div class="p-price"><?= fmt_price($p['price']) ?></div>
+        <div class="p-price"><?= $isAmount ? 'من ' : '' ?><?= fmt_price($displayPrice) ?></div>
       <?php endif; ?>
       <?php if (!$p['available']): ?><div class="oos-badge">غير متوفر حالياً ❌</div><?php endif; ?>
     </div>
