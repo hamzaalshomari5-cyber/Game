@@ -131,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dest = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
                 $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . $dest;
             } else {
+                $amount = $amount * 100;
                 // إذا التحويل بالدولار (شام كاش فقط) نحوّله لليرة حسب سعر الصرف
                 if ($method === 'shamcash' && $currency === 'usd') {
                     $amount = round($amount * usd_rate());
