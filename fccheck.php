@@ -2,39 +2,31 @@
 require_once __DIR__ . '/fastcard_api.php';
 header('Content-Type: text/plain; charset=utf-8');
 
-echo "=== تشخيص منتج FastCard محدد ===\n\n";
+echo "=== فحص قسم رصيد سيرياتيل ===\n\n";
 
-$pid = $_GET['pid'] ?? '';
-if ($pid === '') {
-    echo "أضف رقم المنتج: fccheck.php?pid=رقم_المنتج\n";
-    echo "(رقم المنتج = product_id، بتلاقيه برابط الشراء)\n";
-    exit;
+$cat = $_GET['cat'] ?? '473';
+$content = fc_content($cat, true);
+
+// نطبع الرد الخام الكامل من فاست كارد (أول 2 منتج)
+echo "=== الرد الخام من فاست كارد (cat=$cat) ===\n";
+$raw = is_array($content['data'] ?? null) ? $content['data'] : $content;
+echo substr(json_encode($content, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), 0, 3000) . "\n\n";
+
+echo str_repeat("=", 50) . "\n";
+echo "=== المنتجات بعد معالجة الكود (store_products) ===\n\n";
+
+$prods = store_products(true);
+$found = 0;
+foreach ($prods as $p) {
+    // نعرض منتجات هذا القسم فقط (أو كل اللي اسمها فيه رصيد/سيرياتيل)
+    if (stripos($p['name'], 'SYRIATEL') !== false || stripos($p['name'], 'رصيد') !== false || stripos($p['name'], 'سيرياتيل') !== false) {
+        $found++;
+        echo "🔹 " . $p['name'] . "\n";
+        echo "   ID: " . $p['id'] . "\n";
+        echo "   النوع: " . ($p['type'] ?: 'عادي') . "\n";
+        echo "   السعر: " . $p['price'] . "\n";
+        echo "   qty_min: " . $p['qty_min'] . " | qty_max: " . ($p['qty_max'] ?: 'بلا حد') . "\n";
+        echo "   params: " . json_encode($p['params'], JSON_UNESCAPED_UNICODE) . "\n\n";
+    }
 }
-
-$p = store_product($pid);
-if (!$p) {
-    echo "❌ المنتج $pid غير موجود.\n";
-    exit;
-}
-
-echo "=== تفاصيل المنتج (بعد المعالجة) ===\n";
-echo json_encode($p, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n\n";
-
-echo "=== التحليل ===\n";
-echo "الاسم: " . $p['name'] . "\n";
-echo "النوع (type): " . ($p['type'] ?: '(فارغ)') . "\n";
-echo "سعر الوحدة: " . $p['price'] . " ل.س\n";
-echo "أقل كمية (qty_min): " . $p['qty_min'] . "\n";
-echo "أكبر كمية (qty_max): " . ($p['qty_max'] > 0 ? $p['qty_max'] : 'بلا حد') . "\n\n";
-
-$testQty = (int)($_GET['qty'] ?? 110);
-echo "=== فحص الكمية المطلوبة: $testQty ===\n";
-if ($testQty < $p['qty_min']) {
-    echo "❌ الكمية $testQty أقل من الحد الأدنى (" . $p['qty_min'] . ")\n";
-    echo "💡 هذا سبب 'quantity not allowed'!\n";
-} elseif ($p['qty_max'] > 0 && $testQty > $p['qty_max']) {
-    echo "❌ الكمية $testQty أكبر من الحد الأقصى (" . $p['qty_max'] . ")\n";
-} else {
-    echo "✅ الكمية $testQty ضمن الحدود المسموحة.\n";
-    echo "إذاً سبب الرفض شي ثاني (مضاعفات معينة؟ صيغة؟).\n";
-}
+if (!$found) echo "ما لقيت منتجات رصيد بهذا القسم.\n";
