@@ -124,22 +124,30 @@ $payload = [
     'generationConfig' => ['maxOutputTokens' => 600, 'temperature' => 0.7],
 ];
 
-// ===== نداء Gemini API =====
-$model = 'gemini-flash-latest';
-$url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=" . urlencode($apiKey);
-$ch = curl_init($url);
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST => true,
-    CURLOPT_TIMEOUT => 40,
-    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-    CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-]);
-$res = curl_exec($ch);
-$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
+// ===== نداء Gemini API مع محاولة عدة موديلات =====
+$models = ['gemini-2.0-flash', 'gemini-2.0-flash-001', 'gemini-flash-latest', 'gemini-2.5-flash'];
+$d = null; $code = 0;
+foreach ($models as $model) {
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=" . urlencode($apiKey);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_TIMEOUT => 40,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+    ]);
+    $res = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code === 200) {
+        $d = json_decode($res, true);
+        if (is_array($d) && !empty($d['candidates'])) break; // نجح
+    }
+    // لو 429 أو 503 أو 404 نجرّب الموديل التالي
+    $d = null;
+}
 
-$d = json_decode($res, true);
 if ($code !== 200 || !is_array($d)) {
     out(false, ['msg' => 'المساعد مشغول حالياً، حاول بعد قليل أو تواصل عبر واتساب.']);
 }
