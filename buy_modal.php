@@ -3,11 +3,13 @@
     <h3 id="mName">اسم المنتج</h3>
     <div class="m-price" id="mPrice"></div>
     <p class="muted" id="mDesc"></p>
-    <label>العدد</label>
-    <div class="qty-row">
-      <button type="button" onclick="qtyStep(-1)">−</button>
-      <input type="number" id="mQty" value="1" min="1">
-      <button type="button" onclick="qtyStep(1)">+</button>
+    <div class="m-qty-row" id="mQtyRow">
+      <label>العدد</label>
+      <div class="qty-row">
+        <button type="button" onclick="qtyStep(-1)">−</button>
+        <input type="number" id="mQty" value="1" min="1">
+        <button type="button" onclick="qtyStep(1)">+</button>
+      </div>
     </div>
     <div id="mPlayerWrap">
       <label id="mPlayerLabel">ID اللاعب</label>

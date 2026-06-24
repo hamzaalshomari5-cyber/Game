@@ -53,6 +53,7 @@ if ($action === 'add') {
     if (!$p['available']) cout(false, 'المنتج غير متوفر حالياً ❌');
     if ($qty < $p['qty_min']) cout(false, 'أقل كمية مسموحة: ' . $p['qty_min']);
     if ($p['qty_max'] > 0 && $qty > $p['qty_max']) cout(false, 'أكبر كمية مسموحة: ' . $p['qty_max']);
+    if (($p['type'] ?? '') === 'specificPackage') $qty = 1;
     if (!empty($p['params']) && $player === '') cout(false, 'مطلوب: ' . $p['params'][0]);
 
     // مفتاح فريد حسب المنتج + الـ ID (نفس المنتج بنفس الـ ID = نزيد الكمية)

@@ -74,12 +74,23 @@ function openBuy(card) {
   curPrice = parseFloat(card.dataset.price) || 0;
   qMin = parseInt(card.dataset.qmin) || 1;
   qMax = parseInt(card.dataset.qmax) || 0;
+  const pType = card.dataset.type || '';
+  // منتجات الباقة المحددة: الكمية ثابتة = 1
+  const fixedQty = (pType === 'specificPackage');
   document.getElementById('mName').textContent = card.dataset.name;
   document.getElementById('mPrice').textContent = fmtPrice(curPrice);
   document.getElementById('mDesc').textContent = card.dataset.desc || '';
   const qty = document.getElementById('mQty');
-  qty.value = qMin; qty.min = qMin;
-  if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
+  if (fixedQty) {
+    qMin = 1; qMax = 1;
+    qty.value = 1; qty.min = 1; qty.max = 1;
+  } else {
+    qty.value = qMin; qty.min = qMin;
+    if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
+  }
+  // إخفاء/إظهار صف الكمية
+  const qtyRow = document.getElementById('mQtyRow');
+  if (qtyRow) qtyRow.style.display = fixedQty ? 'none' : '';
   // حقل المعرف حسب متطلبات المنتج من API
   needVerify = card.dataset.verify === '1';
   verified = false; softPass = false;
