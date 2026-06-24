@@ -37,7 +37,9 @@ function fc_profile() {
 function _map_product($p, $profit) {
     $rate = usd_rate();
     $type = $p['product_type'] ?? '';
-    $costUsd = (float)($p['price'] ?? 0);
+    // التكلفة الحقيقية بالدولار: نفضّل 'cost' (الدقيق) ثم 'price'
+    $costUsd = (float)($p['cost'] ?? 0);
+    if ($costUsd <= 0) $costUsd = (float)($p['price'] ?? 0);
     // السعر النهائي للوحدة بالليرة (قبل التقريب)
     $rawPrice = $costUsd * $rate * (1 + $profit / 100);
     // منتجات "amount" سعر وحدتها صغير جداً والكمية بالآلاف،
