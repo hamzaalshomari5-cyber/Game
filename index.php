@@ -55,9 +55,13 @@ function needs_verify($p, $ctx = '') {
 function product_card($p, $favs, $ctx = '') {
     $isFav = in_array((string)$p['id'], $favs);
     $label = $p['params'][0] ?? '';
-    // منتجات amount: نعرض سعر الكمية الدنيا (سعر الوحدة صغير جداً)
-    $isAmount = ($p['type'] ?? '') === 'amount';
-    $displayPrice = $isAmount ? round($p['price'] * max(1, $p['qty_min'])) : $p['price']; ?>
+    // سعر العرض = سعر الكمية الدنيا (مهم للمنتجات ذات سعر الوحدة الصغير مثل amount/رصيد)
+    $qm = max(1, (int)$p['qty_min']);
+    $unitSmall = ($p['type'] ?? '') === 'amount' || $p['price'] < 100; // سعر الوحدة صغير
+    $showFrom = ($qm > 1) || $unitSmall;
+    $displayPrice = $showFrom ? round($p['price'] * $qm) : $p['price'];
+    // إذا كانت الكمية الدنيا 1 لكن سعر الوحدة صغير، نعرض السعر كما هو بدون "من"
+    $prefix = ($qm > 1) ? 'من ' : ''; ?>
     <div class="card product-card <?= $p['available'] ? '' : 'oos' ?>"
          data-id="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>"
          data-price="<?= e($p['price']) ?>" data-desc="<?= e($p['desc']) ?>"
@@ -72,11 +76,11 @@ function product_card($p, $favs, $ctx = '') {
         $newPrice = $displayPrice * (1 - $disc/100); ?>
         <div class="p-price-wrap">
           <span class="p-price-old"><?= fmt_price($displayPrice) ?></span>
-          <span class="p-price discounted"><?= $isAmount ? 'من ' : '' ?><?= fmt_price($newPrice) ?></span>
+          <span class="p-price discounted"><?= $prefix ?><?= fmt_price($newPrice) ?></span>
         </div>
         <span class="p-disc-badge">-<?= rtrim(rtrim(number_format($disc,1),'0'),'.') ?>%</span>
       <?php else: ?>
-        <div class="p-price"><?= $isAmount ? 'من ' : '' ?><?= fmt_price($displayPrice) ?></div>
+        <div class="p-price"><?= $prefix ?><?= fmt_price($displayPrice) ?></div>
       <?php endif; ?>
       <?php if (!$p['available']): ?><div class="oos-badge">غير متوفر حالياً ❌</div><?php endif; ?>
     </div>
