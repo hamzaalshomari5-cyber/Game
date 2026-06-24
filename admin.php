@@ -553,6 +553,10 @@ include __DIR__ . '/header.php'; ?>
   <div class="card">
     <h3>سعر صرف الدولار 💱</h3>
     <p class="muted">أسعار FastCard بترجع بالدولار — حط سعر الصرف ليتحول السعر لليرة تلقائياً.</p>
+    <p class="muted" style="background:rgba(212,175,55,.1);padding:10px;border-radius:8px;border-right:3px solid var(--accent)">
+      💡 <b>للعملة السورية القديمة</b> (الأرقام الكبيرة): حط سعر الدولار الحقيقي بالسوق، مثلاً <b>15000</b>.<br>
+      كل الأسعار والمحفظة رح تظهر بالعملة القديمة تلقائياً.
+    </p>
     <form method="post" class="inline-form">
       <input name="usd_rate" type="number" step="any" value="<?= e(setting('usd_rate', 11000)) ?>" required>
       <span class="muted">ل.س لكل 1$</span>
