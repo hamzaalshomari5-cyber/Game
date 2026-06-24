@@ -2,35 +2,35 @@
 require_once __DIR__ . '/fastcard_api.php';
 header('Content-Type: text/plain; charset=utf-8');
 
-echo "=== مقارنة الأسعار: cost vs price ===\n";
-echo "سعر الصرف: " . usd_rate() . " | الربح: " . setting('profit_percent', DEFAULT_PROFIT) . "%\n\n";
+echo "=== الحقول الخام الكاملة لرصيد سيرياتيل ===\n\n";
 
-$cats = ['473', '1392']; // رصيد سيرياتيل + التطبيقات
-$shown = 0;
+$cat = $_GET['cat'] ?? '473';
+$content = fc_content($cat, true);
 
-foreach ($cats as $cat) {
-    $content = fc_content($cat, true);
-    $prods = [];
-    function fp($d, &$f) {
-        if (!is_array($d)) return;
-        foreach ($d as $v) if (is_array($v)) {
-            if (isset($v['id']) && isset($v['name'])) $f[] = $v;
-            else fp($v, $f);
-        }
-    }
-    fp($content, $prods);
-
-    echo "===== القسم $cat =====\n";
-    $c = 0;
-    foreach ($prods as $p) {
-        if ($c++ >= 3) break;
-        $rate = usd_rate();
-        $profit = (float)setting('profit_percent', DEFAULT_PROFIT);
-        $byCost = round((float)($p['cost'] ?? 0) * $rate * (1+$profit/100));
-        $byPrice = round((float)($p['price'] ?? 0) * $rate * (1+$profit/100));
-        echo "🔹 " . $p['name'] . " (نوع: " . ($p['product_type'] ?? $p['type'] ?? '?') . ")\n";
-        echo "   cost=" . ($p['cost'] ?? '?') . " | price=" . ($p['price'] ?? '?') . "\n";
-        echo "   لو حسبنا بـ cost = " . number_format($byCost) . " ل.س\n";
-        echo "   لو حسبنا بـ price = " . number_format($byPrice) . " ل.س\n\n";
+function scan($d, &$f) {
+    if (!is_array($d)) return;
+    foreach ($d as $v) if (is_array($v)) {
+        if (isset($v['id']) && isset($v['name'])) $f[] = $v;
+        else scan($v, $f);
     }
 }
+$prods = [];
+scan($content, $prods);
+
+// نطبع أول منتج بكل حقوله الخام (كامل بدون اختصار)
+if ($prods) {
+    echo "=== المنتج الأول كامل ===\n";
+    echo json_encode($prods[0], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n\n";
+    
+    echo "=== كل المفاتيح (الحقول) الموجودة ===\n";
+    foreach (array_keys($prods[0]) as $k) {
+        $val = $prods[0][$k];
+        $type = gettype($val);
+        $preview = is_array($val) ? json_encode($val, JSON_UNESCAPED_UNICODE) : (string)$val;
+        if (strlen($preview) > 100) $preview = substr($preview, 0, 100) . '...';
+        echo "  • $k ($type): $preview\n";
+    }
+}
+echo "\n=== ملاحظة ===\n";
+echo "ندوّر على حقل فيه القيم: 1.92, 2.88, 3.84 ...\n";
+echo "(قد يكون اسمه: qty_values / qty_list / steps / packages / options)\n";
