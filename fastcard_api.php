@@ -58,8 +58,8 @@ function _map_product($p, $profit) {
         'available' => !isset($p['available']) || $p['available'] == 1 || $p['available'] === true,
         'desc'      => $p['description'] ?? $p['desc'] ?? '',
         'params'    => is_array($p['params'] ?? null) ? $p['params'] : [],
-        'qty_min'   => (int)($p['qty_values']['min'] ?? 1),
-        'qty_max'   => (int)($p['qty_values']['max'] ?? 0), // 0 = بلا حد
+        'qty_min'   => (int)($p['qty_values']['min'] ?? $p['qty_min'] ?? 1),
+        'qty_max'   => (int)($p['qty_values']['max'] ?? $p['qty_max'] ?? 0), // 0 = بلا حد
         'type'      => $type,
     ];
 }
