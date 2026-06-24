@@ -65,7 +65,7 @@ function init_db($pdo) {
     $pdo->exec("CREATE TABLE IF NOT EXISTS orders (
         id $pk,
         user_id INTEGER, product_id TEXT, product_name TEXT,
-        qty INTEGER DEFAULT 1, player_id TEXT,
+        qty $real DEFAULT 1, player_id TEXT,
         price $real, total $real,
         uuid TEXT, fc_order_id TEXT, codes TEXT,
         status TEXT DEFAULT 'pending',
@@ -143,6 +143,7 @@ function init_db($pdo) {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS id_verified INTEGER DEFAULT 0"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE id_verifications ADD COLUMN IF NOT EXISTS image_back TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE otp_codes ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending'"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE orders ALTER COLUMN qty TYPE DOUBLE PRECISION"); } catch (Exception $e) {}
     } else {
         try { $pdo->exec("ALTER TABLE topups ADD COLUMN coupon TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}

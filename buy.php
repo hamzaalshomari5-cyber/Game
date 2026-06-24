@@ -11,7 +11,7 @@ if (!$U) out(false, 'سجّل دخول أولاً', ['login' => true]);
 
 $in = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 $pid    = (string)($in['product_id'] ?? '');
-$qty    = max(1, (int)($in['qty'] ?? 1));
+$qty    = max(1, (float)($in['qty'] ?? 1));
 $player = trim((string)($in['player_id'] ?? ''));
 
 $p = store_product($pid);
@@ -22,8 +22,8 @@ if (!$p['available']) out(false, 'المنتج غير متوفر حالياً �
 if ($qty < $p['qty_min']) out(false, 'أقل كمية مسموحة: ' . $p['qty_min']);
 if ($p['qty_max'] > 0 && $qty > $p['qty_max']) out(false, 'أكبر كمية مسموحة: ' . $p['qty_max']);
 
-// منتجات specificPackage = باقة محددة، الكمية لازم تكون 1 فقط
-if (($p['type'] ?? '') === 'specificPackage') $qty = 1;
+// منتجات specificPackage: الكمية من قائمة قيم محددة (تأتي من الواجهة كقيمة عشرية)
+// نتركها كما هي - لا نثبّتها على 1
 
 // إذا المنتج بيطلب معرف لاعب
 if (!empty($p['params']) && $player === '') out(false, 'مطلوب: ' . $p['params'][0]);

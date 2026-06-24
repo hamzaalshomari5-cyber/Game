@@ -45,7 +45,7 @@ function cart_summary() {
 // ===== إضافة منتج للسلة =====
 if ($action === 'add') {
     $pid = (string)($in['product_id'] ?? '');
-    $qty = max(1, (int)($in['qty'] ?? 1));
+    $qty = max(1, (float)($in['qty'] ?? 1));
     $player = trim((string)($in['player_id'] ?? ''));
 
     $p = store_product($pid);
@@ -53,7 +53,6 @@ if ($action === 'add') {
     if (!$p['available']) cout(false, 'المنتج غير متوفر حالياً ❌');
     if ($qty < $p['qty_min']) cout(false, 'أقل كمية مسموحة: ' . $p['qty_min']);
     if ($p['qty_max'] > 0 && $qty > $p['qty_max']) cout(false, 'أكبر كمية مسموحة: ' . $p['qty_max']);
-    if (($p['type'] ?? '') === 'specificPackage') $qty = 1;
     if (!empty($p['params']) && $player === '') cout(false, 'مطلوب: ' . $p['params'][0]);
 
     // مفتاح فريد حسب المنتج + الـ ID (نفس المنتج بنفس الـ ID = نزيد الكمية)
@@ -78,7 +77,7 @@ if ($action === 'remove') {
 // ===== تعديل الكمية =====
 if ($action === 'update') {
     $key = (string)($in['key'] ?? '');
-    $qty = max(1, (int)($in['qty'] ?? 1));
+    $qty = max(1, (float)($in['qty'] ?? 1));
     if (isset($_SESSION['cart'][$key])) {
         $p = store_product($_SESSION['cart'][$key]['product_id']);
         if ($p) {

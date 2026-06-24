@@ -75,22 +75,39 @@ function openBuy(card) {
   qMin = parseInt(card.dataset.qmin) || 1;
   qMax = parseInt(card.dataset.qmax) || 0;
   const pType = card.dataset.type || '';
-  // منتجات الباقة المحددة: الكمية ثابتة = 1
+  // منتجات الباقة المحددة: قائمة كميات بقيم محددة (مثل فاست كارد)
   const fixedQty = (pType === 'specificPackage');
   document.getElementById('mName').textContent = card.dataset.name;
   document.getElementById('mPrice').textContent = fmtPrice(curPrice);
   document.getElementById('mDesc').textContent = card.dataset.desc || '';
   const qty = document.getElementById('mQty');
+  const qtyRow = document.getElementById('mQtyRow');
+  const qtySelectRow = document.getElementById('mQtySelectRow');
+  const qtySelect = document.getElementById('mQtySelect');
+
   if (fixedQty) {
-    qMin = 1; qMax = 1;
-    qty.value = 1; qty.min = 1; qty.max = 1;
+    // نولّد قيم الكمية: تبدأ من 1.92 وتزيد 0.96 (نفس فاست كارد)
+    const startVal = 1.92, step = 0.96, count = 30;
+    qtySelect.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const v = Math.round((startVal + step * i) * 100) / 100;
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      qtySelect.appendChild(opt);
+    }
+    qtySelect.value = startVal;
+    qty.value = startVal; qMin = startVal; qMax = 0;
+    if (qtyRow) qtyRow.style.display = 'none';
+    if (qtySelectRow) qtySelectRow.style.display = '';
   } else {
+    qMin = parseInt(card.dataset.qmin) || 1;
+    qMax = parseInt(card.dataset.qmax) || 0;
     qty.value = qMin; qty.min = qMin;
     if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
+    if (qtyRow) qtyRow.style.display = '';
+    if (qtySelectRow) qtySelectRow.style.display = 'none';
   }
-  // إخفاء/إظهار صف الكمية
-  const qtyRow = document.getElementById('mQtyRow');
-  if (qtyRow) qtyRow.style.display = fixedQty ? 'none' : '';
   // حقل المعرف حسب متطلبات المنتج من API
   needVerify = card.dataset.verify === '1';
   verified = false; softPass = false;
@@ -122,8 +139,22 @@ function qtyStep(d) {
   i.value = v;
   updateTotal();
 }
+function onQtySelect() {
+  const sel = document.getElementById('mQtySelect');
+  const v = parseFloat(sel.value) || qMin;
+  document.getElementById('mQty').value = v;
+  updateTotal();
+}
+function getQty() {
+  // إذا القائمة المنسدلة ظاهرة، نأخذ قيمتها (قد تكون عشرية)
+  const selRow = document.getElementById('mQtySelectRow');
+  if (selRow && selRow.style.display !== 'none') {
+    return parseFloat(document.getElementById('mQtySelect').value) || qMin;
+  }
+  return parseFloat(document.getElementById('mQty').value) || qMin;
+}
 function updateTotal() {
-  const q = parseInt(document.getElementById('mQty').value) || qMin;
+  const q = getQty();
   document.getElementById('mTotal').textContent = fmtPrice(curPrice * q);
 }
 document.addEventListener('input', e => { if (e.target.id === 'mQty') updateTotal(); });
@@ -195,7 +226,7 @@ async function submitBuy() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         product_id: modal.dataset.pid,
-        qty: parseInt(document.getElementById('mQty').value) || 1,
+        qty: getQty(),
         player_id: document.getElementById('mPlayer').value.trim(),
       }),
     });
@@ -228,7 +259,7 @@ async function addToCart() {
       body: JSON.stringify({
         action: 'add',
         product_id: modal.dataset.pid,
-        qty: parseInt(document.getElementById('mQty').value) || 1,
+        qty: getQty(),
         player_id: document.getElementById('mPlayer').value.trim(),
       }),
     });

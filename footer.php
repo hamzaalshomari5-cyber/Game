@@ -7,7 +7,7 @@
     <?php if (INSTAGRAM): ?><a href="<?= e(INSTAGRAM) ?>" target="_blank">انستغرام</a><?php endif; ?>
   </div>
 </footer>
-<script src="/app.js?v=8" defer></script>
+<script src="/app.js?v=9" defer></script>
 </body>
 </html>
 <?php /* تتبّع الطلبات تلقائياً بالخلفية لو المستخدم مسجّل دخول */ ?>

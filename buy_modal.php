@@ -11,6 +11,10 @@
         <button type="button" onclick="qtyStep(1)">+</button>
       </div>
     </div>
+    <div class="m-qty-row" id="mQtySelectRow" style="display:none">
+      <label>اختر الكمية</label>
+      <select id="mQtySelect" onchange="onQtySelect()"></select>
+    </div>
     <div id="mPlayerWrap">
       <label id="mPlayerLabel">ID اللاعب</label>
       <input type="text" id="mPlayer" placeholder="" oninput="resetVerify()">
