@@ -269,7 +269,7 @@ function require_admin() {
 function e($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 /* ===== العملة وسعر الصرف ===== */
-function usd_rate() { return max(0.0001, (float)setting('usd_rate', 11000)); }
+function usd_rate() { return max(0.0001, (float)setting('usd_rate', 13500)); }
 function display_currency() { return (($_COOKIE['currency'] ?? 'syp') === 'usd') ? 'usd' : 'syp'; }
 function fmt_price($syp) {
     if (display_currency() === 'usd') return number_format($syp / usd_rate(), 2) . ' $';
