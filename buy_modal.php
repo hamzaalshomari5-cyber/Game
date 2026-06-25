@@ -6,7 +6,7 @@
     <div class="m-qty-row" id="mQtyRow">
       <label>العدد</label>
       <div class="qty-row">
-        <button type="button" onclick="qtyStep(-1)">−</button>
+        <button type="button" onclick="qtyStep(1)">+</button>
         <input type="number" id="mQty" value="1" min="1">
         <button type="button" onclick="qtyStep(1)">+</button>
       </div>
