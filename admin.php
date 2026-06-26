@@ -25,6 +25,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->prepare("UPDATE users SET banned = 1 - COALESCE(banned,0) WHERE id=? AND role <> 'admin'")->execute([$uid]);
         $msg = 'تم تحديث حالة المستخدم ✅';
     }
+    // إرسال رسالة لمستخدم (أو لكل المستخدمين)
+    if (isset($_POST['send_msg'])) {
+        $title = trim($_POST['msg_title'] ?? '');
+        $body  = trim($_POST['msg_body'] ?? '');
+        $all   = !empty($_POST['msg_all']);
+        $uid   = (int)($_POST['msg_user'] ?? 0);
+        if ($title === '' && $body === '') {
+            $msg = 'اكتب نص الرسالة أولاً';
+        } elseif ($all) {
+            $ids = db()->query("SELECT id FROM users")->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($ids as $id) notify_user((int)$id, $title !== '' ? $title : 'رسالة من الإدارة', $body, '📩');
+            $msg = 'تم إرسال الرسالة لكل المستخدمين ✅ (' . count($ids) . ' مستخدم)';
+        } elseif ($uid > 0) {
+            $chk = db()->prepare("SELECT name FROM users WHERE id=?");
+            $chk->execute([$uid]);
+            $name = $chk->fetchColumn();
+            if ($name !== false) {
+                notify_user($uid, $title !== '' ? $title : 'رسالة من الإدارة', $body, '📩');
+                $msg = 'تم إرسال الرسالة إلى ' . e($name) . ' (#' . $uid . ') ✅';
+            } else {
+                $msg = 'ما في مستخدم بهالرقم ❌';
+            }
+        } else {
+            $msg = 'حط رقم المستخدم أو اختر "إرسال للجميع"';
+        }
+    }
     if (isset($_POST['sync_products'])) {
         store_products(true); fc_content(0, true);
         $msg = 'تمت مزامنة المنتجات من FastCard ✅';
@@ -330,6 +356,21 @@ include __DIR__ . '/header.php'; ?>
     </form>
   </div>
   <div class="card">
+    <h3>إرسال رسالة لمستخدم 📩</h3>
+    <p class="muted">بتوصل الرسالة للمستخدم كإشعار داخل الموقع. حط رقم المستخدم، أو فعّل "إرسال للجميع".</p>
+    <form method="post">
+      <div class="inline-form">
+        <input name="msg_user" id="msgUser" type="number" placeholder="رقم المستخدم">
+        <input name="msg_title" placeholder="عنوان الرسالة (اختياري)">
+      </div>
+      <textarea name="msg_body" id="msgBody" placeholder="اكتب نص الرسالة هون..." rows="3" required style="width:100%; margin-top:10px"></textarea>
+      <label style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer">
+        <input type="checkbox" name="msg_all" value="1" style="width:auto"> إرسال لكل المستخدمين
+      </label>
+      <button class="btn" name="send_msg" value="1" style="margin-top:12px">إرسال 📩</button>
+    </form>
+  </div>
+  <div class="card">
     <h3>المستخدمين (<?= count($users) ?>)</h3>
     <input type="text" id="userSearch" placeholder="🔍 ابحث بالاسم أو الإيميل..." onkeyup="filterUsers()" style="margin-bottom:12px">
     <table class="tbl" id="usersTable">
@@ -343,13 +384,14 @@ include __DIR__ . '/header.php'; ?>
           <td><?= $u['role'] === 'admin' ? '👑 أدمن' : 'مستخدم' ?></td>
           <td><?= !empty($u['banned']) ? '🚫 محظور' : '✅ نشط' ?></td>
           <td>
+            <button type="button" class="btn-mini" onclick="msgTo(<?= $u['id'] ?>)">📩 رسالة</button>
             <?php if ($u['role'] !== 'admin'): ?>
             <form method="post" style="display:inline">
               <button class="btn-mini <?= !empty($u['banned']) ? '' : 'danger' ?>" name="toggle_ban" value="<?= $u['id'] ?>">
                 <?= !empty($u['banned']) ? 'فك الحظر' : 'حظر' ?>
               </button>
             </form>
-            <?php else: ?>—<?php endif; ?>
+            <?php endif; ?>
           </td>
         </tr>
       <?php endforeach; ?>
@@ -362,6 +404,14 @@ include __DIR__ . '/header.php'; ?>
       if (i === 0) return;
       row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
+  }
+  function msgTo(id) {
+    const u = document.getElementById('msgUser');
+    const allBox = document.querySelector('input[name="msg_all"]');
+    if (allBox) allBox.checked = false;
+    u.value = id;
+    u.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('msgBody').focus();
   }
   </script>
 
