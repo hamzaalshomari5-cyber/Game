@@ -309,21 +309,13 @@ function disc_label($type, $amount) {
     return $type === 'percent' ? $n . '%' : number_format($a) . ' ل.س';
 }
 
-// يبحث عن خصم دائم مفعّل لهذا المستخدم يناسب الـ ID المطلوب
-// يفضّل الخصم المربوط بنفس الـ ID، وإلا الخصم العام (player_id فارغ)
+// يبحث عن خصم دائم مفعّل لهذا المستخدم — ينطبق على كل مشترياته (بدون شرط ID)
 // الخصم دائم: لا ينتهي بالاستخدام، ويبقى فعّالاً ما دام الكود مفعّلاً في لوحة الأدمن
-function find_active_discount($userId, $player) {
-    $player = trim((string)$player);
-    $base = "SELECT ud.id AS id, ud.code AS code, ud.player_id AS player_id, c.type AS type, c.amount AS amount
-             FROM user_discounts ud JOIN coupons c ON c.id = ud.coupon_id
-             WHERE ud.user_id=? AND ud.status='active' AND c.active=1 ";
-    if ($player !== '') {
-        $st = db()->prepare($base . "AND ud.player_id=? ORDER BY ud.id ASC");
-        $st->execute([$userId, $player]);
-        $d = $st->fetch(PDO::FETCH_ASSOC);
-        if ($d) return $d;
-    }
-    $st = db()->prepare($base . "AND ud.player_id='' ORDER BY ud.id ASC");
+function find_active_discount($userId, $player = '') {
+    $st = db()->prepare("SELECT ud.id AS id, ud.code AS code, ud.player_id AS player_id, c.type AS type, c.amount AS amount
+        FROM user_discounts ud JOIN coupons c ON c.id = ud.coupon_id
+        WHERE ud.user_id=? AND ud.status='active' AND c.active=1
+        ORDER BY ud.id DESC");
     $st->execute([$userId]);
     $d = $st->fetch(PDO::FETCH_ASSOC);
     return $d ?: null;

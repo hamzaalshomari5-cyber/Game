@@ -157,6 +157,11 @@ function getQty() {
 function allDiscounts() {
   return (typeof MY_DISCOUNTS !== 'undefined' && Array.isArray(MY_DISCOUNTS)) ? MY_DISCOUNTS : [];
 }
+// الخصم الدائم المفعّل (ينطبق على كل المنتجات)
+function activeDiscount() {
+  const ds = allDiscounts();
+  return ds.length ? ds[0] : null;
+}
 // تنسيق الرقم: 10 => "10"، 10.5 => "10.5"
 function fmtNum(n) { n = parseFloat(n) || 0; return (n % 1 === 0) ? String(n) : String(Math.round(n * 100) / 100); }
 // نص نسبة/قيمة الخصم
@@ -169,32 +174,35 @@ function discValue(type, amount, total) {
 function updateTotal() {
   const q = getQty();
   const base = Math.round(curPrice * q);
-  const pid = (document.getElementById('mPlayer').value || '').trim();
-  const ds = allDiscounts();
-  const line = document.getElementById('mDiscLine');
-  // الخصم القابل للتطبيق فعلياً: مطابق للـ ID المُدخل، أو غير مربوط بأي ID
-  const applies = ds.find(x => x.player_id && x.player_id === pid) || ds.find(x => !x.player_id);
-  if (applies) {
-    const disc = discValue(applies.type, parseFloat(applies.amount), base);
-    document.getElementById('mTotal').textContent = fmtPrice(Math.max(1, base - disc));
+  const d = activeDiscount();
+  const line  = document.getElementById('mDiscLine');
+  const oldT  = document.getElementById('mOldTotal');
+  const oldP  = document.getElementById('mOldPrice');
+  if (d) {
+    const disc  = discValue(d.type, parseFloat(d.amount), base);
+    const final = Math.max(1, base - disc);
+    document.getElementById('mTotal').textContent = fmtPrice(final);
+    if (oldT) { oldT.style.display = ''; oldT.textContent = fmtPrice(base); }
+    // سعر الوحدة: نعرض القديم مشطوب والجديد (للنسبة المئوية)
+    if (d.type === 'percent') {
+      const unitNew = Math.max(1, Math.round(curPrice * (1 - parseFloat(d.amount) / 100)));
+      document.getElementById('mPrice').textContent = fmtPrice(unitNew);
+      if (oldP) { oldP.style.display = ''; oldP.textContent = fmtPrice(curPrice); }
+    } else {
+      document.getElementById('mPrice').textContent = fmtPrice(curPrice);
+      if (oldP) oldP.style.display = 'none';
+    }
     if (line) {
       line.style.display = '';
       line.className = 'm-disc ok';
-      line.textContent = '🎁 خصمك الدائم ' + discLabel(applies) + ' — وفّرت ' + fmtPrice(disc);
+      line.textContent = '🎁 خصمك الدائم ' + discLabel(d) + ' — وفّرت ' + fmtPrice(disc);
     }
-    return;
-  }
-  // ما في خصم قابل للتطبيق الآن — إذا عندو خصم مربوط بـ ID نظهر تلميح
-  document.getElementById('mTotal').textContent = fmtPrice(base);
-  const locked = ds.find(x => x.player_id);
-  if (line) {
-    if (locked) {
-      line.style.display = '';
-      line.className = 'm-disc hint';
-      line.textContent = '🎁 عندك خصم دائم ' + discLabel(locked) + ' — اكتب ID: ' + locked.player_id + ' حتى يتطبّق';
-    } else {
-      line.style.display = 'none';
-    }
+  } else {
+    document.getElementById('mTotal').textContent = fmtPrice(base);
+    document.getElementById('mPrice').textContent = fmtPrice(curPrice);
+    if (oldT) oldT.style.display = 'none';
+    if (oldP) oldP.style.display = 'none';
+    if (line) line.style.display = 'none';
   }
 }
 document.addEventListener('input', e => { if (e.target.id === 'mQty' || e.target.id === 'mPlayer') updateTotal(); });

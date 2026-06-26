@@ -384,15 +384,15 @@ include __DIR__ . '/header.php'; ?>
   </div>
   <div class="card">
     <h3>كود خصم على الأسعار (مربوط بـ ID) 🏷️</h3>
-    <p class="muted">هذا الكود <b>بيخصم من سعر الشراء</b>، ومربوط بـ <b>ID لاعب محدد</b>. الزبون بيفعّل الكود من صفحة "كود الخصم"، وبعدها الخصم بينطبق <b>تلقائياً وبشكل دائم</b> على كل مشترياته لنفس الـ ID. لإيقافه: اضغط "إيقاف" على الكود. اتركه فارغاً ليشتغل لأي ID.</p>
+    <p class="muted">هذا الكود <b>بيخصم من سعر الشراء</b>. الزبون بيفعّل الكود من صفحة "كود الخصم"، وبعدها الخصم بينطبق <b>تلقائياً وبشكل دائم على كل مشترياته (كل المنتجات)</b> — وبيشوف السعر القديم مشطوب والسعر الجديد. لإيقافه: اضغط "إيقاف" على الكود. خانة الـ ID اختيارية (للملاحظة فقط).</p>
     <form method="post" class="inline-form">
-      <input name="pc_code" placeholder="الكود مثلاً VIP100" required style="text-transform:uppercase">
+      <input name="pc_code" placeholder="الكود مثلاً VIP" required style="text-transform:uppercase">
       <select name="pc_type">
         <option value="percent">نسبة %</option>
         <option value="fixed">مبلغ ثابت ل.س</option>
       </select>
-      <input name="pc_amount" type="number" step="any" placeholder="قيمة الخصم" required>
-      <input name="pc_player" placeholder="ID اللاعب المربوط (فارغ=أي ID)">
+      <input name="pc_amount" type="number" step="any" placeholder="قيمة الخصم (مثلاً 10)" required>
+      <input name="pc_player" placeholder="ملاحظة/ID (اختياري)">
       <input name="pc_maxuses" type="number" placeholder="حد الاستخدام (0=لا نهائي)">
       <button class="btn" name="add_price_coupon" value="1">إضافة</button>
     </form>

@@ -1,7 +1,7 @@
 <div class="modal" id="buyModal">
   <div class="modal-box">
     <h3 id="mName">اسم المنتج</h3>
-    <div class="m-price" id="mPrice"></div>
+    <div class="m-price"><s class="old-price" id="mOldPrice" style="display:none"></s> <span id="mPrice"></span></div>
     <p class="muted" id="mDesc"></p>
     <input type="hidden" id="mQty" value="1">
     <div class="m-qty-row" id="mQtyRow" style="display:none"></div>
@@ -15,7 +15,7 @@
       <div class="verify-box" id="mVerify" style="display:none"></div>
     </div>
     <div class="m-disc" id="mDiscLine" style="display:none"></div>
-    <div class="m-total">الإجمالي: <b id="mTotal"></b></div>
+    <div class="m-total">الإجمالي: <s class="old-price" id="mOldTotal" style="display:none"></s> <b id="mTotal"></b></div>
     <div class="m-msg" id="mMsg"></div>
     <div class="m-actions">
       <button class="btn ghost" onclick="closeBuy()">إلغاء</button>
