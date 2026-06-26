@@ -115,9 +115,8 @@ code { background: var(--bg2); padding: 2px 6px; border-radius: 6px; font-size: 
 .cat-icon {
   width: 100%; aspect-ratio: 1; border-radius: 10px;
   background:
-    url('/brand-logo.png') center / 74% no-repeat,
-    radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 62%),
-    linear-gradient(160deg, #161d3d 0%, #0b0e20 100%);
+    url('/brand-logo.png') center / 86% no-repeat,
+    linear-gradient(160deg, #15193a 0%, #0a0d1e 100%);
   border: 1px solid var(--border);
   font-size: 0; /* يخفي الإيموجي القديم */
 }
@@ -127,9 +126,8 @@ code { background: var(--bg2); padding: 2px 6px; border-radius: 6px; font-size: 
 .product-card .ph, .cat-card .ph, .ph {
   width: 100%; aspect-ratio: 1; border-radius: 10px;
   background:
-    url('/brand-logo.png') center / 74% no-repeat,
-    radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 62%),
-    linear-gradient(160deg, #161d3d 0%, #0b0e20 100%);
+    url('/brand-logo.png') center / 86% no-repeat,
+    linear-gradient(160deg, #15193a 0%, #0a0d1e 100%);
   border: 1px solid var(--border);
   font-size: 0; /* يخفي الإيموجي القديم 🎮 */
 }
