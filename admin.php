@@ -64,6 +64,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = 'اكتب نص الرد';
         }
     }
+    // رفع صورة لقسم/منتج
+    if (isset($_POST['save_img'])) {
+        $iid = trim($_POST['img_item_id'] ?? '');
+        if ($iid === '') {
+            $msg = 'حدد رقم القسم/المنتج';
+        } elseif (empty($_FILES['img_file']['tmp_name'])) {
+            $msg = 'اختر صورة';
+        } else {
+            $f = $_FILES['img_file'];
+            $info = @getimagesize($f['tmp_name']);
+            $mime = $info['mime'] ?? '';
+            $okMimes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+            if (!in_array($mime, $okMimes, true)) {
+                $msg = 'الملف لازم يكون صورة (PNG / JPG / WEBP / GIF)';
+            } elseif ($f['size'] > 2 * 1024 * 1024) {
+                $msg = 'حجم الصورة كبير — الحد الأقصى 2 ميغا';
+            } else {
+                $data = base64_encode(file_get_contents($f['tmp_name']));
+                if (is_pg()) {
+                    db()->prepare("INSERT INTO item_images (item_id,mime,data,updated_at) VALUES (?,?,?,NOW())
+                        ON CONFLICT (item_id) DO UPDATE SET mime=EXCLUDED.mime, data=EXCLUDED.data, updated_at=NOW()")
+                        ->execute([$iid, $mime, $data]);
+                } else {
+                    db()->prepare("INSERT OR REPLACE INTO item_images (item_id,mime,data,updated_at) VALUES (?,?,?,datetime('now'))")
+                        ->execute([$iid, $mime, $data]);
+                }
+                $msg = 'تم حفظ الصورة ✅';
+            }
+        }
+    }
+    if (isset($_POST['del_img'])) {
+        db()->prepare("DELETE FROM item_images WHERE item_id=?")->execute([(string)$_POST['del_img']]);
+        $msg = 'تم حذف الصورة ✅';
+    }
     if (isset($_POST['sync_products'])) {
         store_products(true); fc_content(0, true);
         $msg = 'تمت مزامنة المنتجات من FastCard ✅';
@@ -234,6 +268,7 @@ include __DIR__ . '/header.php'; ?>
   <a class="<?= $tab === 'topups' ? 'on' : '' ?>" href="?tab=topups">الإيداعات</a>
   <a class="<?= $tab === 'users' ? 'on' : '' ?>" href="?tab=users">المستخدمين</a>
   <a class="<?= $tab === 'support' ? 'on' : '' ?>" href="?tab=support">الدعم 🎧</a>
+  <a class="<?= $tab === 'images' ? 'on' : '' ?>" href="?tab=images">الصور 🖼️</a>
   <a class="<?= $tab === 'coupons' ? 'on' : '' ?>" href="?tab=coupons">كوبونات</a>
   <a class="<?= $tab === 'slides' ? 'on' : '' ?>" href="?tab=slides">السلايدر</a>
   <a class="<?= $tab === 'idverify' ? 'on' : '' ?>" href="?tab=idverify">توثيق الهوية</a>
@@ -483,6 +518,50 @@ include __DIR__ . '/header.php'; ?>
     <?php endif; ?>
   </div>
   <?php endif; ?>
+
+<?php elseif ($tab === 'images'):
+  $imgMap = item_images_map();
+  $rootCats = [];
+  try { $rootCats = fc_content(0)['categories']; } catch (Exception $e) {}
+  if (!function_exists('admin_img_row')):
+    function admin_img_row($c, $imgMap, $indent = false) {
+      $id = (string)$c['id']; $has = isset($imgMap[$id]); ?>
+      <div class="img-row"<?= $indent ? ' style="margin-inline-start:26px"' : '' ?>>
+        <div class="img-thumb">
+          <?php if ($has): ?><img src="/img.php?id=<?= rawurlencode($id) ?>&v=<?= substr(md5($imgMap[$id]),0,6) ?>" alt=""><?php else: ?><span class="muted small">—</span><?php endif; ?>
+        </div>
+        <div class="img-info"><b><?= e($c['name']) ?></b><br><span class="muted small">ID: <?= e($id) ?></span></div>
+        <form method="post" enctype="multipart/form-data" class="img-up">
+          <input type="hidden" name="img_item_id" value="<?= e($id) ?>">
+          <input type="file" name="img_file" accept="image/*" required>
+          <button class="btn-mini" name="save_img" value="1">رفع</button>
+        </form>
+        <?php if ($has): ?>
+        <form method="post" onsubmit="return confirm('حذف صورة هذا القسم؟')">
+          <button class="btn-mini danger" name="del_img" value="<?= e($id) ?>">حذف</button>
+        </form>
+        <?php endif; ?>
+      </div>
+    <?php }
+  endif; ?>
+  <div class="card">
+    <h3>صور الأقسام والمنتجات 🖼️</h3>
+    <p class="muted">ارفع صورة لكل قسم — والمنتجات داخل القسم بتاخد صورتو تلقائياً. الصور بتتخزن بقاعدة البيانات وبتضل بعد التحديث. (الحد الأقصى 2 ميغا للصورة).</p>
+    <form method="post" enctype="multipart/form-data" class="inline-form">
+      <input name="img_item_id" placeholder="رقم القسم/المنتج (ID)" required>
+      <input type="file" name="img_file" accept="image/*" required>
+      <button class="btn" name="save_img" value="1">حفظ</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>الأقسام (ارفع صورة لكل قسم)</h3>
+    <?php if (!$rootCats): ?><p class="empty">تعذّر جلب الأقسام — تأكد من توكن FastCard.</p><?php endif; ?>
+    <?php foreach ($rootCats as $c): ?>
+      <?php admin_img_row($c, $imgMap); ?>
+      <?php try { $subs = fc_content($c['id'])['categories']; } catch (Exception $e) { $subs = []; }
+        foreach ($subs as $s): admin_img_row($s, $imgMap, true); endforeach; ?>
+    <?php endforeach; ?>
+  </div>
 
 <?php elseif ($tab === 'coupons'):
   $coupons = db()->query("SELECT * FROM coupons ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC); ?>

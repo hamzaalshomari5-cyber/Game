@@ -119,6 +119,13 @@ function init_db($pdo) {
         read_user INTEGER DEFAULT 0, read_admin INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT $now
     )");
+    // صور مخصّصة للأقسام/المنتجات (مخزّنة بقاعدة البيانات لتبقى بعد التحديث)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS item_images (
+        item_id TEXT PRIMARY KEY,
+        mime TEXT DEFAULT 'image/png',
+        data TEXT,
+        updated_at TIMESTAMP DEFAULT $now
+    )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS slides (
         id $pk,
         image TEXT, link TEXT, sort INTEGER DEFAULT 0, active INTEGER DEFAULT 1,
@@ -314,6 +321,28 @@ function disc_label($type, $amount) {
     $a = (float)$amount;
     $n = ($a == (int)$a) ? (string)(int)$a : rtrim(rtrim(number_format($a, 2, '.', ''), '0'), '.');
     return $type === 'percent' ? $n . '%' : number_format($a) . ' ل.س';
+}
+
+// ===== صور الأقسام/المنتجات المخصّصة =====
+// خريطة [item_id => updated_at] لكل العناصر يلي إلها صورة (استعلام واحد لكل صفحة)
+function item_images_map() {
+    static $m = null;
+    if ($m === null) {
+        $m = [];
+        try {
+            foreach (db()->query("SELECT item_id, updated_at FROM item_images")->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $m[(string)$r['item_id']] = (string)$r['updated_at'];
+            }
+        } catch (Exception $e) {}
+    }
+    return $m;
+}
+// رابط صورة العنصر إن وجدت، وإلا null
+function item_img_url($id) {
+    $id = (string)$id;
+    $m = item_images_map();
+    if (!isset($m[$id])) return null;
+    return '/img.php?id=' . rawurlencode($id) . '&v=' . substr(md5($m[$id]), 0, 8);
 }
 
 // يبحث عن خصم دائم مفعّل لهذا المستخدم — ينطبق على كل مشترياته (بدون شرط ID)

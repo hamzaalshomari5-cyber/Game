@@ -449,6 +449,19 @@ body.light .btn-google { border-color: #dadce0; }
 .sc-msg.admin .sc-bubble { background: rgba(47,208,114,.12); border: 1px solid var(--ok); border-top-left-radius: 4px; }
 .sc-who { font-size: .72rem; font-weight: 800; opacity: .8; margin-bottom: 3px; }
 .sc-time { font-size: .65rem; color: var(--muted); margin-top: 4px; }
+/* إدارة صور الأقسام */
+.img-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.img-thumb { width: 54px; height: 54px; border-radius: 10px; overflow: hidden; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border); }
+.img-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.img-info { flex: 1; min-width: 120px; }
+.img-up { display: flex; align-items: center; gap: 6px; }
+.img-up input[type=file] { max-width: 170px; font-size: .8rem; }
+/* خلفية الموقع — علامة مائية للوغو */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: url('/brand-logo.png') center 15% / min(560px, 80%) no-repeat;
+  opacity: .07;
+}
 .ai-typing span { animation: aiBlink 1.2s infinite; }
 .ai-typing span:nth-child(2) { animation-delay: .2s; }
 .ai-typing span:nth-child(3) { animation-delay: .4s; }
