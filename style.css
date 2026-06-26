@@ -112,11 +112,19 @@ code { background: var(--bg2); padding: 2px 6px; border-radius: 6px; font-size: 
 }
 .cat-card, .product-card { text-align: center; cursor: pointer; transition: transform .15s, background .15s; }
 .cat-card:hover, .product-card:hover { background: var(--card-hover); transform: translateY(-3px); }
-.cat-icon { font-size: 2rem; }
+.cat-icon {
+  width: 100%; aspect-ratio: 1; border-radius: 10px;
+  background: url('/brand-logo.png') center / 78% no-repeat, var(--bg);
+  font-size: 0; /* يخفي الإيموجي القديم */
+}
 .cat-name { font-weight: 800; margin-top: 8px; color: var(--text); }
 .cat-count { color: var(--muted); font-size: .8rem; margin-top: 4px; }
 .product-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
-.product-card .ph { font-size: 2.4rem; padding: 18px 0; }
+.product-card .ph, .cat-card .ph, .ph {
+  width: 100%; aspect-ratio: 1; border-radius: 10px;
+  background: url('/brand-logo.png') center / 78% no-repeat, var(--bg);
+  font-size: 0; /* يخفي الإيموجي القديم 🎮 */
+}
 .p-name { font-weight: 700; margin-top: 8px; font-size: .92rem; min-height: 2.4em; }
 .p-price { color: var(--accent); font-weight: 900; margin-top: 4px; }
 .oos { opacity: .55; }
@@ -708,13 +716,13 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
   }
   .card { padding: 10px; border-radius: 12px; }
   .cat-card { padding: 12px 6px; }
-  .cat-icon { font-size: 1.6rem; }
+  .cat-icon { font-size: 0; }
   .cat-name { font-size: .78rem; margin-top: 6px; }
   .cat-count { font-size: .68rem; }
   .product-card { padding: 10px 6px; }
   .p-name { font-size: .76rem; min-height: 2.3em; line-height: 1.4; }
   .p-price { font-size: .8rem; padding: 2px 7px; margin-top: 5px; }
-  .product-card .ph { font-size: 1.9rem; padding: 10px 0; }
+  .product-card .ph { font-size: 0; padding: 0; }
   .fav-btn { width: 26px; height: 26px; font-size: .75rem; top: 5px; inset-inline-start: 5px; }
   .oos-badge { font-size: .68rem; }
   .section-title { font-size: 1.15rem; }
@@ -743,7 +751,7 @@ a, button { transition: color .15s, background .15s, transform .15s, box-shadow 
 /* ===== دقّة أعلى: حواف وصور أنعم ===== */
 .product-card img, .cat-img {
   border-radius: 12px;
-  background: var(--bg);
+  background: url('/brand-bg.png') center / 82% no-repeat, var(--bg);
 }
 .card {
   border-radius: 16px;
