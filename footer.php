@@ -57,6 +57,39 @@
     }
   }
 
+  // صوت تنبيه قصير (يفشل بصمت إذا منعه المتصفح)
+  function beep() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      var ctx = new Ctx();
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+      o.start(); o.stop(ctx.currentTime + 0.47);
+    } catch (e) {}
+  }
+
+  // تنبيه داخل الصفحة (يشتغل دائماً بدون إذن)
+  function showInAppToast(title, body) {
+    var t = document.createElement('div');
+    t.className = 'app-toast';
+    t.innerHTML = '<div class="at-icon">🔔</div><div class="at-text"><div class="at-title"></div><div class="at-body"></div></div>';
+    t.querySelector('.at-title').textContent = title;
+    t.querySelector('.at-body').textContent = body || '';
+    t.onclick = function () { location.href = '/notifications.php'; };
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(function () {
+      t.classList.remove('show');
+      setTimeout(function () { if (t.parentNode) t.remove(); }, 450);
+    }, 6000);
+    beep();
+  }
+
   // تحديث جرس الإشعارات + عرض إشعار متصفح للجديد
   var lastNotifId = null;
   var firstCheck = true;
@@ -73,10 +106,11 @@
           }
           else { badge.style.display = 'none'; if (bell) bell.classList.remove('has-new'); }
         }
-        // إشعار متصفح لأي إشعار جديد (مش بأول فحص عشان ما نزعج)
+        // إشعار جديد (مش بأول فحص عشان ما نزعج)
         if (d.latest) {
           if (!firstCheck && lastNotifId !== null && d.latest.id !== lastNotifId) {
-            showBrowserNotif(d.latest.title, d.latest.body);
+            showInAppToast(d.latest.title, d.latest.body);  // تنبيه داخل الصفحة (دائماً)
+            showBrowserNotif(d.latest.title, d.latest.body); // إشعار متصفح (إذا مسموح)
           }
           lastNotifId = d.latest.id;
         }
@@ -84,7 +118,7 @@
       }).catch(function(){});
   }
   updateBell();
-  setInterval(updateBell, 20000);
+  setInterval(updateBell, 15000);
 })();
 </script>
 <?php endif; ?>
