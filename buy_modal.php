@@ -3,14 +3,8 @@
     <h3 id="mName">اسم المنتج</h3>
     <div class="m-price" id="mPrice"></div>
     <p class="muted" id="mDesc"></p>
-    <div class="m-qty-row" id="mQtyRow">
-      <label>العدد</label>
-      <div class="qty-row">
-        <button type="button" onclick="qtyStep(-1)">-</button>
-        <input type="number" id="mQty" value="1" min="1">
-        <button type="button" onclick="qtyStep(1)">+</button>
-      </div>
-    </div>
+    <input type="hidden" id="mQty" value="1">
+    <div class="m-qty-row" id="mQtyRow" style="display:none"></div>
     <div class="m-qty-row" id="mQtySelectRow" style="display:none">
       <label>اختر الكمية</label>
       <select id="mQtySelect" onchange="onQtySelect()"></select>
