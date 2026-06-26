@@ -9,11 +9,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($code === '') {
         $msg = 'اكتب كود الخصم';
     } else {
-        $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1 AND (scope IS NULL OR scope <> 'price')");
+        $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1");
         $st->execute([$code]);
         $c = $st->fetch(PDO::FETCH_ASSOC);
         if (!$c) {
             $msg = 'كود الخصم غير صحيح أو غير فعّال';
+        } elseif (($c['scope'] ?? 'wallet') === 'price') {
+            // ===== كود خصم على الأسعار: يتفعّل على الحساب وينطبق تلقائياً وقت الشراء =====
+            if ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses']) {
+                $msg = 'انتهت صلاحية كود الخصم (تم استخدامه بالكامل)';
+            } else {
+                // مرة واحدة لكل مستخدم
+                $st = db()->prepare("SELECT COUNT(*) FROM user_discounts WHERE coupon_id=? AND user_id=?");
+                $st->execute([$c['id'], $U['id']]);
+                if ($st->fetchColumn()) {
+                    $msg = 'فعّلت هذا الكود مسبقاً';
+                } else {
+                    $lock = trim((string)($c['player_id'] ?? ''));
+                    db()->beginTransaction();
+                    db()->prepare("INSERT INTO user_discounts (user_id,coupon_id,code,player_id,type,amount,status) VALUES (?,?,?,?,?,?, 'active')")
+                        ->execute([$U['id'], $c['id'], $code, $lock, $c['type'], $c['amount']]);
+                    db()->prepare("UPDATE coupons SET used = used + 1 WHERE id=?")->execute([$c['id']]);
+                    db()->commit();
+                    $ok = true;
+                    $dtxt = $c['type'] === 'percent'
+                        ? rtrim(rtrim((string)$c['amount'], '0'), '.') . '%'
+                        : number_format($c['amount']) . ' ل.س';
+                    $msg = 'تم تفعيل كود الخصم ✅ خصم ' . $dtxt . ' دائم بينطبق تلقائياً على كل مشترياتك'
+                         . ($lock !== '' ? ' لـ ID: ' . $lock : '') . ' 🎁';
+                    notify_user($U['id'], 'تم تفعيل كود خصم 🎁',
+                        'خصم ' . $dtxt . ' دائم رح ينطبق تلقائياً على كل مشترياتك' . ($lock !== '' ? ' لـ ID ' . $lock : '') . '.', '🎁');
+                    notify_admin("🏷️ <b>تفعيل كود خصم أسعار</b>\nالمستخدم: " . e($U['name']) . "\nالكود: $code" . ($lock !== '' ? "\nID: $lock" : ""));
+                }
+            }
         } elseif ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses']) {
             $msg = 'انتهت صلاحية كود الخصم (تم استخدامه بالكامل)';
         } elseif (!empty($c['user_id']) && (int)$c['user_id'] !== (int)$U['id']) {
@@ -26,12 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = 'استخدمت هذا الكود مسبقاً';
             } else {
                 // الكوبون هنا يعطي مبلغ ثابت مباشرة للمحفظة
-                // (نوع percent يُحسب على قيمة ثابتة مرجعية، والأفضل للكوبون المنفصل أن يكون مبلغ ثابت)
                 if ($c['type'] === 'fixed') {
                     $bonus = (float)$c['amount'];
                 } else {
-                    // نسبة — تُطبّق كمبلغ ثابت بسيط (نعتبر النسبة على 100000 كمكافأة ترحيبية)
-                    // الأفضل استخدام أكواد "مبلغ ثابت" للتفعيل المباشر
                     $bonus = 0;
                     $msg = 'هذا الكود من نوع نسبة ويُطبّق عند الإيداع فقط';
                 }

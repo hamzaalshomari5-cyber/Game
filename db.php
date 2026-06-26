@@ -104,6 +104,14 @@ function init_db($pdo) {
         coupon_id INTEGER, user_id INTEGER, used_at TIMESTAMP DEFAULT $now,
         PRIMARY KEY(coupon_id, user_id)
     )");
+    // خصومات الأسعار المفعّلة على حسابات المستخدمين (من صفحة كود الخصم)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS user_discounts (
+        id $pk,
+        user_id INTEGER, coupon_id INTEGER, code TEXT DEFAULT '',
+        player_id TEXT DEFAULT '', type TEXT DEFAULT 'percent', amount $real DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT $now, used_at TIMESTAMP
+    )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS slides (
         id $pk,
         image TEXT, link TEXT, sort INTEGER DEFAULT 0, active INTEGER DEFAULT 1,
@@ -284,37 +292,32 @@ function fmt_price($syp) {
 }
 
 /* ===== كوبون خصم على الأسعار (مربوط بـ ID لاعب محدد) =====
-   يتحقق من الكود + الـ ID ويحسب الخصم على الإجمالي.
-   يرجّع: ['ok'=>true,'coupon'=>..,'discount'=>قيمة الخصم,'new_total'=>الإجمالي بعد الخصم]
-          أو ['ok'=>false,'msg'=>'سبب الرفض'] */
-function check_price_coupon($code, $player, $total) {
-    $code   = strtoupper(trim((string)$code));
+   الكود يتفعّل على حساب المستخدم من صفحة "كود الخصم"، وينطبق تلقائياً وقت الشراء. */
+
+// يحسب قيمة الخصم على إجمالي معيّن
+function discount_value($type, $amount, $total) {
+    $total = max(0, (float)$total);
+    $d = ($type === 'percent') ? $total * ((float)$amount / 100) : (float)$amount;
+    if ($d > $total) $d = $total;       // الخصم لا يتجاوز الإجمالي
+    return round($d);
+}
+
+// يبحث عن خصم دائم مفعّل لهذا المستخدم يناسب الـ ID المطلوب
+// يفضّل الخصم المربوط بنفس الـ ID، وإلا الخصم العام (player_id فارغ)
+// الخصم دائم: لا ينتهي بالاستخدام، ويبقى فعّالاً ما دام الكود مفعّلاً في لوحة الأدمن
+function find_active_discount($userId, $player) {
     $player = trim((string)$player);
-    $total  = max(0, (float)$total);
-    if ($code === '') return ['ok' => false, 'msg' => 'اكتب كود الخصم'];
-
-    $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1 AND scope='price'");
-    $st->execute([$code]);
-    $c = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$c) return ['ok' => false, 'msg' => 'كود الخصم غير صحيح أو غير فعّال'];
-
-    if ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses'])
-        return ['ok' => false, 'msg' => 'انتهت صلاحية كود الخصم (استُخدم بالكامل)'];
-
-    // الربط بـ ID لاعب محدد
-    $lockId = trim((string)($c['player_id'] ?? ''));
-    if ($lockId !== '' && $lockId !== $player)
-        return ['ok' => false, 'msg' => 'هذا الكود مخصّص لـ ID لاعب آخر ❌'];
-
-    // حساب قيمة الخصم
-    if ($c['type'] === 'percent') {
-        $discount = $total * ((float)$c['amount'] / 100);
-    } else {
-        $discount = (float)$c['amount'];
+    $base = "SELECT ud.id AS id, ud.code AS code, ud.player_id AS player_id, c.type AS type, c.amount AS amount
+             FROM user_discounts ud JOIN coupons c ON c.id = ud.coupon_id
+             WHERE ud.user_id=? AND ud.status='active' AND c.active=1 ";
+    if ($player !== '') {
+        $st = db()->prepare($base . "AND ud.player_id=? ORDER BY ud.id ASC");
+        $st->execute([$userId, $player]);
+        $d = $st->fetch(PDO::FETCH_ASSOC);
+        if ($d) return $d;
     }
-    if ($discount > $total) $discount = $total; // الخصم لا يتجاوز الإجمالي
-    $discount = round($discount);
-    $newTotal = max(0, round($total - $discount));
-
-    return ['ok' => true, 'coupon' => $c, 'discount' => $discount, 'new_total' => $newTotal];
+    $st = db()->prepare($base . "AND ud.player_id='' ORDER BY ud.id ASC");
+    $st->execute([$userId]);
+    $d = $st->fetch(PDO::FETCH_ASSOC);
+    return $d ?: null;
 }

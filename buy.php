@@ -13,7 +13,6 @@ $in = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 $pid    = (string)($in['product_id'] ?? '');
 $qty    = max(1, (float)($in['qty'] ?? 1));
 $player = trim((string)($in['player_id'] ?? ''));
-$couponCode = strtoupper(trim((string)($in['coupon'] ?? '')));
 
 $p = store_product($pid);
 if (!$p) out(false, 'المنتج غير موجود');
@@ -37,15 +36,16 @@ if ($disc > 0) $unitPrice = $p['price'] * (1 - $disc/100);
 $total = round($unitPrice * $qty);
 if ($total < 1) out(false, 'سعر هذا المنتج غير متوفر حالياً، حاول لاحقاً.');
 
-// كوبون خصم على الأسعار (مربوط بـ ID لاعب محدد)
-$couponId = 0; $couponDisc = 0;
-if ($couponCode !== '') {
-    $cc = check_price_coupon($couponCode, $player, $total);
-    if (!$cc['ok']) out(false, $cc['msg']);
-    $couponId   = (int)$cc['coupon']['id'];
-    $couponDisc = (int)$cc['discount'];
-    $total      = (int)$cc['new_total'];
-    if ($total < 1) $total = 1; // أقل إجمالي رمزي بعد الخصم
+// خصم مفعّل على حساب المستخدم (من صفحة "كود الخصم") — ينطبق تلقائياً لنفس الـ ID
+$couponDisc = 0; $udId = 0; $udCode = '';
+$ud = find_active_discount($U['id'], $player);
+if ($ud) {
+    $couponDisc = discount_value($ud['type'], $ud['amount'], $total);
+    if ($couponDisc > 0) {
+        $total  = max(1, $total - $couponDisc);
+        $udId   = (int)$ud['id'];
+        $udCode = (string)$ud['code'];
+    }
 }
 
 if ($U['balance'] < $total) out(false, 'رصيد محفظتك غير كافٍ — المطلوب ' . number_format($total) . ' ل.س. اشحن محفظتك أولاً.');
@@ -116,10 +116,7 @@ $newStatus = ($fcStat === 'accept' || $fcStat === 'completed') ? 'accept' : 'pen
 db()->prepare("UPDATE orders SET fc_order_id=?, status=?, codes=?, updated_at=" . NOW_FN() . " WHERE id=?")
     ->execute([$fcId, $newStatus, $codes ? json_encode($codes, JSON_UNESCAPED_UNICODE) : null, $orderId]);
 
-// تسجيل استخدام كوبون خصم الأسعار (الطلب نجح)
-if ($couponId > 0) {
-    db()->prepare("UPDATE coupons SET used = used + 1 WHERE id=?")->execute([$couponId]);
-}
+// ملاحظة: خصم الأسعار دائم — لا نعطّله بعد الشراء، يبقى فعّالاً لكل عملية لنفس الـ ID
 
 $msg = 'تم إرسال طلبك بنجاح ✅ — تابع حالته من صفحة "طلباتي"';
 if ($codes) $msg = 'تم تنفيذ طلبك ✅ الكود موجود بصفحة "طلباتي"';
@@ -134,6 +131,6 @@ notify_user($U['id'],
     $newStatus === 'accept' ? '✅' : '🛒');
 
 // إشعار الأدمن بالطلب الجديد
-notify_admin("🛒 <b>طلب جديد</b>\nالمستخدم: " . e($U['name']) . "\nالمنتج: " . e($p['name']) . " ×$qty\n" . ($player ? "ID: $player\n" : "") . ($couponDisc > 0 ? "كوبون: $couponCode (−" . number_format($couponDisc) . " ل.س)\n" : "") . "الإجمالي: " . number_format($total) . " ل.س\nالحالة: " . ($newStatus === 'accept' ? 'تم التنفيذ ✅' : 'قيد التنفيذ ⏳'));
+notify_admin("🛒 <b>طلب جديد</b>\nالمستخدم: " . e($U['name']) . "\nالمنتج: " . e($p['name']) . " ×$qty\n" . ($player ? "ID: $player\n" : "") . ($couponDisc > 0 ? "خصم مفعّل: $udCode (−" . number_format($couponDisc) . " ل.س)\n" : "") . "الإجمالي: " . number_format($total) . " ل.س\nالحالة: " . ($newStatus === 'accept' ? 'تم التنفيذ ✅' : 'قيد التنفيذ ⏳'));
 
 out(true, $msg, ['order_id' => $orderId, 'eta' => $eta, 'status' => $newStatus]);
