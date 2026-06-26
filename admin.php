@@ -51,6 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = 'حط رقم المستخدم أو اختر "إرسال للجميع"';
         }
     }
+    // رد الدعم على رسالة مستخدم
+    if (isset($_POST['support_reply'])) {
+        $uid  = (int)($_POST['support_user_id'] ?? 0);
+        $body = trim($_POST['support_body'] ?? '');
+        if ($uid > 0 && $body !== '') {
+            db()->prepare("INSERT INTO support_messages (user_id,sender,body,read_user,read_admin) VALUES (?, 'admin', ?, 0, 1)")
+                ->execute([$uid, mb_substr($body, 0, 2000)]);
+            notify_user($uid, 'رد من الدعم 🧑‍💼', mb_substr($body, 0, 140), '🎧');
+            $msg = 'تم إرسال الرد ✅';
+        } else {
+            $msg = 'اكتب نص الرد';
+        }
+    }
     if (isset($_POST['sync_products'])) {
         store_products(true); fc_content(0, true);
         $msg = 'تمت مزامنة المنتجات من FastCard ✅';
@@ -220,6 +233,7 @@ include __DIR__ . '/header.php'; ?>
   <a class="<?= $tab === 'orders' ? 'on' : '' ?>" href="?tab=orders">الطلبات</a>
   <a class="<?= $tab === 'topups' ? 'on' : '' ?>" href="?tab=topups">الإيداعات</a>
   <a class="<?= $tab === 'users' ? 'on' : '' ?>" href="?tab=users">المستخدمين</a>
+  <a class="<?= $tab === 'support' ? 'on' : '' ?>" href="?tab=support">الدعم 🎧</a>
   <a class="<?= $tab === 'coupons' ? 'on' : '' ?>" href="?tab=coupons">كوبونات</a>
   <a class="<?= $tab === 'slides' ? 'on' : '' ?>" href="?tab=slides">السلايدر</a>
   <a class="<?= $tab === 'idverify' ? 'on' : '' ?>" href="?tab=idverify">توثيق الهوية</a>
@@ -414,6 +428,61 @@ include __DIR__ . '/header.php'; ?>
     document.getElementById('msgBody').focus();
   }
   </script>
+
+<?php elseif ($tab === 'support'):
+  $suid = (int)($_GET['support_user'] ?? 0);
+  if ($suid > 0):
+    // فتح محادثة مستخدم محدد + تعليم رسائله كمقروءة
+    db()->prepare("UPDATE support_messages SET read_admin=1 WHERE user_id=? AND sender='user'")->execute([$suid]);
+    $su = db()->prepare("SELECT name,email FROM users WHERE id=?"); $su->execute([$suid]); $suUser = $su->fetch(PDO::FETCH_ASSOC);
+    $cv = db()->prepare("SELECT * FROM support_messages WHERE user_id=? ORDER BY id ASC"); $cv->execute([$suid]);
+    $msgs = $cv->fetchAll(PDO::FETCH_ASSOC); ?>
+  <div class="card">
+    <a href="?tab=support" class="btn-mini">← رجوع لكل المحادثات</a>
+    <h3 style="margin-top:10px">محادثة مع <?= e($suUser['name'] ?? ('#'.$suid)) ?> <span class="muted small">(#<?= $suid ?>)</span></h3>
+    <div class="support-chat">
+      <?php if (!$msgs): ?><p class="empty">ما في رسائل.</p><?php endif; ?>
+      <?php foreach ($msgs as $m): ?>
+        <div class="sc-msg <?= $m['sender'] === 'admin' ? 'admin' : 'user' ?>">
+          <div class="sc-bubble">
+            <div class="sc-who"><?= $m['sender'] === 'admin' ? '🧑‍💼 أنت (الدعم)' : '👤 '.e($suUser['name'] ?? 'الزبون') ?></div>
+            <?= nl2br(e($m['body'])) ?>
+            <div class="sc-time"><?= e($m['created_at']) ?></div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <form method="post" style="margin-top:14px">
+      <input type="hidden" name="support_user_id" value="<?= $suid ?>">
+      <textarea name="support_body" placeholder="اكتب ردّك هون..." rows="3" required style="width:100%"></textarea>
+      <button class="btn" name="support_reply" value="1" style="margin-top:10px">إرسال الرد 🎧</button>
+    </form>
+  </div>
+  <?php else:
+    // قائمة كل محادثات الدعم
+    $convos = db()->query("SELECT s.user_id, u.name, u.email, MAX(s.id) AS last_id,
+        SUM(CASE WHEN s.sender='user' AND s.read_admin=0 THEN 1 ELSE 0 END) AS unread
+        FROM support_messages s LEFT JOIN users u ON u.id = s.user_id
+        GROUP BY s.user_id, u.name, u.email ORDER BY last_id DESC")->fetchAll(PDO::FETCH_ASSOC); ?>
+  <div class="card">
+    <h3>محادثات الدعم 🎧 (<?= count($convos) ?>)</h3>
+    <p class="muted">لما الزبون يطلب التواصل مع الدعم من المساعد الذكي، بتظهر محادثته هون. اضغط "فتح" للرد.</p>
+    <?php if (!$convos): ?><p class="empty">ما في طلبات دعم بعد.</p><?php else: ?>
+    <table class="tbl">
+      <tr><th>#</th><th>الاسم</th><th>الإيميل</th><th>غير مقروء</th><th>إجراء</th></tr>
+      <?php foreach ($convos as $c): ?>
+        <tr>
+          <td><b><?= (int)$c['user_id'] ?></b></td>
+          <td><?= e($c['name'] ?? '—') ?></td>
+          <td class="small"><?= e($c['email'] ?? '') ?></td>
+          <td><?= (int)$c['unread'] > 0 ? '<b style="color:var(--no)">'.(int)$c['unread'].' 🔴</b>' : '—' ?></td>
+          <td><a class="btn-mini" href="?tab=support&support_user=<?= (int)$c['user_id'] ?>">فتح المحادثة</a></td>
+        </tr>
+      <?php endforeach; ?>
+    </table>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
 
 <?php elseif ($tab === 'coupons'):
   $coupons = db()->query("SELECT * FROM coupons ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC); ?>

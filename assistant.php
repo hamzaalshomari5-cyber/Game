@@ -28,6 +28,7 @@ include __DIR__ . '/header.php'; ?>
     <button onclick="askSuggestion(this)">كيف أطلب شدات ببجي؟</button>
     <button onclick="askSuggestion(this)">شو طرق الدفع المتاحة؟</button>
     <button onclick="askSuggestion(this)">كم بياخد وقت التسليم؟</button>
+    <button onclick="askSuggestion(this)">🧑‍💼 تواصل مع الدعم</button>
   </div>
 
   <div class="ai-input-bar">
@@ -38,7 +39,13 @@ include __DIR__ . '/header.php'; ?>
 
 <script>
 const STORE_NAME = <?= json_encode(STORE_NAME) ?>;
+const IS_LOGGED = <?= $U ? 'true' : 'false' ?>;
 let aiHistory = [];
+let supportMode = false;
+let lastSupportId = 0;
+let supportTimer = null;
+
+function esc(s){ return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function addMsg(text, who) {
   const box = document.getElementById('aiMessages');
@@ -51,8 +58,53 @@ function addMsg(text, who) {
 }
 
 function askSuggestion(btn) {
-  document.getElementById('aiInput').value = btn.textContent;
+  document.getElementById('aiInput').value = btn.textContent.replace(/^🧑‍💼\s*/, '');
   sendAi();
+}
+
+// ===== الدعم البشري =====
+function addSupportMsg(sender, body) {
+  const box = document.getElementById('aiMessages');
+  const div = document.createElement('div');
+  div.className = 'ai-msg ' + (sender === 'admin' ? 'bot' : 'user');
+  const label = sender === 'admin' ? '<div class="ai-support-label">🧑‍💼 الدعم</div>' : '';
+  div.innerHTML = '<div class="ai-bubble ' + (sender === 'admin' ? 'support' : '') + '">' + label + esc(body).replace(/\n/g, '<br>') + '</div>';
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function enterSupportMode() {
+  if (supportMode) return;
+  supportMode = true;
+  const sugg = document.getElementById('aiSuggestions');
+  if (sugg) sugg.style.display = 'none';
+  document.getElementById('aiInput').placeholder = 'اكتب رسالتك للدعم...';
+  if (!supportTimer) supportTimer = setInterval(pollSupport, 8000);
+}
+
+async function loadSupport() {
+  if (!IS_LOGGED) return;
+  try {
+    const res = await fetch('/support.php?action=fetch&after=0', { credentials: 'same-origin' });
+    const d = await res.json();
+    if (d.ok && d.messages && d.messages.length) {
+      d.messages.forEach(m => { addSupportMsg(m.sender, m.body); lastSupportId = m.id; });
+      enterSupportMode();
+    }
+  } catch (e) {}
+}
+
+async function pollSupport() {
+  try {
+    const res = await fetch('/support.php?action=fetch&after=' + lastSupportId, { credentials: 'same-origin' });
+    const d = await res.json();
+    if (d.ok && d.messages) {
+      d.messages.forEach(m => {
+        if (m.sender === 'admin') addSupportMsg('admin', m.body); // رسائل المستخدم معروضة أصلاً
+        lastSupportId = m.id;
+      });
+    }
+  } catch (e) {}
 }
 
 async function sendAi() {
@@ -61,12 +113,26 @@ async function sendAi() {
   const sugg = document.getElementById('aiSuggestions');
   const q = input.value.trim();
   if (!q) return;
-
   if (sugg) sugg.style.display = 'none';
-  addMsg(q.replace(/</g,'&lt;'), 'user');
   input.value = '';
-  btn.disabled = true;
 
+  // وضع الدعم البشري: الرسائل تروح للموظف
+  if (supportMode) {
+    addSupportMsg('user', q);
+    btn.disabled = true;
+    try {
+      await fetch('/support.php', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ action: 'send', message: q }),
+      });
+    } catch (e) {}
+    btn.disabled = false;
+    input.focus();
+    return;
+  }
+
+  addMsg(esc(q), 'user');
+  btn.disabled = true;
   const loading = addMsg('<span class="ai-typing">يكتب<span>.</span><span>.</span><span>.</span></span>', 'bot');
 
   try {
@@ -82,6 +148,7 @@ async function sendAi() {
       aiHistory.push({ role: 'user', content: q });
       aiHistory.push({ role: 'assistant', content: d.reply });
       if (aiHistory.length > 12) aiHistory = aiHistory.slice(-12);
+      if (d.support) enterSupportMode(); // تم تحويله للدعم البشري
     } else {
       addMsg(d.msg || 'صار خطأ، حاول مرة ثانية.', 'bot');
     }
@@ -92,6 +159,8 @@ async function sendAi() {
   btn.disabled = false;
   input.focus();
 }
+
+document.addEventListener('DOMContentLoaded', loadSupport);
 </script>
 
 <?php include __DIR__ . '/footer.php';

@@ -21,6 +21,32 @@ function detect_speedup($text) {
     return false;
 }
 
+// ===== كشف طلب التواصل مع الدعم البشري =====
+function detect_support($text) {
+    $t = mb_strtolower($text);
+    $keys = ['اتواصل مع الدعم', 'تواصل مع الدعم', 'بدي دعم', 'بدي الدعم', 'خدمة العملاء', 'خدمة الزبائن',
+             'موظف', 'حدا حقيقي', 'شخص حقيقي', 'انسان حقيقي', 'إنسان حقيقي', 'تواصل بشري', 'دعم بشري',
+             'بدي احكي مع حدا', 'بدي احكي مع موظف', 'اكلم موظف', 'احكي مع موظف', 'اكلم حدا', 'مساعدة بشرية',
+             'حابب اتواصل', 'بدي اتواصل', 'customer service', 'human', 'agent', 'real person'];
+    foreach ($keys as $k) if (mb_strpos($t, $k) !== false) return true;
+    return false;
+}
+
+// إذا طلب التواصل مع الدعم البشري: نسجّل الرسالة، ننبّه الأدمن، ونردّ مباشرة (بدون Gemini)
+if ($U && detect_support($message)) {
+    db()->prepare("INSERT INTO support_messages (user_id,sender,body,read_user,read_admin) VALUES (?, 'user', ?, 1, 0)")
+        ->execute([$U['id'], mb_substr($message, 0, 1000)]);
+    notify_admin("🎧 <b>طلب تواصل مع الدعم</b>\n"
+        . "الاسم: " . e($U['name']) . "\n"
+        . "الإيميل: " . e($U['email']) . "\n"
+        . "رقم المستخدم: #" . $U['id'] . "\n─────────\n"
+        . "الرسالة: " . e(mb_substr($message, 0, 300)));
+    out(true, [
+        'reply' => "حوّلتك لفريق الدعم 🧑‍💼\nرح يتواصل معك موظف من فريقنا بأقرب وقت. اكتب تفاصيل مشكلتك هون ورح توصلهم مباشرةً، وردّهم رح يوصلك كإشعار وبهالمحادثة.",
+        'support' => true,
+    ]);
+}
+
 if ($U && detect_speedup($message)) {
     // آخر طلب للمستخدم (قيد التنفيذ إن وجد)
     $st = db()->prepare("SELECT * FROM orders WHERE user_id=? ORDER BY id DESC LIMIT 1");

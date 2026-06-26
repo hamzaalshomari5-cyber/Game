@@ -112,6 +112,13 @@ function init_db($pdo) {
         status TEXT DEFAULT 'active',
         created_at TIMESTAMP DEFAULT $now, used_at TIMESTAMP
     )");
+    // رسائل الدعم البشري (محادثة بين الزبون والأدمن)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS support_messages (
+        id $pk,
+        user_id INTEGER, sender TEXT DEFAULT 'user', body TEXT,
+        read_user INTEGER DEFAULT 0, read_admin INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT $now
+    )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS slides (
         id $pk,
         image TEXT, link TEXT, sort INTEGER DEFAULT 0, active INTEGER DEFAULT 1,

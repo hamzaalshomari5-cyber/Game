@@ -417,6 +417,24 @@ body.light .btn-google { border-color: #dadce0; }
   background: var(--accent); color: #1a1a1a;
   border-top-left-radius: 4px; font-weight: 600;
 }
+/* فقاعة الدعم البشري */
+.ai-bubble.support {
+  border-inline-start: 3px solid var(--ok);
+  background: rgba(47, 208, 114, .08);
+}
+.ai-support-label {
+  font-size: .72rem; font-weight: 800; color: var(--ok); margin-bottom: 4px;
+}
+/* محادثة الدعم في لوحة الأدمن */
+.support-chat { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; max-height: 460px; overflow-y: auto; padding: 4px; }
+.sc-msg { display: flex; }
+.sc-msg.user { justify-content: flex-start; }
+.sc-msg.admin { justify-content: flex-end; }
+.sc-bubble { max-width: 78%; padding: 10px 14px; border-radius: 14px; line-height: 1.6; font-size: .92rem; }
+.sc-msg.user .sc-bubble { background: var(--card); border: 1px solid var(--border); border-top-right-radius: 4px; }
+.sc-msg.admin .sc-bubble { background: rgba(47,208,114,.12); border: 1px solid var(--ok); border-top-left-radius: 4px; }
+.sc-who { font-size: .72rem; font-weight: 800; opacity: .8; margin-bottom: 3px; }
+.sc-time { font-size: .65rem; color: var(--muted); margin-top: 4px; }
 .ai-typing span { animation: aiBlink 1.2s infinite; }
 .ai-typing span:nth-child(2) { animation-delay: .2s; }
 .ai-typing span:nth-child(3) { animation-delay: .4s; }
