@@ -32,9 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     db()->prepare("UPDATE coupons SET used = used + 1 WHERE id=?")->execute([$c['id']]);
                     db()->commit();
                     $ok = true;
-                    $dtxt = $c['type'] === 'percent'
-                        ? rtrim(rtrim((string)$c['amount'], '0'), '.') . '%'
-                        : number_format($c['amount']) . ' ل.س';
+                    $dtxt = disc_label($c['type'], $c['amount']);
                     $msg = 'تم تفعيل كود الخصم ✅ خصم ' . $dtxt . ' دائم بينطبق تلقائياً على كل مشترياتك'
                          . ($lock !== '' ? ' لـ ID: ' . $lock : '') . ' 🎁';
                     notify_user($U['id'], 'تم تفعيل كود خصم 🎁',

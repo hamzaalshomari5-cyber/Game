@@ -302,6 +302,13 @@ function discount_value($type, $amount, $total) {
     return round($d);
 }
 
+// نص الخصم للعرض: 10 => "10%"، 10.5 => "10.5%"، أو "5,000 ل.س"
+function disc_label($type, $amount) {
+    $a = (float)$amount;
+    $n = ($a == (int)$a) ? (string)(int)$a : rtrim(rtrim(number_format($a, 2, '.', ''), '0'), '.');
+    return $type === 'percent' ? $n . '%' : number_format($a) . ' ل.س';
+}
+
 // يبحث عن خصم دائم مفعّل لهذا المستخدم يناسب الـ ID المطلوب
 // يفضّل الخصم المربوط بنفس الـ ID، وإلا الخصم العام (player_id فارغ)
 // الخصم دائم: لا ينتهي بالاستخدام، ويبقى فعّالاً ما دام الكود مفعّلاً في لوحة الأدمن

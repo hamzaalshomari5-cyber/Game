@@ -412,7 +412,7 @@ include __DIR__ . '/header.php'; ?>
               💰 محفظة<?= (int)($c['user_id'] ?? 0) ? '<br><span class="muted small">مستخدم #' . (int)$c['user_id'] . '</span>' : '' ?>
             <?php endif; ?>
           </td>
-          <td><?= $c['type'] === 'percent' ? e($c['amount']).'%' : number_format($c['amount']).' ل.س' ?></td>
+          <td><?= disc_label($c['type'], $c['amount']) ?></td>
           <td><?= $c['used'] ?><?= $c['max_uses'] > 0 ? '/'.$c['max_uses'] : '' ?></td>
           <td><?= $c['active'] ? '✅ فعّال' : '⛔ موقوف' ?></td>
           <td style="white-space:nowrap">

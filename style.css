@@ -167,6 +167,7 @@ input, select {
 .m-total { margin-top: 14px; font-size: 1.05rem; }
 .m-total b { color: var(--accent); }
 .m-disc { margin-top: 10px; font-weight: 700; color: var(--ok); }
+.m-disc.hint { color: var(--accent); }
 .m-msg { margin-top: 10px; font-weight: 700; min-height: 1.4em; }
 .m-msg.ok { color: var(--ok); } .m-msg.no { color: var(--no); }
 .m-actions { display: flex; gap: 10px; margin-top: 16px; }
