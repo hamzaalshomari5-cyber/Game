@@ -70,7 +70,7 @@ function product_card($p, $favs, $ctx = '') {
          data-verify="<?= (needs_verify($p, $ctx) && !empty($p['params'])) ? '1' : '0' ?>"
          onclick="openBuy(this)">
       <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>
-      <?php if (!fc_img($p['image'], '')): ?><div class="ph">🎮</div><?php endif; ?>
+      <div class="ph"></div>
       <div class="p-name"><?= e($p['name']) ?></div>
       <?php $disc = promo_discount_pct(); if ($disc > 0 && $p['available']):
         $newPrice = $displayPrice * (1 - $disc/100); ?>
@@ -305,7 +305,7 @@ if ($page === 'products') {
       <div class="grid cats-grid">
         <?php foreach ($subs as $c): ?>
           <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?>">
-            <?php if (!fc_img($c['image'], 'cat-img')): ?><div class="cat-icon">🎮</div><?php endif; ?>
+            <div class="cat-icon"></div>
             <div class="cat-name"><?= e($c['name']) ?></div>
           </a>
         <?php endforeach; ?>
@@ -408,7 +408,7 @@ include __DIR__ . '/header.php'; ?>
 <div class="grid cats-grid">
   <?php foreach ($root['categories'] as $c): ?>
     <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?>">
-      <?php if (!fc_img($c['image'], 'cat-img')): ?><div class="cat-icon">🎮</div><?php endif; ?>
+      <div class="cat-icon"></div>
       <div class="cat-name"><?= e($c['name']) ?></div>
     </a>
   <?php endforeach; ?>
