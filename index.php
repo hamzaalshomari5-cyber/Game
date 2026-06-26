@@ -292,7 +292,10 @@ if ($page === 'cart') {
 /* ===== صفحة قسم: content/{id} → أقسام فرعية + منتجات (نفس FastCard) ===== */
 if ($page === 'products') {
     $cat = $_GET['cat'] ?? '0';
-    $GLOBALS['cur_cat_img'] = item_img_url($cat); // المنتجات ترث صورة قسمها
+    // توريث الصورة: صورة القسم نفسه، وإلا الصورة الموروثة من قسم أعلى (تنتقل عبر الرابط)
+    $ownImg = item_img_url($cat);
+    $GLOBALS['cur_cat_img'] = $ownImg ?: item_img_url($_GET['img'] ?? '');
+    $GLOBALS['cur_img_id']  = $ownImg ? (string)$cat : (string)($_GET['img'] ?? '');
     $content = fc_content($cat);
     $subs = $content['categories'];
     $products = $content['products'];
@@ -305,9 +308,12 @@ if ($page === 'products') {
 
     <?php if ($subs): ?>
       <div class="grid cats-grid">
-        <?php foreach ($subs as $c): ?>
-          <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?>">
-            <?php $cimg = item_img_url($c['id']); if ($cimg): ?><img class="cat-img" src="<?= e($cimg) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon"></div><?php endif; ?>
+        <?php foreach ($subs as $c):
+          $cOwn = item_img_url($c['id']);
+          $cShow = $cOwn ?: ($GLOBALS['cur_cat_img'] ?? null);
+          $cPass = $cOwn ? (string)$c['id'] : (string)($GLOBALS['cur_img_id'] ?? ''); ?>
+          <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?><?= $cPass !== '' ? '&img=' . urlencode($cPass) : '' ?>">
+            <?php if ($cShow): ?><img class="cat-img" src="<?= e($cShow) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon"></div><?php endif; ?>
             <div class="cat-name"><?= e($c['name']) ?></div>
           </a>
         <?php endforeach; ?>
@@ -408,9 +414,9 @@ include __DIR__ . '/header.php'; ?>
   <p class="empty">لم يتم تحميل المنتجات بعد — تأكد من توكن FastCard في الإعدادات.</p>
 <?php endif; ?>
 <div class="grid cats-grid">
-  <?php foreach ($root['categories'] as $c): ?>
-    <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?>">
-      <?php $cimg = item_img_url($c['id']); if ($cimg): ?><img class="cat-img" src="<?= e($cimg) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon"></div><?php endif; ?>
+  <?php foreach ($root['categories'] as $c): $cimg = item_img_url($c['id']); ?>
+    <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?><?= $cimg ? '&img=' . urlencode($c['id']) : '' ?>">
+      <?php if ($cimg): ?><img class="cat-img" src="<?= e($cimg) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon"></div><?php endif; ?>
       <div class="cat-name"><?= e($c['name']) ?></div>
     </a>
   <?php endforeach; ?>
