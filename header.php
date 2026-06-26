@@ -10,7 +10,7 @@ $U = current_user();
 <meta name="description" content="<?= e(STORE_NAME . ' - ' . STORE_TAGLINE) ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/style.css?v=9">
+<link rel="stylesheet" href="/style.css?v=10">
 <!-- الخط يحمّل بدون حجب الصفحة (أسرع ظهور) -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet"></noscript>
@@ -85,4 +85,18 @@ $U = current_user();
   </div>
 </header>
 <script>const USD_RATE = <?= usd_rate() ?>; const CUR = '<?= display_currency() ?>';</script>
+<?php
+// خصومات الأسعار الدائمة المفعّلة للمستخدم (لإظهارها تلقائياً على المنتجات)
+$myDiscounts = [];
+if ($U) {
+    $st = db()->prepare("SELECT ud.player_id AS player_id, c.type AS type, c.amount AS amount
+        FROM user_discounts ud JOIN coupons c ON c.id = ud.coupon_id
+        WHERE ud.user_id=? AND ud.status='active' AND c.active=1");
+    $st->execute([$U['id']]);
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $myDiscounts[] = ['player_id' => (string)$r['player_id'], 'type' => $r['type'], 'amount' => (float)$r['amount']];
+    }
+}
+?>
+<script>const MY_DISCOUNTS = <?= json_encode($myDiscounts, JSON_UNESCAPED_UNICODE) ?>;</script>
 <main class="container">

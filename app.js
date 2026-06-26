@@ -68,7 +68,6 @@ document.addEventListener('DOMContentLoaded', updateBalanceDisplay);
 
 // ===== مودال الشراء =====
 let curPrice = 0, qMin = 1, qMax = 0, needVerify = false, verified = false, softPass = false;
-let appliedCoupon = '';   // كود خصم الأسعار المُطبّق (بعد التحقق)
 
 function openBuy(card) {
   if (card.classList.contains('oos')) return;
@@ -127,12 +126,6 @@ function openBuy(card) {
   document.getElementById('mPlayer').value = '';
   document.getElementById('mMsg').textContent = '';
   document.getElementById('mMsg').className = 'm-msg';
-  // إعادة ضبط كود الخصم
-  appliedCoupon = '';
-  const cInp = document.getElementById('mCoupon');
-  if (cInp) cInp.value = '';
-  const cMsg = document.getElementById('mCouponMsg');
-  if (cMsg) { cMsg.style.display = 'none'; cMsg.textContent = ''; }
   document.getElementById('buyModal').dataset.pid = card.dataset.id;
   updateTotal();
   document.getElementById('buyModal').classList.add('show');
@@ -150,7 +143,6 @@ function onQtySelect() {
   const sel = document.getElementById('mQtySelect');
   const v = parseFloat(sel.value) || qMin;
   document.getElementById('mQty').value = v;
-  resetCoupon();   // تغيّر الكمية يلغي خصم الكوبون المطبّق
   updateTotal();
 }
 function getQty() {
@@ -161,62 +153,38 @@ function getQty() {
   }
   return parseFloat(document.getElementById('mQty').value) || qMin;
 }
+// يختار الخصم الدائم المناسب حسب الـ ID المُدخل (يفضّل المطابق، وإلا الخصم العام)
+function pickDiscount() {
+  if (typeof MY_DISCOUNTS === 'undefined' || !MY_DISCOUNTS || !MY_DISCOUNTS.length) return null;
+  const pid = (document.getElementById('mPlayer').value || '').trim();
+  let d = MY_DISCOUNTS.find(x => x.player_id && x.player_id === pid);
+  if (!d) d = MY_DISCOUNTS.find(x => !x.player_id);
+  return d || null;
+}
+function discValue(type, amount, total) {
+  let v = (type === 'percent') ? total * (amount / 100) : amount;
+  if (v > total) v = total;
+  return Math.round(v);
+}
 function updateTotal() {
   const q = getQty();
-  document.getElementById('mTotal').textContent = fmtPrice(curPrice * q);
-}
-
-// ===== كود خصم على الأسعار (مربوط بـ ID) =====
-// إلغاء أي خصم مطبّق وإرجاع السعر الأصلي
-function resetCoupon() {
-  if (appliedCoupon) { appliedCoupon = ''; updateTotal(); }
-  const cMsg = document.getElementById('mCouponMsg');
-  if (cMsg) { cMsg.style.display = 'none'; cMsg.textContent = ''; }
-}
-
-async function applyCoupon() {
-  const modal = document.getElementById('buyModal');
-  const code = (document.getElementById('mCoupon').value || '').trim();
-  const cMsg = document.getElementById('mCouponMsg');
-  const btn = document.getElementById('mCouponBtn');
-  if (!code) { resetCoupon(); return; }
-  if (typeof IS_LOGGED !== 'undefined' && !IS_LOGGED) { location.href = '/auth.php'; return; }
-  btn.disabled = true;
-  cMsg.style.display = 'block';
-  cMsg.className = 'm-coupon-msg';
-  cMsg.textContent = 'جارٍ التحقق...';
-  try {
-    const res = await fetch('/coupon_check.php', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        product_id: modal.dataset.pid,
-        qty: getQty(),
-        player_id: document.getElementById('mPlayer').value.trim(),
-        code: code,
-      }),
-    });
-    const d = await res.json();
-    if (d.login) { location.href = '/auth.php'; return; }
-    if (d.ok) {
-      appliedCoupon = code.toUpperCase();
-      document.getElementById('mTotal').textContent = fmtPrice(d.new_total);
-      cMsg.className = 'm-coupon-msg ok';
-      cMsg.textContent = '✅ تم تطبيق الخصم: −' + fmtPrice(d.discount);
-    } else {
-      appliedCoupon = '';
-      updateTotal();
-      cMsg.className = 'm-coupon-msg no';
-      cMsg.textContent = d.msg || 'تعذّر تطبيق الكود';
+  const base = Math.round(curPrice * q);
+  const line = document.getElementById('mDiscLine');
+  const d = pickDiscount();
+  if (d) {
+    const disc = discValue(d.type, parseFloat(d.amount), base);
+    const final = Math.max(1, base - disc);
+    document.getElementById('mTotal').textContent = fmtPrice(final);
+    if (line) {
+      line.style.display = '';
+      line.textContent = '🎁 خصمك الدائم: −' + fmtPrice(disc);
     }
-  } catch (e) {
-    appliedCoupon = '';
-    updateTotal();
-    cMsg.className = 'm-coupon-msg no';
-    cMsg.textContent = 'خطأ بالاتصال — حاول مرة ثانية';
+  } else {
+    document.getElementById('mTotal').textContent = fmtPrice(base);
+    if (line) line.style.display = 'none';
   }
-  btn.disabled = false;
 }
-document.addEventListener('input', e => { if (e.target.id === 'mQty') updateTotal(); });
+document.addEventListener('input', e => { if (e.target.id === 'mQty' || e.target.id === 'mPlayer') updateTotal(); });
 document.addEventListener('click', e => { if (e.target.id === 'buyModal') closeBuy(); });
 
 // إعادة ضبط التحقق عند تغيير الـ ID
@@ -287,7 +255,6 @@ async function submitBuy() {
         product_id: modal.dataset.pid,
         qty: getQty(),
         player_id: document.getElementById('mPlayer').value.trim(),
-        coupon: appliedCoupon,
       }),
     });
     const d = await res.json();

@@ -14,14 +14,7 @@
       <input type="text" id="mPlayer" placeholder="" oninput="resetVerify()">
       <div class="verify-box" id="mVerify" style="display:none"></div>
     </div>
-    <div id="mCouponWrap">
-      <label>كود الخصم (اختياري)</label>
-      <div class="coupon-row">
-        <input type="text" id="mCoupon" placeholder="أدخل كود الخصم" oninput="resetCoupon()" style="text-transform:uppercase">
-        <button type="button" class="btn ghost" id="mCouponBtn" onclick="applyCoupon()">تطبيق</button>
-      </div>
-      <div class="m-coupon-msg" id="mCouponMsg" style="display:none"></div>
-    </div>
+    <div class="m-disc" id="mDiscLine" style="display:none"></div>
     <div class="m-total">الإجمالي: <b id="mTotal"></b></div>
     <div class="m-msg" id="mMsg"></div>
     <div class="m-actions">

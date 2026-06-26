@@ -166,13 +166,7 @@ input, select {
 .qty-row input { text-align: center; }
 .m-total { margin-top: 14px; font-size: 1.05rem; }
 .m-total b { color: var(--accent); }
-#mCouponWrap { margin-top: 12px; }
-.coupon-row { display: flex; gap: 8px; align-items: center; }
-.coupon-row input { flex: 1; text-transform: uppercase; letter-spacing: 1px; }
-.coupon-row .btn { white-space: nowrap; padding-inline: 16px; }
-.m-coupon-msg { margin-top: 8px; font-weight: 700; font-size: .92rem; }
-.m-coupon-msg.ok { color: var(--ok); }
-.m-coupon-msg.no { color: var(--no); }
+.m-disc { margin-top: 10px; font-weight: 700; color: var(--ok); }
 .m-msg { margin-top: 10px; font-weight: 700; min-height: 1.4em; }
 .m-msg.ok { color: var(--ok); } .m-msg.no { color: var(--no); }
 .m-actions { display: flex; gap: 10px; margin-top: 16px; }
