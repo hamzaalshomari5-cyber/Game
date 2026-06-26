@@ -95,6 +95,9 @@ function init_db($pdo) {
         code TEXT UNIQUE, type TEXT DEFAULT 'percent', amount $real DEFAULT 0,
         max_uses INTEGER DEFAULT 0, used INTEGER DEFAULT 0,
         active INTEGER DEFAULT 1,
+        user_id INTEGER DEFAULT 0,
+        scope TEXT DEFAULT 'wallet',
+        player_id TEXT DEFAULT '',
         created_at TIMESTAMP DEFAULT $now
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS coupon_uses (
@@ -136,6 +139,8 @@ function init_db($pdo) {
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS codes TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS banned INTEGER DEFAULT 0"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE coupons ADD COLUMN IF NOT EXISTS user_id INTEGER DEFAULT 0"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE coupons ADD COLUMN IF NOT EXISTS scope TEXT DEFAULT 'wallet'"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE coupons ADD COLUMN IF NOT EXISTS player_id TEXT DEFAULT ''"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bday_gift TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT"); } catch (Exception $e) {}
@@ -149,6 +154,8 @@ function init_db($pdo) {
         try { $pdo->exec("ALTER TABLE orders ADD COLUMN codes TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE coupons ADD COLUMN user_id INTEGER DEFAULT 0"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE coupons ADD COLUMN scope TEXT DEFAULT 'wallet'"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE coupons ADD COLUMN player_id TEXT DEFAULT ''"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN birthday TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN last_bday_gift TEXT"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN phone TEXT"); } catch (Exception $e) {}
@@ -274,4 +281,40 @@ function display_currency() { return (($_COOKIE['currency'] ?? 'syp') === 'usd')
 function fmt_price($syp) {
     if (display_currency() === 'usd') return number_format($syp / usd_rate(), 2) . ' $';
     return number_format($syp) . ' ل.س';
+}
+
+/* ===== كوبون خصم على الأسعار (مربوط بـ ID لاعب محدد) =====
+   يتحقق من الكود + الـ ID ويحسب الخصم على الإجمالي.
+   يرجّع: ['ok'=>true,'coupon'=>..,'discount'=>قيمة الخصم,'new_total'=>الإجمالي بعد الخصم]
+          أو ['ok'=>false,'msg'=>'سبب الرفض'] */
+function check_price_coupon($code, $player, $total) {
+    $code   = strtoupper(trim((string)$code));
+    $player = trim((string)$player);
+    $total  = max(0, (float)$total);
+    if ($code === '') return ['ok' => false, 'msg' => 'اكتب كود الخصم'];
+
+    $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1 AND scope='price'");
+    $st->execute([$code]);
+    $c = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$c) return ['ok' => false, 'msg' => 'كود الخصم غير صحيح أو غير فعّال'];
+
+    if ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses'])
+        return ['ok' => false, 'msg' => 'انتهت صلاحية كود الخصم (استُخدم بالكامل)'];
+
+    // الربط بـ ID لاعب محدد
+    $lockId = trim((string)($c['player_id'] ?? ''));
+    if ($lockId !== '' && $lockId !== $player)
+        return ['ok' => false, 'msg' => 'هذا الكود مخصّص لـ ID لاعب آخر ❌'];
+
+    // حساب قيمة الخصم
+    if ($c['type'] === 'percent') {
+        $discount = $total * ((float)$c['amount'] / 100);
+    } else {
+        $discount = (float)$c['amount'];
+    }
+    if ($discount > $total) $discount = $total; // الخصم لا يتجاوز الإجمالي
+    $discount = round($discount);
+    $newTotal = max(0, round($total - $discount));
+
+    return ['ok' => true, 'coupon' => $c, 'discount' => $discount, 'new_total' => $newTotal];
 }

@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($code === '') {
         $msg = 'اكتب كود الخصم';
     } else {
-        $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1");
+        $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1 AND (scope IS NULL OR scope <> 'price')");
         $st->execute([$code]);
         $c = $st->fetch(PDO::FETCH_ASSOC);
         if (!$c) {

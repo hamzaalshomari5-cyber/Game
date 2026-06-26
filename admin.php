@@ -44,7 +44,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } catch (Exception $e) { $msg = 'الكود موجود مسبقاً'; }
         } else { $msg = 'تأكد من الكود والقيمة'; }
     }
-    // حذف/تفعيل كوبون
+    // إضافة كود خصم على الأسعار (مربوط بـ ID لاعب محدد)
+    if (isset($_POST['add_price_coupon'])) {
+        $code = strtoupper(trim($_POST['pc_code'] ?? ''));
+        $type = ($_POST['pc_type'] ?? 'percent') === 'fixed' ? 'fixed' : 'percent';
+        $amt  = (float)($_POST['pc_amount'] ?? 0);
+        $maxu = (int)($_POST['pc_maxuses'] ?? 0);
+        $playerId = trim($_POST['pc_player'] ?? '');
+        if ($code && $amt > 0) {
+            try {
+                db()->prepare("INSERT INTO coupons (code,type,amount,max_uses,user_id,scope,player_id) VALUES (?,?,?,?,0,'price',?)")
+                    ->execute([$code, $type, $amt, $maxu, $playerId]);
+                $msg = 'تم إضافة كود خصم الأسعار ✅' . ($playerId !== '' ? " (مربوط بـ ID: $playerId)" : ' (لأي ID)');
+            } catch (Exception $e) { $msg = 'الكود موجود مسبقاً'; }
+        } else { $msg = 'تأكد من الكود والقيمة'; }
+    }
     if (isset($_POST['toggle_coupon'])) {
         db()->prepare("UPDATE coupons SET active = 1 - active WHERE id=?")->execute([(int)$_POST['toggle_coupon']]);
         $msg = 'تم التحديث ✅';
@@ -369,13 +383,35 @@ include __DIR__ . '/header.php'; ?>
     </form>
   </div>
   <div class="card">
+    <h3>كود خصم على الأسعار (مربوط بـ ID) 🏷️</h3>
+    <p class="muted">هذا الكود <b>بيخصم من سعر الشراء</b> مباشرة، ومربوط بـ <b>ID لاعب محدد</b>. لما الزبون يحط الكود، إذا الـ ID يلي كتبه ما طابق الـ ID المربوط بالكود → بينرفض ويظهرله "مخصّص لـ ID آخر". اتركه فارغاً ليشتغل لأي ID.</p>
+    <form method="post" class="inline-form">
+      <input name="pc_code" placeholder="الكود مثلاً VIP100" required style="text-transform:uppercase">
+      <select name="pc_type">
+        <option value="percent">نسبة %</option>
+        <option value="fixed">مبلغ ثابت ل.س</option>
+      </select>
+      <input name="pc_amount" type="number" step="any" placeholder="قيمة الخصم" required>
+      <input name="pc_player" placeholder="ID اللاعب المربوط (فارغ=أي ID)">
+      <input name="pc_maxuses" type="number" placeholder="حد الاستخدام (0=لا نهائي)">
+      <button class="btn" name="add_price_coupon" value="1">إضافة</button>
+    </form>
+  </div>
+  <div class="card">
     <h3>الأكواد (<?= count($coupons) ?>)</h3>
     <?php if (!$coupons): ?><p class="empty">ما في أكواد بعد.</p><?php else: ?>
     <table class="tbl">
-      <tr><th>الكود</th><th>القيمة</th><th>الاستخدام</th><th>الحالة</th><th>إجراء</th></tr>
-      <?php foreach ($coupons as $c): ?>
+      <tr><th>الكود</th><th>النوع</th><th>القيمة</th><th>الاستخدام</th><th>الحالة</th><th>إجراء</th></tr>
+      <?php foreach ($coupons as $c): $isPrice = ($c['scope'] ?? 'wallet') === 'price'; ?>
         <tr>
           <td><b><?= e($c['code']) ?></b></td>
+          <td>
+            <?php if ($isPrice): ?>
+              🏷️ سعر<?= trim((string)($c['player_id'] ?? '')) !== '' ? '<br><span class="muted small">ID: ' . e($c['player_id']) . '</span>' : '<br><span class="muted small">أي ID</span>' ?>
+            <?php else: ?>
+              💰 محفظة<?= (int)($c['user_id'] ?? 0) ? '<br><span class="muted small">مستخدم #' . (int)$c['user_id'] . '</span>' : '' ?>
+            <?php endif; ?>
+          </td>
           <td><?= $c['type'] === 'percent' ? e($c['amount']).'%' : number_format($c['amount']).' ل.س' ?></td>
           <td><?= $c['used'] ?><?= $c['max_uses'] > 0 ? '/'.$c['max_uses'] : '' ?></td>
           <td><?= $c['active'] ? '✅ فعّال' : '⛔ موقوف' ?></td>
