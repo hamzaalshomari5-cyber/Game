@@ -97,15 +97,20 @@ function verify_tx($txId, $method) {
 function check_coupon($code, $userId) {
     $code = strtoupper(trim($code));
     if ($code === '') return [0, null];
-    $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1");
-    $st->execute([$code]);
-    $c = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$c) return [0, 'كود الخصم غير صحيح'];
-    if ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses']) return [0, 'انتهت صلاحية كود الخصم'];
-    // كوبون مربوط بمستخدم محدد (كود VIP خاص)
-    if (!empty($c['user_id']) && (int)$c['user_id'] !== (int)$userId) {
-        return [0, 'هذا الكود خاص بحساب آخر'];
-    }
+                $amount = verify_tx($txId, $method);
+            if ($amount === null) {
+                $dest = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
+                $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . $dest;
+            } else {
+                // ------ 🔴 تم إصلاح الثغرة هنا 🔴 ------
+                // حذفنا الضرب بـ 100 الذي كان يضاعف المبالغ كالأقراش
+                
+                // إذا التحويل بالدولار (شام كاش فقط) نحوّله لليرة حسب سعر الصرف
+                if ($method === 'shamcash' && $currency === 'usd') {
+                    $amount = round($amount * usd_rate());
+                }
+                // --------------------------------------
+
     // مرة واحدة لكل مستخدم
     $st = db()->prepare("SELECT COUNT(*) FROM coupon_uses WHERE coupon_id=? AND user_id=?");
     $st->execute([$c['id'], $userId]);
