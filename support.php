@@ -8,6 +8,13 @@ if (!$U) { echo json_encode(['ok' => false, 'login' => true]); exit; }
 $in = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 $action = (string)($_GET['action'] ?? ($in['action'] ?? 'fetch'));
 
+// open: بداية محادثة جديدة — نحذف المحادثة القديمة (تنحذف لما يطلع ويرجع يفوت)
+if ($action === 'open') {
+    db()->prepare("DELETE FROM support_messages WHERE user_id=?")->execute([$U['id']]);
+    echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if ($action === 'send') {
     $body = trim((string)($in['message'] ?? ''));
     if ($body === '') { echo json_encode(['ok' => false, 'msg' => 'اكتب رسالتك']); exit; }

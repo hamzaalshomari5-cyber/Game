@@ -47,16 +47,6 @@ function scAdd(sender, body) {
   box.scrollTop = box.scrollHeight;
 }
 
-async function scLoad() {
-  try {
-    const res = await fetch('/support.php?action=fetch&after=0', { credentials: 'same-origin' });
-    const d = await res.json();
-    if (d.ok && d.messages) {
-      d.messages.forEach(m => { scAdd(m.sender, m.body); scLastId = m.id; });
-    }
-  } catch (e) {}
-}
-
 async function scPoll() {
   try {
     const res = await fetch('/support.php?action=fetch&after=' + scLastId, { credentials: 'same-origin' });
@@ -88,7 +78,11 @@ async function scSend() {
   input.focus();
 }
 
-document.addEventListener('DOMContentLoaded', () => { scLoad(); setInterval(scPoll, 8000); });
+document.addEventListener('DOMContentLoaded', async () => {
+  // محادثة جديدة كل مرة: نحذف القديمة عند الفتح
+  try { await fetch('/support.php?action=open', { credentials: 'same-origin' }); } catch (e) {}
+  setInterval(scPoll, 8000);
+});
 </script>
 <?php endif; ?>
 

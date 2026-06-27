@@ -30,6 +30,24 @@ function tg_send($token, $chat, $text) {
 }
 
 $uid = 0; $reply = '';
+// أمر إنهاء/حذف المحادثة: "/end 45"  أو  Reply بـ "/end"
+$endUid = 0;
+if (preg_match('~^/end\s+(\d+)~u', $text, $m)) {
+    $endUid = (int)$m[1];
+} elseif ($text === '/end' && !empty($msg['reply_to_message']['text']) && preg_match('/#(\d+)/', $msg['reply_to_message']['text'], $m)) {
+    $endUid = (int)$m[1];
+}
+if ($endUid) {
+    try {
+        db()->prepare("DELETE FROM support_messages WHERE user_id=?")->execute([$endUid]);
+        notify_user($endUid, 'انتهت محادثة الدعم 🎧', 'تم إنهاء المحادثة من قبل فريق الدعم. تقدر تبلّش محادثة جديدة وقت ما بدك.', '🎧');
+        tg_send($token, $chatId, "✅ تم إنهاء وحذف محادثة المستخدم #$endUid");
+    } catch (Exception $e) {
+        tg_send($token, $chatId, "⚠️ تعذّر إنهاء المحادثة");
+    }
+    echo 'ok'; exit;
+}
+
 // (1) ردّ (Reply) على رسالة الطلب — نستخرج رقم المستخدم منها (#45)
 if (!empty($msg['reply_to_message']['text']) && preg_match('/#(\d+)/', $msg['reply_to_message']['text'], $m)) {
     $uid = (int)$m[1]; $reply = $text;
@@ -42,7 +60,7 @@ if (!$uid && $text !== '') {
 
 if (!$uid || $reply === '') {
     if ($text !== '' && strncmp($text, '/start', 6) !== 0) {
-        tg_send($token, $chatId, "للرد على زبون:\n• اعمل <b>Reply</b> على رسالة طلبه، واكتب ردّك.\n• أو اكتب: <code>45: نص الرد</code> (45 = رقم المستخدم).");
+        tg_send($token, $chatId, "للرد على زبون:\n• اعمل <b>Reply</b> على رسالة طلبه، واكتب ردّك.\n• أو اكتب: <code>45: نص الرد</code> (45 = رقم المستخدم).\n\nلإنهاء محادثة زبون: <code>/end 45</code> أو ردّ بـ <code>/end</code> على رسالته.");
     }
     echo 'ok'; exit;
 }
