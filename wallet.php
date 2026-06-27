@@ -26,28 +26,19 @@ if (isset($_GET['apidebug'])) {
     }
     $url = $base . '?' . http_build_query($params);
     $shown = str_replace(urlencode(apisyria_key()), '***KEY***', $url);
-    echo "الطريقة: $method
-";
-    echo "GSM/Address: " . ($method==='shamcash'?shamcash_account():syriatel_gsm()) . "
-";
-    echo "مفتاح apisyria: " . (apisyria_key()!==''?'موجود (طول '.strlen(apisyria_key()).')':'فارغ ❌') . "
-";
-    echo "الرابط: $shown
-
-";
+    echo "الطريقة: $method\n";
+    echo "GSM/Address: " . ($method==='shamcash'?shamcash_account():syriatel_gsm()) . "\n";
+    echo "مفتاح apisyria: " . (apisyria_key()!==''?'موجود (طول '.strlen(apisyria_key()).')':'فارغ ❌') . "\n";
+    echo "الرابط: $shown\n\n";
     $ch = curl_init($url);
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>30, CURLOPT_HTTPHEADER=>['Accept: application/json']]);
     $res = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $err = curl_error($ch);
     curl_close($ch);
-    echo "HTTP: $code
-";
-    if ($err) echo "CURL_ERR: $err
-";
-    echo "
-الرد:
-$res";
+    echo "HTTP: $code\n";
+    if ($err) echo "CURL_ERR: $err\n";
+    echo "\nالرد:\n$res";
     exit;
 }
 
@@ -55,7 +46,6 @@ $res";
 function verify_tx($txId, $method) {
     $base = 'https://apisyria.com/api/v1';
     if ($method === 'shamcash') {
-        // tx = رقم العملية (tran_id) أرقام فقط. account_address اختياري (نتركه ليبحث بكل الحسابات)
         $params = [
             'resource' => 'shamcash',
             'action'   => 'find_tx',
@@ -97,21 +87,14 @@ function verify_tx($txId, $method) {
 function check_coupon($code, $userId) {
     $code = strtoupper(trim($code));
     if ($code === '') return [0, null];
-                $amount = verify_tx($txId, $method);
-            if ($amount === null) {
-                $dest = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
-                $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . $dest;
-            } else {
-                // ------ 🔴 تم إصلاح الثغرة هنا 🔴 ------
-                // حذفنا الضرب بـ 100 الذي كان يضاعف المبالغ كالأقراش
-                
-                // إذا التحويل بالدولار (شام كاش فقط) نحوّله لليرة حسب سعر الصرف
-                if ($method === 'shamcash' && $currency === 'usd') {
-                    $amount = round($amount * usd_rate());
-                }
-                // --------------------------------------
-
-    // مرة واحدة لكل مستخدم
+    $st = db()->prepare("SELECT * FROM coupons WHERE code=? AND active=1");
+    $st->execute([$code]);
+    $c = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$c) return [0, 'كود الخصم غير صحيح'];
+    if ($c['max_uses'] > 0 && $c['used'] >= $c['max_uses']) return [0, 'انتهت صلاحية كود الخصم'];
+    if (!empty($c['user_id']) && (int)$c['user_id'] !== (int)$userId) {
+        return [0, 'هذا الكود خاص بحساب آخر'];
+    }
     $st = db()->prepare("SELECT COUNT(*) FROM coupon_uses WHERE coupon_id=? AND user_id=?");
     $st->execute([$c['id'], $userId]);
     if ($st->fetchColumn()) return [0, 'استخدمت هذا الكود مسبقاً'];
@@ -136,12 +119,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dest = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
                 $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . $dest;
             } else {
-                $amount = $amount * 100;
-                // إذا التحويل بالدولار (شام كاش فقط) نحوّله لليرة حسب سعر الصرف
+                // تم إزالة الضرب بـ 100 لتصحيح الخلل البرمجي من هنا
                 if ($method === 'shamcash' && $currency === 'usd') {
                     $amount = round($amount * usd_rate());
                 }
-                // تطبيق كود الخصم (مكافأة إضافية على الإيداع)
                 $bonus = 0; $couponObj = null; $couponMsg = null;
                 if ($couponCode !== '') {
                     [$couponObj, $couponMsg] = check_coupon($couponCode, $U['id']);
@@ -150,7 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         else $bonus = $couponObj['amount'];
                     }
                 }
-                // بونص العرض بوقت محدود (يُضاف فوق أي كوبون)
                 $promoBonus = 0;
                 $promoPct = promo_deposit_pct();
                 if ($promoPct > 0) $promoBonus = round($amount * $promoPct / 100);
@@ -176,10 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $msg .= ' (منها ' . implode(' + ', $parts) . ')';
                 } elseif ($couponMsg) $msg .= ' — ملاحظة: ' . $couponMsg;
                 $U = current_user();
-                // إشعار المستخدم بنجاح الإيداع
-                notify_user($U['id'], 'تم شحن محفظتك 💰',
-                    'أُضيف ' . number_format($total) . ' ل.س' . ($bonus > 0 ? ' (منها ' . number_format($bonus) . ' مكافأة)' : '') . ' لمحفظتك.', '💰');
-                // إشعار الأدمن
+                notify_user($U['id'], 'تم شحن محفظتك 💰', 'أُضيف ' . number_format($total) . ' ل.س' . ($bonus > 0 ? ' (منها ' . number_format($bonus) . ' مكافأة)' : '') . ' لمحفظتك.', '💰');
                 notify_admin("💰 <b>إيداع جديد</b>\nالمستخدم: " . e($U['name']) . "\nالمبلغ: " . number_format($total) . " ل.س\nالطريقة: " . ($method === 'shamcash' ? 'شام كاش' : 'سيرياتيل كاش') . "\nرقم العملية: $txId");
             }
         }
@@ -187,7 +164,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $hasSham = shamcash_number() !== '';
-
 $pageTitle = 'المحفظة';
 include __DIR__ . '/header.php'; ?>
 
@@ -237,7 +213,7 @@ include __DIR__ . '/header.php'; ?>
           <button type="button" class="cur-btn active" data-cur="syp" onclick="selectCur(this)">🇸🇾 ليرة سورية</button>
           <button type="button" class="cur-btn" data-cur="usd" onclick="selectCur(this)">💵 دولار</button>
         </div>
-        <p class="muted small" id="curNote" style="display:none;margin-top:6px">سيُحوّل مبلغ الدولار لليرة حسب سعر الصرف الحالي (<?= number_format(usd_rate()) ?> ل.س للدولar).</p>
+        <p class="muted small" id="curNote" style="display:none;margin-top:6px">سيُحوّل مبلغ الدولار لليرة حسب سعر الصرف الحالي (<?= number_format(usd_rate()) ?> ل.س للدولار).</p>
       </div>
     </div>
     <?php endif; ?>
@@ -267,7 +243,6 @@ function selectMethod(btn) {
   document.querySelectorAll('.pay-box').forEach(b => b.style.display = 'none');
   const box = document.getElementById('box-' + m);
   if (box) box.style.display = '';
-  // إعادة العملة لليرة عند التبديل (الدولار خاص بشام كاش فقط)
   if (m !== 'shamcash') {
     document.getElementById('payCurrency').value = 'syp';
   }
