@@ -98,6 +98,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->prepare("DELETE FROM item_images WHERE item_id=?")->execute([(string)$_POST['del_img']]);
         $msg = 'تم حذف الصورة ✅';
     }
+    // ربط بوت تلجرام لاستقبال ردود الدعم
+    if (isset($_POST['tg_setup'])) {
+        $token = admin_bot_token();
+        if ($token === '') {
+            $msg = 'ما في توكن بوت — اضبط ADMIN_BOT_TOKEN أولاً';
+        } else {
+            $secret = substr(hash('sha256', 'wh' . $token), 0, 32);
+            $url = site_url() . '/telegram_webhook.php';
+            $ch = curl_init("https://api.telegram.org/bot$token/setWebhook");
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => http_build_query(['url' => $url, 'secret_token' => $secret, 'allowed_updates' => json_encode(['message'])]),
+            ]);
+            $res = @curl_exec($ch); @curl_close($ch);
+            $msg = ($res && strpos($res, '"ok":true') !== false)
+                ? 'تم ربط البوت بتلجرام ✅ صرت تقدر ترد من تلجرام'
+                : ('فشل الربط: ' . ($res ?: 'تعذّر الاتصال'));
+        }
+    }
     if (isset($_POST['sync_products'])) {
         store_products(true); fc_content(0, true);
         $msg = 'تمت مزامنة المنتجات من FastCard ✅';
@@ -499,6 +518,13 @@ include __DIR__ . '/header.php'; ?>
         SUM(CASE WHEN s.sender='user' AND s.read_admin=0 THEN 1 ELSE 0 END) AS unread
         FROM support_messages s LEFT JOIN users u ON u.id = s.user_id
         GROUP BY s.user_id, u.name, u.email ORDER BY last_id DESC")->fetchAll(PDO::FETCH_ASSOC); ?>
+  <div class="card">
+    <h3>الرد عبر تلجرام ✈️</h3>
+    <p class="muted">فعّل هالخيار مرة وحدة، وبعدها لما يوصلك طلب دعم على تلجرام، <b>اعمل Reply على الرسالة واكتب ردّك</b> — والرد بيوصل الزبون عالموقع. (أو اكتب: <code>رقم_المستخدم: نص الرد</code>).</p>
+    <form method="post">
+      <button class="btn" name="tg_setup" value="1">🔗 تفعيل الرد من تلجرام</button>
+    </form>
+  </div>
   <div class="card">
     <h3>محادثات الدعم 🎧 (<?= count($convos) ?>)</h3>
     <p class="muted">لما الزبون يطلب التواصل مع الدعم من المساعد الذكي، بتظهر محادثته هون. اضغط "فتح" للرد.</p>

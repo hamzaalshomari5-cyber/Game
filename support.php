@@ -13,7 +13,7 @@ if ($action === 'send') {
     if ($body === '') { echo json_encode(['ok' => false, 'msg' => 'اكتب رسالتك']); exit; }
     db()->prepare("INSERT INTO support_messages (user_id,sender,body,read_user,read_admin) VALUES (?, 'user', ?, 1, 0)")
         ->execute([$U['id'], mb_substr($body, 0, 1000)]);
-    notify_admin("🎧 <b>رسالة دعم</b>\nالاسم: " . e($U['name']) . " (#" . $U['id'] . ")\n─────────\n" . e(mb_substr($body, 0, 300)));
+    notify_admin("🎧 <b>رسالة دعم</b>\nالاسم: " . e($U['name']) . " (#" . $U['id'] . ")\n─────────\n" . e(mb_substr($body, 0, 300)) . "\n\n↩️ ردّ (Reply) على هالرسالة للرد على الزبون");
     echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
     exit;
 }
