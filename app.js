@@ -112,7 +112,7 @@ function openBuy(card) {
         opt.textContent = displayVal;
         qtySelect.appendChild(opt);
         
-        currentVal = currentVal * 2; // الضرب في 2 للمضاعفة الأسية
+        currentVal = currentVal * 2; // المضاعفة الأسية
       }
 
       qtySelect.value = 1.92;
@@ -128,7 +128,7 @@ function openBuy(card) {
       if (qtySelectRow) qtySelectRow.style.display = 'none';
     }
   } else {
-    // إخفاء حقول الكمية نهائياً في الألعاب وتثبيتها على 1
+    // إخفاء حقول الكمية نهائياً في الألعاب وتثبيتها على الحد الأدنى
     qty.value = qMin;
     if (qtyRow) qtyRow.style.display = 'none';
     if (qtySelectRow) qtySelectRow.style.display = 'none';
@@ -190,7 +190,7 @@ function onQtySelect() {
   const sel = document.getElementById('mQtySelect');
   const v = parseFloat(sel.value) || qMin;
   document.getElementById('mQty').value = v;
-  updateTotal();
+  updateTotal(); // تحديث السعر الإجمالي فوراً عند تغيير الباقة المنسدلة
 }
 
 function getQty() {
@@ -199,10 +199,9 @@ function getQty() {
     return parseFloat(document.getElementById('mQtySelect').value) || qMin;
   }
   const input = document.getElementById('mQty');
-  let v = parseInt(input.value);
+  let v = parseFloat(input.value);
   if (isNaN(v) || v < qMin) v = qMin;
   if (qMax > 0 && v > qMax) v = qMax;
-  if (String(v) !== input.value) input.value = v;
   return v;
 }
 
@@ -219,7 +218,7 @@ function discValue(type, amount, total) {
 
 function updateTotal() {
   const q = getQty();
-  const base = Math.round(curPrice * q);
+  const base = Math.round(curPrice * q); // احتساب السعر مضروباً بالكمية المحددة بدقة
   const d = activeDiscount();
   const line  = document.getElementById('mDiscLine');
   const oldT  = document.getElementById('mOldTotal');
