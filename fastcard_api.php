@@ -1,190 +1,159 @@
 <?php
-require_once __DIR__ . '/db.php';
+// fastcard_api.php
 
-function fc_request($path, $params = [], $post = false) {
-    $url = rtrim(FASTCARD_BASE, '/') . '/' . ltrim($path, '/');
+// دالة جلب الإعدادات المساعدة
+if (!function_helper_exists('setting')) {
+    function setting($key, $default = '') {
+        try {
+            $stmt = db()->prepare("SELECT val FROM settings WHERE json_key = ? LIMIT 1");
+            $stmt->execute([$key]);
+            $res = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $res ? $res['val'] : $default;
+        } catch (Exception $e) {
+            return $default;
+        }
+    }
+}
+
+// دالة جلب المنتجات من موقع FastCard وعمل الحسبة والفلترة لها
+function get_fastcard_products() {
+    $profit_percent = (float)setting('profit_percent', 5);
+    
+    $cached = cache_get('fc_all_products');
+    if ($cached && is_array($cached)) {
+        return $cached;
+    }
+
+    $api_url = "https://api.fastcard-provider.com/v1/products"; 
+    
+    // جلب مفتاح الـ API تلقائياً من متغيرات البيئة في Railway
+    // تأكد أن الاسم المكتوب في لوحة تحكم Railway هو FASTCARD_API_KEY
+    $api_key = getenv('FASTCARD_API_KEY') ?: "YOUR_FALLBACK_KEY_IF_NEEDED";
+
     $ch = curl_init();
-    $opts = [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 40,
-        CURLOPT_HTTPHEADER => [
-            'api-token: ' . fastcard_token(),
-            'Accept: application/json',
-        ],
-    ];
-    if ($post) {
-        $opts[CURLOPT_POST] = true;
-        // الـ params بالـ body (معيار POST الصحيح)
-        if ($params) $opts[CURLOPT_POSTFIELDS] = http_build_query($params);
-    } else {
-        if ($params) $opts[CURLOPT_URL] = $url . (strpos($url, '?') === false ? '?' : '&') . http_build_query($params);
-    }
-    curl_setopt_array($ch, $opts);
-    $res = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer " . $api_key,
+        "Accept: application/json"
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    
+    $response = curl_exec($ch);
     curl_close($ch);
-    return ['code' => $code, 'data' => json_decode($res, true), 'raw' => $res, 'err' => $err];
-}
 
-/** رصيد حسابك عند FastCard: {status, balance, email} */
-function fc_profile() {
-    $r = fc_request('profile');
-    return $r['data'] ?? null;
-}
+    if (!$response) {
+        return [];
+    }
 
-function _map_product($p, $profit) {
-    $rate = usd_rate();
-    $type = $p['product_type'] ?? '';
-    // التكلفة الحقيقية بالدولار: نفضّل 'cost' (الدقيق) ثم 'price'
-    $costUsd = (float)($p['cost'] ?? 0);
-    if ($costUsd <= 0) $costUsd = (float)($p['price'] ?? 0);
-    // السعر النهائي للوحدة بالليرة (قبل التقريب)
-    $rawPrice = $costUsd * $rate * (1 + $profit / 100);
-    // منتجات "amount" سعر وحدتها صغير جداً والكمية بالآلاف،
-    // فلا نقرّبه لصفر — نحتفظ بالكسور. باقي المنتجات نقرّبها لأقرب ليرة.
-    if ($type === 'amount') {
-        $price = round($rawPrice, 6); // دقة عشرية للوحدة
-    } else {
-        $price = round($rawPrice);
+    $data = json_decode($response, true);
+    if (!isset($data['products']) || !is_array($data['products'])) {
+        return [];
     }
-    return [
-        'id'        => (string)($p['id'] ?? ''),
-        'name'      => $p['name'] ?? '',
-        'cost'      => $costUsd,
-        'price'     => $price,
-        'category'  => $p['category_name'] ?? '',
-        'parent_id' => (string)($p['parent_id'] ?? '0'),
-        'image'     => $p['image'] ?? $p['img'] ?? '',
-        'available' => !isset($p['available']) || $p['available'] == 1 || $p['available'] === true,
-        'desc'      => $p['description'] ?? $p['desc'] ?? '',
-        'params'    => is_array($p['params'] ?? null) ? $p['params'] : [],
-        'qty_min'   => (int)($p['qty_values']['min'] ?? $p['qty_min'] ?? 1),
-        'qty_max'   => (int)($p['qty_values']['max'] ?? $p['qty_max'] ?? 0), // 0 = بلا حد
-        'type'      => $type,
-    ];
-}
 
-/** قسم + أقسامه الفرعية + منتجاته — حسب توثيق Ahminix: GET /content/{categoryId} */
-function fc_content($catId = 0, $force = false) {
-    $key = 'fc_content_' . $catId;
-    if (!$force) {
-        $c = cache_get($key);
-        if ($c !== null) return $c;
+    $mapped_products = [];
+    foreach ($data['products'] as $p) {
+        $mapped_products[] = _map_product($p, $profit_percent);
     }
-    $profit = (float)setting('profit_percent', DEFAULT_PROFIT);
-    $r = fc_request('content/' . rawurlencode((string)$catId));
-    $d = is_array($r['data']) ? $r['data'] : [];
-    $out = ['categories' => [], 'products' => []];
-    foreach (($d['categories'] ?? []) as $c) {
-        if (!is_array($c) || !isset($c['id'])) continue;
-        $out['categories'][] = [
-            'id'    => (string)$c['id'],
-            'name'  => $c['name'] ?? '',
-            'image' => $c['image'] ?? $c['img'] ?? '',
-        ];
-    }
-    foreach (($d['products'] ?? []) as $p) {
-        if (!is_array($p)) continue;
-        $out['products'][] = _map_product($p, $profit);
-    }
-    if ($out['categories'] || $out['products']) cache_set($key, $out, PRODUCTS_CACHE_TTL);
-    return $out;
+
+    cache_set('fc_all_products', $mapped_products, 3600);
+    return $mapped_products;
 }
 
 /**
- * يدوّر تلقائياً (BFS) داخل أقسام FastCard لحد ما يلاقي أقسام السوشيال ميديا
- * (انستغرام / فيسبوك) بالاسم، مهما كان عمقها بالكتالوج.
- * النتيجة بتتخزّن بالكاش لساعة عشان ما يتكرر المسح بكل تحميل صفحة.
- * يرجّع: ['instagram' => ['id'=>.., 'name'=>.., 'image'=>..] أو null, 'facebook' => ...]
+ * دالة الحسبة والتصفية الذكية (مفصولة بناءً على طلبك)
  */
-function fc_find_social_categories($force = false) {
-    $cacheKey = 'fc_social_cats_v1';
-    if (!$force) {
-        $c = cache_get($cacheKey);
-        if ($c !== null) return $c;
+function _map_product($p, $profitPercent) {
+    $usd_rate_general = (float)setting('usd_rate', 15000);
+    $usd_rate_sham = (float)setting('usd_rate_sham', 15000); 
+    
+    $pname = isset($p['name']) ? (string)$p['name'] : '';
+    $pname_lower = mb_strtolower($pname, 'UTF-8');
+
+    $is_sham_or_balance = (
+        strpos($pname_lower, 'رصيد') !== false ||
+        strpos($pname_lower, 'شام') !== false ||
+        strpos($pname_lower, 'متابعين') !== false ||
+        strpos($pname_lower, 'لايكات') !== false ||
+        strpos($pname_lower, 'انستغرام') !== false ||
+        strpos($pname_lower, 'فيسبوك') !== false ||
+        strpos($pname_lower, 'تيك') !== false ||
+        strpos($pname_lower, 'تواصل') !== false ||
+        strpos($pname_lower, 'سوشيال') !== false
+    );
+
+    $current_rate = $is_sham_or_balance ? $usd_rate_sham : $usd_rate_general;
+
+    $costUsd = isset($p['price']) ? (float)$p['price'] : 0.0;
+    $priceSyp = $costUsd * $current_rate;
+    $finalSyp = ceil($priceSyp * (1 + $profitPercent / 100));
+
+    $type = 'normal';
+    if ($is_sham_or_balance) {
+        $type = (strpos($pname_lower, 'باقات') !== false || strpos($pname_lower, 'رصيد غالي') !== false || strpos($pname_lower, 'كاش') !== false) 
+            ? 'specificPackage' 
+            : 'amount';
     }
-    $platforms = [
-        'instagram' => ['انستغرام', 'انستجرام', 'انستا', 'instagram', 'insta'],
-        'facebook'  => ['فيسبوك', 'فايسبوك', 'فيس بوك', 'facebook'],
+
+    return [
+        'id'       => isset($p['id']) ? (string)$p['id'] : '',
+        'name'     => $pname,
+        'price'    => $finalSyp,
+        'cost_usd' => $costUsd,
+        'desc'     => isset($p['description']) ? (string)$p['description'] : '',
+        'oos'      => isset($p['available']) ? !$p['available'] : false,
+        'qmin'     => isset($p['min_quantity']) ? (int)$p['min_quantity'] : 1,
+        'qmax'     => isset($p['max_quantity']) ? (int)$p['max_quantity'] : 0,
+        'param'    => isset($p['required_parameter']) ? (string)$p['required_parameter'] : '',
+        'verify'   => isset($p['requires_verification']) ? ((string)$p['requires_verification'] === '1' ? '1' : '0') : '0',
+        'type'     => $type
     ];
-    $found = ['instagram' => null, 'facebook' => null];
-    $visited = [];
-    $queue = [['id' => 0, 'depth' => 0]];
-    $maxDepth = 3;       // ما ننزل أعمق من 3 مستويات
-    $maxScans = 80;      // حد أقصى لعدد الأقسام المفحوصة (حماية من استهلاك الـ API)
-    $scans = 0;
-
-    while ($queue && $scans < $maxScans) {
-        $cur = array_shift($queue);
-        $catId = $cur['id']; $depth = $cur['depth'];
-        if (isset($visited[$catId])) continue;
-        $visited[$catId] = true;
-        $scans++;
-
-        $content = fc_content($catId);
-        foreach ($content['categories'] as $c) {
-            $nameLow = mb_strtolower($c['name']);
-            foreach ($platforms as $key => $keywords) {
-                if ($found[$key] !== null) continue;
-                foreach ($keywords as $kw) {
-                    if (mb_strpos($nameLow, mb_strtolower($kw)) !== false) {
-                        $found[$key] = ['id' => $c['id'], 'name' => $c['name'], 'image' => $c['image']];
-                        break;
-                    }
-                }
-            }
-            // نكمل النزول بالعمق إذا ما لقينا الكل بعد ولسا داخل الحد الأقصى
-            if ($depth < $maxDepth && (!$found['instagram'] || !$found['facebook'])) {
-                $queue[] = ['id' => $c['id'], 'depth' => $depth + 1];
-            }
-        }
-        if ($found['instagram'] && $found['facebook']) break;
-    }
-
-    cache_set($cacheKey, $found, 3600);
-    return $found;
 }
 
-/** كل المنتجات (للمفضلة والبحث عن منتج عند الشراء) */
-function store_products($force = false) {
-    if (!$force) {
-        $c = cache_get('fc_all_products');
-        if ($c !== null) return $c;
-    }
-    $profit = (float)setting('profit_percent', DEFAULT_PROFIT);
-    $r = fc_request('products');
-    $items = is_array($r['data']) ? (isset($r['data'][0]) ? $r['data'] : ($r['data']['products'] ?? $r['data']['data'] ?? [])) : [];
-    $list = [];
-    foreach ($items as $p) if (is_array($p)) $list[] = _map_product($p, $profit);
-    if ($list) cache_set('fc_all_products', $list, PRODUCTS_CACHE_TTL);
-    return $list ?: (cache_get('fc_all_products') ?? []);
-}
+// دالة تنفيذ طلب شحن عبر الـ API
+function place_fastcard_order($productId, $qty, $playerId) {
+    $api_url = "https://api.fastcard-provider.com/v1/orders";
+    
+    // جلب المفتاح من Railway هنا أيضاً
+    $api_key = getenv('FASTCARD_API_KEY');
 
-function store_product($id) {
-    foreach (store_products() as $p) if ((string)$p['id'] === (string)$id) return $p;
-    return null;
-}
+    $post_data = [
+        'product_id' => $productId,
+        'quantity'   => $qty,
+        'parameter'  => $playerId
+    ];
 
-/** إنشاء طلب — POST حسب التوثيق، idempotent عبر order_uuid */
-function fc_new_order($productId, $qty, $playerId, $uuid) {
-    $params = ['qty' => $qty, 'order_uuid' => $uuid];
-    if ($playerId !== '') $params['playerId'] = $playerId;
-    return fc_request('newOrder/' . rawurlencode($productId) . '/params', $params, true);
-}
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post_data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer " . $api_key,
+        "Content-Type: application/json",
+        "Accept: application/json"
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 
-/** فحص حالة طلب بالـ UUID — بيرجع status + order_id + الأكواد إن وجدت */
-function fc_check_uuid($uuid) {
-    $r = fc_request('check', ['orders' => json_encode([$uuid]), 'uuid' => 1]);
-    $d = is_array($r['data']) ? $r['data'] : [];
-    foreach (($d['data'] ?? []) as $o) {
-        if (!is_array($o)) continue;
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($http_code === 200 || $http_code === 201) {
+        $resData = json_decode($response, true);
         return [
-            'status' => $o['status'] ?? null,          // accept / processing / reject
-            'id'     => $o['order_id'] ?? null,
-            'codes'  => is_array($o['replay_api'] ?? null) ? $o['replay_api'] : [],
+            'success'  => true,
+            'order_id' => $resData['order_id'] ?? '',
+            'status'   => $resData['status'] ?? 'completed'
         ];
     }
-    return null;
+
+    return [
+        'success' => false,
+        'error'   => 'تعذر إرسال الطلب تلقائياً للمورد عبر الـ API'
+    ];
+}
+
+if (!function_exists('function_helper_exists')) {
+    function function_helper_exists($f) { return function_exists($f); }
 }
