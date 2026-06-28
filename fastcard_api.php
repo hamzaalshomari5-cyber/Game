@@ -1,13 +1,14 @@
 <?php
 // fastcard_api.php
 
-// تأمين جلب ملفات النظام الأساسية وقاعدة البيانات إذا لم تكن مدمجة تلقائياً
-if (file_exists(__DIR__ . '/config.php')) {
-    require_once __DIR__ . '/config.php';
-} elseif (file_exists(__DIR__ . '/db.php')) {
-    require_once __DIR__ . '/db.php';
-} elseif (file_exists(__DIR__ . '/functions.php')) {
-    require_once __DIR__ . '/functions.php';
+// 1. استدعاء ملفات النظام الأساسية بشكل ديناميكي وآمن لضمان عمل دالة current_user ودالة db
+$base_dir = __DIR__;
+if (file_exists($base_dir . '/functions.php')) {
+    require_once $base_dir . '/functions.php';
+} elseif (file_exists($base_dir . '/db.php')) {
+    require_once $base_dir . '/db.php';
+} elseif (file_exists($base_dir . '/config.php')) {
+    require_once $base_dir . '/config.php';
 }
 
 // دالة جلب الإعدادات من قاعدة البيانات
@@ -166,4 +167,3 @@ function place_fastcard_order($productId, $qty, $playerId) {
         'error'   => 'تعذر إرسال الطلب تلقائياً للمورد عبر الـ API'
     ];
 }
- 
