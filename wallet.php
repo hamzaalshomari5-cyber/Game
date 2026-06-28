@@ -121,8 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // ------ 🟢 تعديل الحسبة بدقة هنا 🟢 ------
                 if ($method === 'shamcash' && $currency === 'usd') {
-                    // إذا كان الشحن بالدولار، نضربه مباشرة بسعر الصرف الحالي بدون إضافة أصفار
-                    $amount = round($amount * usd_rate());
+                    // إذا كان الشحن بالدولار، نضربه مباشرة بسعر صرف شام كاش الخاص (بدون إضافة أصفار)
+                    $amount = round($amount * usd_rate_shamcash());
                 } else {
                     // إذا كان الشحن بالليرة السورية (سيرياتيل أو شام كاش سوري)، نضربه بـ 100 لإضافة الـ 00 للعملة القديمة
                     $amount = $amount * 100;
@@ -219,7 +219,7 @@ include __DIR__ . '/header.php'; ?>
           <button type="button" class="cur-btn active" data-cur="syp" onclick="selectCur(this)">🇸🇾 ليرة سورية</button>
           <button type="button" class="cur-btn" data-cur="usd" onclick="selectCur(this)">💵 دولار</button>
         </div>
-        <p class="muted small" id="curNote" style="display:none;margin-top:6px">سيُحوّل مبلغ الدولار لليرة حسب سعر الصرف الحالي (<?= number_format(usd_rate()) ?> ل.س للدولار).</p>
+        <p class="muted small" id="curNote" style="display:none;margin-top:6px">سيُحوّل مبلغ الدولار لليرة حسب سعر الصرف الحالي (<?= number_format(usd_rate_shamcash()) ?> ل.س للدولار).</p>
       </div>
     </div>
     <?php endif; ?>

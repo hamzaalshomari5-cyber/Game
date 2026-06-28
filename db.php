@@ -298,7 +298,15 @@ function require_admin() {
 function e($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 /* ===== العملة وسعر الصرف ===== */
+// سعر صرف تسعير الألعاب (تحويل سعر FastCard بالدولار لليرة السورية)
 function usd_rate() { return max(0.0001, (float)setting('usd_rate', 13500)); }
+// سعر صرف شحن شام كاش بالدولار (منفصل عن سعر تسعير الألعاب)
+// إذا الأدمن ما حدّده، بيرجع لسعر تسعير الألعاب تلقائياً
+function usd_rate_shamcash() {
+    $v = setting('usd_rate_shamcash', '');
+    if ($v === '' || $v === null) return usd_rate();
+    return max(0.0001, (float)$v);
+}
 function display_currency() { return (($_COOKIE['currency'] ?? 'syp') === 'usd') ? 'usd' : 'syp'; }
 function fmt_price($syp) {
     if (display_currency() === 'usd') return number_format($syp / usd_rate(), 2) . ' $';

@@ -7,7 +7,11 @@ $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['usd_rate'])) {
         set_setting('usd_rate', (float)$_POST['usd_rate']);
-        $msg = 'تم حفظ سعر الصرف ✅';
+        $msg = 'تم حفظ سعر صرف تسعير الألعاب ✅';
+    }
+    if (isset($_POST['usd_rate_shamcash'])) {
+        set_setting('usd_rate_shamcash', (float)$_POST['usd_rate_shamcash']);
+        $msg = 'تم حفظ سعر صرف شحن شام كاش بالدولار ✅';
     }
     if (isset($_POST['profit_percent'])) {
         set_setting('profit_percent', (float)$_POST['profit_percent']);
@@ -811,7 +815,7 @@ include __DIR__ . '/header.php'; ?>
 
 <?php else: ?>
   <div class="card">
-    <h3>سعر صرف الدولار 💱</h3>
+    <h3>سعر صرف تسعير الألعاب 💱</h3>
     <p class="muted">أسعار FastCard بترجع بالدولار — حط سعر الصرف ليتحول السعر لليرة تلقائياً.</p>
     <p class="muted" style="background:rgba(212,175,55,.1);padding:10px;border-radius:8px;border-right:3px solid var(--accent)">
       💡 <b>للعملة السورية القديمة</b> (الأرقام الكبيرة): حط سعر الدولار الحقيقي بالسوق، مثلاً <b>15000</b>.<br>
@@ -829,6 +833,19 @@ include __DIR__ . '/header.php'; ?>
         (<?= e($x['cost']) ?> × <?= e(setting('usd_rate', 11000)) ?> × <?= 1 + (float)setting('profit_percent', DEFAULT_PROFIT) / 100 ?>)
       </p>
     <?php endif; ?>
+  </div>
+  <div class="card">
+    <h3>سعر صرف شحن شام كاش بالدولار 💵</h3>
+    <p class="muted">هذا السعر مستقل عن سعر صرف تسعير الألعاب فوق — يُستخدم فقط عند ما يشحن الزبون محفظته بالدولار عبر شام كاش.</p>
+    <p class="muted small" style="background:rgba(212,175,55,.1);padding:10px;border-radius:8px;border-right:3px solid var(--accent)">
+      💡 إذا تركت الحقل فارغ أو 0، رح يُستخدم تلقائياً نفس سعر صرف تسعير الألعاب.
+    </p>
+    <form method="post" class="inline-form">
+      <input name="usd_rate_shamcash" type="number" step="any" value="<?= e(setting('usd_rate_shamcash', '')) ?>" placeholder="اتركه فارغ لاستخدام سعر تسعير الألعاب">
+      <span class="muted">ل.س لكل 1$ (شام كاش)</span>
+      <button class="btn">حفظ</button>
+    </form>
+    <p class="muted small" style="margin-top:8px">السعر الحالي المُطبَّق فعلياً: <b><?= number_format(usd_rate_shamcash()) ?></b> ل.س لكل 1$</p>
   </div>
   <div class="card">
     <h3>هامش الربح</h3>
