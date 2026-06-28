@@ -1,3 +1,4 @@
+// زر الرجوع الذكي
 function goBack() {
   const openModal = document.querySelector('.modal.show');
   if (openModal) { openModal.classList.remove('show'); return; }
@@ -12,11 +13,13 @@ function goBack() {
   }
 }
 
+// السايدبار
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
 }
 
+// الوضع الداكن/الفاتح
 function toggleTheme() {
   const light = document.body.classList.toggle('light');
   document.cookie = 'theme=' + (light ? 'light' : 'dark') + ';path=/;max-age=31536000';
@@ -25,12 +28,13 @@ function toggleTheme() {
   if (document.cookie.includes('theme=light')) document.body.classList.add('light');
 })();
 
+// تبديل العملة (ل.س / $)
 function toggleCurrency() {
   const cur = (typeof CUR !== 'undefined' && CUR === 'usd') ? 'syp' : 'usd';
   document.cookie = 'currency=' + cur + ';path=/;max-age=31536000';
   location.reload();
 }
-
+// تنسيق سعر
 function fmtPrice(syp) {
   if (typeof CUR !== 'undefined' && CUR === 'usd')
     return (syp / USD_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' $';
@@ -68,23 +72,23 @@ function openBuy(card) {
   qMin = parseInt(card.dataset.qmin) || 1;
   qMax = parseInt(card.dataset.qmax) || 0;
   const pType = card.dataset.type || '';
-  const pCat = (card.dataset.cat || '').toLowerCase();
-  const pName = (card.dataset.name || '').toLowerCase();
-
-  // فحص ذكي للأقسام لتمكين الكميات فقط في الرصيد والتواصل
+  
+  // قراءة اسم المنتج المكتوب داخل الكرت مباشرة لحل مشكلة الـ PHP
+  const pNameEl = card.querySelector('.p-name');
+  const pName = pNameEl ? pNameEl.textContent.toLowerCase() : (card.dataset.name || '').toLowerCase();
+  
+  // فحص ذكي من خلال اسم المنتج والـ Type
   const isBalanceOrSocial = pType === 'amount' || 
-                            pCat.includes('رصيد') || 
-                            pCat.includes('تواصل') || 
-                            pCat.includes('متابعين') || 
-                            pCat.includes('لايكات') || 
-                            pCat.includes('سوشيال') || 
-                            pCat.includes('انستغرام') || 
-                            pCat.includes('فيسبوك') || 
-                            pCat.includes('تيك') || 
                             pName.includes('رصيد') || 
-                            pName.includes('متابعين');
+                            pName.includes('متابعين') || 
+                            pName.includes('لايكات') || 
+                            pName.includes('انستغرام') || 
+                            pName.includes('فيسبوك') || 
+                            pName.includes('تيك') || 
+                            pName.includes('تواصل') || 
+                            pName.includes('سوشيال');
 
-  document.getElementById('mName').textContent = card.dataset.name;
+  document.getElementById('mName').textContent = card.dataset.name || (pNameEl ? pNameEl.textContent : '');
   document.getElementById('mPrice').textContent = fmtPrice(curPrice);
   document.getElementById('mDesc').textContent = card.dataset.desc || '';
   const qty = document.getElementById('mQty');
@@ -117,6 +121,7 @@ function openBuy(card) {
       if (qtySelectRow) qtySelectRow.style.display = 'none';
     }
   } else {
+    // إخفاء حقل التحكم بالكمية تماماً وتثبيتها في الألعاب وباقي الأقسام
     qty.value = qMin;
     if (qtyRow) qtyRow.style.display = 'none';
     if (qtySelectRow) qtySelectRow.style.display = 'none';
@@ -261,7 +266,7 @@ async function verifyName() {
     } else if (d.soft) {
       softPass = true;
       vb.className = 'verify-box warn';
-      vb.textContent = '⚠️ ' + d.msg + ' — تأكد من الـ ID بنفسك ثم اضغط شراء';
+      vb.textContent = '⚠️ ' + d.msg + ' — تأكد من الـ ID بنفسك then press buy';
       btn.textContent = 'شراء';
     } else {
       vb.className = 'verify-box no';
