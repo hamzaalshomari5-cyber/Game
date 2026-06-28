@@ -1,7 +1,7 @@
 <?php
 // fastcard_api.php
 
-// تصحيح الخطأ: استخدام function_exists الفطرية في PHP
+// استخدام function_exists الصحيحة
 if (!function_exists('setting')) {
     function setting($key, $default = '') {
         try {
@@ -130,8 +130,8 @@ function place_fastcard_order($productId, $qty, $playerId) {
         "Content-Type: application/json",
         "Accept: application/json"
     ]);
-    curl_timeout = 20;
-    curl_setopt($ch, CURLOPT_TIMEOUT, $curl_timeout);
+    // تم إصلاح السطر هنا بوضع القيمة مباشرة لتجنب الخطأ الإملائي
+    curl_setopt($ch, CURLOPT_TIMEOUT, 20);[span_2](start_span)[span_2](end_span)
 
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
