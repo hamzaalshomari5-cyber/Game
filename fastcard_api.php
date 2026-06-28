@@ -93,6 +93,60 @@ function fc_content($catId = 0, $force = false) {
     return $out;
 }
 
+/**
+ * يدوّر تلقائياً (BFS) داخل أقسام FastCard لحد ما يلاقي أقسام السوشيال ميديا
+ * (انستغرام / فيسبوك) بالاسم، مهما كان عمقها بالكتالوج.
+ * النتيجة بتتخزّن بالكاش لساعة عشان ما يتكرر المسح بكل تحميل صفحة.
+ * يرجّع: ['instagram' => ['id'=>.., 'name'=>.., 'image'=>..] أو null, 'facebook' => ...]
+ */
+function fc_find_social_categories($force = false) {
+    $cacheKey = 'fc_social_cats_v1';
+    if (!$force) {
+        $c = cache_get($cacheKey);
+        if ($c !== null) return $c;
+    }
+    $platforms = [
+        'instagram' => ['انستغرام', 'انستجرام', 'انستا', 'instagram', 'insta'],
+        'facebook'  => ['فيسبوك', 'فايسبوك', 'فيس بوك', 'facebook'],
+    ];
+    $found = ['instagram' => null, 'facebook' => null];
+    $visited = [];
+    $queue = [['id' => 0, 'depth' => 0]];
+    $maxDepth = 3;       // ما ننزل أعمق من 3 مستويات
+    $maxScans = 80;      // حد أقصى لعدد الأقسام المفحوصة (حماية من استهلاك الـ API)
+    $scans = 0;
+
+    while ($queue && $scans < $maxScans) {
+        $cur = array_shift($queue);
+        $catId = $cur['id']; $depth = $cur['depth'];
+        if (isset($visited[$catId])) continue;
+        $visited[$catId] = true;
+        $scans++;
+
+        $content = fc_content($catId);
+        foreach ($content['categories'] as $c) {
+            $nameLow = mb_strtolower($c['name']);
+            foreach ($platforms as $key => $keywords) {
+                if ($found[$key] !== null) continue;
+                foreach ($keywords as $kw) {
+                    if (mb_strpos($nameLow, mb_strtolower($kw)) !== false) {
+                        $found[$key] = ['id' => $c['id'], 'name' => $c['name'], 'image' => $c['image']];
+                        break;
+                    }
+                }
+            }
+            // نكمل النزول بالعمق إذا ما لقينا الكل بعد ولسا داخل الحد الأقصى
+            if ($depth < $maxDepth && (!$found['instagram'] || !$found['facebook'])) {
+                $queue[] = ['id' => $c['id'], 'depth' => $depth + 1];
+            }
+        }
+        if ($found['instagram'] && $found['facebook']) break;
+    }
+
+    cache_set($cacheKey, $found, 3600);
+    return $found;
+}
+
 /** كل المنتجات (للمفضلة والبحث عن منتج عند الشراء) */
 function store_products($force = false) {
     if (!$force) {

@@ -37,6 +37,7 @@ $U = current_user();
   <?php endif; ?>
   <nav class="sb-nav">
     <a href="/index.php">🏠 الرئيسية</a>
+    <a href="/index.php?page=social">📱 خدمات السوشيال ميديا</a>
     <a href="/index.php?page=search">🔍 بحث عن منتج</a>
     <a href="/assistant.php">🤖 المساعد الذكي</a>
     <?php if ($U): ?>

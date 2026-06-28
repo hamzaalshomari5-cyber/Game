@@ -177,7 +177,11 @@ input, select {
 .m-price { color: var(--accent); font-weight: 900; font-size: 1.2rem; margin: 6px 0; }
 .qty-row { display: flex; gap: 8px; align-items: center; }
 .qty-row button { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.3rem; cursor: pointer; }
-.qty-row input { text-align: center; }
+.qty-row input { text-align: center; flex: 1; min-width: 0; }
+.qty-row input.invalid { border-color: var(--no); color: var(--no); }
+.m-qty-row { margin: 12px 0; }
+.m-qty-row > label { display: block; margin-bottom: 6px; font-weight: 700; }
+.m-qty-row > label small { font-weight: 500; color: var(--muted); }
 .m-total { margin-top: 14px; font-size: 1.05rem; }
 .m-total b { color: var(--accent); }
 .m-disc { margin-top: 10px; font-weight: 700; color: var(--ok); }

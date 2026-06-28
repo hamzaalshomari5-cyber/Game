@@ -103,8 +103,10 @@ function openBuy(card) {
   } else {
     qMin = parseInt(card.dataset.qmin) || 1;
     qMax = parseInt(card.dataset.qmax) || 0;
-    qty.value = qMin; qty.min = qMin;
+    qty.value = qMin; qty.min = qMin; qty.step = 1;
     if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
+    const hint = document.getElementById('mQtyHint');
+    if (hint) hint.textContent = qMax > 0 ? ('(من ' + qMin.toLocaleString() + ' إلى ' + qMax.toLocaleString() + ')') : ('(الحد الأدنى ' + qMin.toLocaleString() + ')');
     if (qtyRow) qtyRow.style.display = '';
     if (qtySelectRow) qtySelectRow.style.display = 'none';
   }
@@ -137,6 +139,25 @@ function qtyStep(d) {
   if (v < qMin) v = qMin;
   if (qMax > 0 && v > qMax) v = qMax;
   i.value = v;
+  i.classList.remove('invalid');
+  updateTotal();
+}
+// تلوين الحقل لو القيمة المكتوبة خارج النطاق المسموح (بدون فرض التصحيح وهو لسا عم يكتب)
+function onQtyType() {
+  const i = document.getElementById('mQty');
+  const v = parseInt(i.value);
+  const invalid = i.value !== '' && (isNaN(v) || v < qMin || (qMax > 0 && v > qMax));
+  i.classList.toggle('invalid', invalid);
+  updateTotal();
+}
+// تصحيح القيمة لأقرب حد مسموح بعد ما يخلص كتابة (onblur)
+function clampQty() {
+  const i = document.getElementById('mQty');
+  let v = parseInt(i.value);
+  if (isNaN(v) || v < qMin) v = qMin;
+  if (qMax > 0 && v > qMax) v = qMax;
+  i.value = v;
+  i.classList.remove('invalid');
   updateTotal();
 }
 function onQtySelect() {
@@ -151,7 +172,13 @@ function getQty() {
   if (selRow && selRow.style.display !== 'none') {
     return parseFloat(document.getElementById('mQtySelect').value) || qMin;
   }
-  return parseFloat(document.getElementById('mQty').value) || qMin;
+  // حقل الكتابة الحر: نتأكد من القيمة ضمن الحدود قبل الإرسال فعلياً (شبكة أمان حتى لو ما حصل blur)
+  const input = document.getElementById('mQty');
+  let v = parseInt(input.value);
+  if (isNaN(v) || v < qMin) v = qMin;
+  if (qMax > 0 && v > qMax) v = qMax;
+  if (String(v) !== input.value) input.value = v;
+  return v;
 }
 // كل الخصومات الدائمة المفعّلة للمستخدم
 function allDiscounts() {

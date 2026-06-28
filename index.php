@@ -289,6 +289,41 @@ if ($page === 'cart') {
     <?php include __DIR__ . '/footer.php'; exit;
 }
 
+/* ===== صفحة خدمات السوشيال ميديا: انستغرام/فيسبوك → متابعين/لايكات/مشاهدات ===== */
+if ($page === 'social') {
+    $social = fc_find_social_categories();
+    $pageTitle = 'خدمات السوشيال ميديا';
+    include __DIR__ . '/header.php'; ?>
+    <h1 class="section-title">📱 خدمات السوشيال ميديا</h1>
+    <p class="muted" style="margin:-6px 0 16px">اختر المنصة، وبعدين نوع الخدمة (متابعين، لايكات، مشاهدات...) والكمية</p>
+    <?php if (!$social['instagram'] && !$social['facebook']): ?>
+      <p class="empty">خدمات السوشيال ميديا غير متوفرة حالياً ضمن باقات المزوّد — تواصل معنا لتفعيلها.</p>
+    <?php else: ?>
+      <div class="grid cats-grid">
+        <?php
+        $plat = [
+          'instagram' => ['label' => 'انستغرام', 'emoji' => '📷'],
+          'facebook'  => ['label' => 'فيسبوك',   'emoji' => '👍'],
+        ];
+        foreach ($plat as $key => $info):
+          $c = $social[$key];
+          if (!$c) continue;
+          $img = item_img_url($c['id']);
+          if (!$img && $c['image']) {
+              $base = 'https://fastcard1.store/uploads/';
+              $img = $base . (strpos($c['image'], 'cat_') === 0 ? 'categories/' : 'products/') . $c['image'];
+          }
+        ?>
+          <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($c['id']) ?>&name=<?= urlencode($c['name']) ?>">
+            <?php if ($img): ?><img class="cat-img" src="<?= e($img) ?>" alt="" loading="lazy"><?php else: ?><div class="cat-icon"><?= $info['emoji'] ?></div><?php endif; ?>
+            <div class="cat-name"><?= $info['emoji'] ?> <?= e($info['label']) ?></div>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+    <?php include __DIR__ . '/footer.php'; exit;
+}
+
 /* ===== صفحة قسم: content/{id} → أقسام فرعية + منتجات (نفس FastCard) ===== */
 if ($page === 'products') {
     $cat = $_GET['cat'] ?? '0';
@@ -410,6 +445,20 @@ include __DIR__ . '/header.php'; ?>
 </div>
 
 <h2 class="section-title">الأقسام</h2>
+<?php $socialCats = fc_find_social_categories(); if ($socialCats['instagram'] || $socialCats['facebook']): ?>
+<div class="grid cats-grid" style="margin-bottom:18px">
+  <?php if ($socialCats['instagram']): $ig = $socialCats['instagram']; ?>
+    <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($ig['id']) ?>&name=<?= urlencode($ig['name']) ?>">
+      <div class="cat-icon">📷</div><div class="cat-name">📷 متابعين / لايكات انستغرام</div>
+    </a>
+  <?php endif; ?>
+  <?php if ($socialCats['facebook']): $fb = $socialCats['facebook']; ?>
+    <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($fb['id']) ?>&name=<?= urlencode($fb['name']) ?>">
+      <div class="cat-icon">👍</div><div class="cat-name">👍 متابعين / لايكات فيسبوك</div>
+    </a>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
 <?php if (!$root['categories'] && !$root['products']): ?>
   <p class="empty">لم يتم تحميل المنتجات بعد — تأكد من توكن FastCard في الإعدادات.</p>
 <?php endif; ?>
