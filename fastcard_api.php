@@ -14,10 +14,13 @@ if (file_exists(__DIR__ . '/config.php')) {
 if (!function_exists('setting')) {
     function setting($key, $default = '') {
         try {
-            $stmt = db()->prepare("SELECT val FROM settings WHERE json_key = ? LIMIT 1");
-            $stmt->execute([$key]);
-            $res = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $res ? $res['val'] : $default;
+            if (function_exists('db')) {
+                $stmt = db()->prepare("SELECT val FROM settings WHERE json_key = ? LIMIT 1");
+                $stmt->execute([$key]);
+                $res = $stmt->fetch(PDO::FETCH_ASSOC);
+                return $res ? $res['val'] : $default;
+            }
+            return $default;
         } catch (Exception $e) {
             return $default;
         }
@@ -28,7 +31,7 @@ if (!function_exists('setting')) {
 function get_fastcard_products() {
     $profit_percent = (float)setting('profit_percent', 5);
     
-    $cached = cache_get('fc_all_products');
+    $cached = function_exists('cache_get') ? cache_get('fc_all_products') : null;
     if ($cached && is_array($cached)) {
         return $cached;
     }
@@ -64,7 +67,9 @@ function get_fastcard_products() {
         $mapped_products[] = _map_product($p, $profit_percent);
     }
 
-    cache_set('fc_all_products', $mapped_products, 3600);
+    if (function_exists('cache_set')) {
+        cache_set('fc_all_products', $mapped_products, 3600);
+    }
     return $mapped_products;
 }
 
@@ -161,3 +166,4 @@ function place_fastcard_order($productId, $qty, $playerId) {
         'error'   => 'تعذر إرسال الطلب تلقائياً للمورد عبر الـ API'
     ];
 }
+ 
