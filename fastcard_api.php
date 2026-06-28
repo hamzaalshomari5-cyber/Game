@@ -1,8 +1,8 @@
 <?php
 // fastcard_api.php
 
-// دالة جلب الإعدادات المساعدة
-if (!function_helper_exists('setting')) {
+// تصحيح الخطأ: استخدام function_exists الفطرية في PHP
+if (!function_exists('setting')) {
     function setting($key, $default = '') {
         try {
             $stmt = db()->prepare("SELECT val FROM settings WHERE json_key = ? LIMIT 1");
@@ -27,8 +27,7 @@ function get_fastcard_products() {
     $api_url = "https://api.fastcard-provider.com/v1/products"; 
     
     // جلب مفتاح الـ API تلقائياً من متغيرات البيئة في Railway
-    // تأكد أن الاسم المكتوب في لوحة تحكم Railway هو FASTCARD_API_KEY
-    $api_key = getenv('FASTCARD_API_KEY') ?: "YOUR_FALLBACK_KEY_IF_NEEDED";
+    $api_key = getenv('FASTCARD_API_KEY') ?: "";
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $api_url);
@@ -61,7 +60,7 @@ function get_fastcard_products() {
 }
 
 /**
- * دالة الحسبة والتصفية الذكية (مفصولة بناءً على طلبك)
+ * دالة الحسبة والتصفية الذكية لفصل الأسعار تلقائياً
  */
 function _map_product($p, $profitPercent) {
     $usd_rate_general = (float)setting('usd_rate', 15000);
@@ -113,9 +112,7 @@ function _map_product($p, $profitPercent) {
 // دالة تنفيذ طلب شحن عبر الـ API
 function place_fastcard_order($productId, $qty, $playerId) {
     $api_url = "https://api.fastcard-provider.com/v1/orders";
-    
-    // جلب المفتاح من Railway هنا أيضاً
-    $api_key = getenv('FASTCARD_API_KEY');
+    $api_key = getenv('FASTCARD_API_KEY') ?: "";
 
     $post_data = [
         'product_id' => $productId,
@@ -133,7 +130,8 @@ function place_fastcard_order($productId, $qty, $playerId) {
         "Content-Type: application/json",
         "Accept: application/json"
     ]);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+    curl_timeout = 20;
+    curl_setopt($ch, CURLOPT_TIMEOUT, $curl_timeout);
 
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -152,8 +150,4 @@ function place_fastcard_order($productId, $qty, $playerId) {
         'success' => false,
         'error'   => 'تعذر إرسال الطلب تلقائياً للمورد عبر الـ API'
     ];
-}
-
-if (!function_exists('function_helper_exists')) {
-    function function_helper_exists($f) { return function_exists($f); }
 }
