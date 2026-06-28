@@ -55,12 +55,10 @@ function needs_verify($p, $ctx = '') {
 function product_card($p, $favs, $ctx = '') {
     $isFav = in_array((string)$p['id'], $favs);
     $label = $p['params'][0] ?? '';
-    // سعر العرض = سعر الكمية الدنيا (مهم للمنتجات ذات سعر الوحدة الصغير مثل amount/رصيد)
     $qm = max(1, (int)$p['qty_min']);
-    $unitSmall = ($p['type'] ?? '') === 'amount' || $p['price'] < 100; // سعر الوحدة صغير
+    $unitSmall = ($p['type'] ?? '') === 'amount' || $p['price'] < 100;
     $showFrom = ($qm > 1) || $unitSmall;
     $displayPrice = $showFrom ? round($p['price'] * $qm) : $p['price'];
-    // إذا كانت الكمية الدنيا 1 لكن سعر الوحدة صغير، نعرض السعر كما هو بدون "من"
     $prefix = ($qm > 1) ? 'من ' : ''; ?>
     <div class="card product-card <?= $p['available'] ? '' : 'oos' ?>"
          data-id="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>"
