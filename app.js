@@ -100,17 +100,23 @@ function openBuy(card) {
   if (isBalanceOrSocial) {
     const fixedQty = (pType === 'specificPackage');
     if (fixedQty) {
-      const startVal = 1.92, count = 1252; // حلقة التكرار للضرب التسلسلي لتصل لـ 2401.92
       qtySelect.innerHTML = '';
-      for (let i = 1; i <= count; i++) {
-        const v = Math.round((startVal * i) * 100) / 100;
+      let currentVal = 1.92;
+      const targetMax = 2403.84;
+
+      // حلقة تكرار تضرب القيمة السابقة بـ 2 في كل خطوة حتى الوصول إلى القيمة المستهدفة
+      while (currentVal <= targetMax + 1) {
+        const displayVal = Math.round(currentVal * 100) / 100;
         const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
+        opt.value = displayVal;
+        opt.textContent = displayVal;
         qtySelect.appendChild(opt);
+        
+        currentVal = currentVal * 2; // الضرب في 2 للمضاعفة الأسية
       }
-      qtySelect.value = startVal;
-      qty.value = startVal; qMin = startVal; qMax = 0;
+
+      qtySelect.value = 1.92;
+      qty.value = 1.92; qMin = 1.92; qMax = 0;
       if (qtyRow) qtyRow.style.display = 'none';
       if (qtySelectRow) qtySelectRow.style.display = '';
     } else {
