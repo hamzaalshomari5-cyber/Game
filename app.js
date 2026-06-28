@@ -1,12 +1,8 @@
-// زر الرجوع الذكي
 function goBack() {
-  // إذا فاتح مودال، سكّرو بدل ما ترجع صفحة
   const openModal = document.querySelector('.modal.show');
   if (openModal) { openModal.classList.remove('show'); return; }
-  // إذا السايدبار مفتوح، سكّرو
   const sb = document.getElementById('sidebar');
   if (sb && sb.classList.contains('open')) { toggleSidebar(); return; }
-  // إذا في صفحة سابقة بنفس الموقع، ارجع لها — وإلا روح للرئيسية
   if (document.referrer && document.referrer.indexOf(location.host) !== -1) {
     history.back();
   } else if (history.length > 1) {
@@ -16,13 +12,11 @@ function goBack() {
   }
 }
 
-// السايدبار
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
 }
 
-// الوضع الداكن/الفاتح
 function toggleTheme() {
   const light = document.body.classList.toggle('light');
   document.cookie = 'theme=' + (light ? 'light' : 'dark') + ';path=/;max-age=31536000';
@@ -31,13 +25,12 @@ function toggleTheme() {
   if (document.cookie.includes('theme=light')) document.body.classList.add('light');
 })();
 
-// تبديل العملة (ل.س / $)
 function toggleCurrency() {
   const cur = (typeof CUR !== 'undefined' && CUR === 'usd') ? 'syp' : 'usd';
   document.cookie = 'currency=' + cur + ';path=/;max-age=31536000';
   location.reload();
 }
-// تنسيق سعر (المخزن دائماً ل.س)
+
 function fmtPrice(syp) {
   if (typeof CUR !== 'undefined' && CUR === 'usd')
     return (syp / USD_RATE).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' $';
@@ -78,7 +71,7 @@ function openBuy(card) {
   const pCat = (card.dataset.cat || '').toLowerCase();
   const pName = (card.dataset.name || '').toLowerCase();
 
-  // فحص ذكي: هل المنتج ينتمي لقسم الرصيد أو للتواصل الاجتماعي؟
+  // فحص ذكي للأقسام لتمكين الكميات فقط في الرصيد والتواصل
   const isBalanceOrSocial = pType === 'amount' || 
                             pCat.includes('رصيد') || 
                             pCat.includes('تواصل') || 
@@ -124,13 +117,11 @@ function openBuy(card) {
       if (qtySelectRow) qtySelectRow.style.display = 'none';
     }
   } else {
-    // باقي الأقسام والألعاب: إخفاء حقل التحكم بالكمية وتثبيتها على الحد الأدنى الافتراضي
     qty.value = qMin;
     if (qtyRow) qtyRow.style.display = 'none';
     if (qtySelectRow) qtySelectRow.style.display = 'none';
   }
 
-  // حقل المعرف حسب متطلبات المنتج من API
   needVerify = card.dataset.verify === '1';
   verified = false; softPass = false;
   const vb = document.getElementById('mVerify');
@@ -196,13 +187,8 @@ function getQty() {
   if (String(v) !== input.value) input.value = v;
   return v;
 }
-function allDiscounts() {
-  return (typeof MY_DISCOUNTS !== 'undefined' && Array.isArray(MY_DISCOUNTS)) ? MY_DISCOUNTS : [];
-}
-function activeDiscount() {
-  const ds = allDiscounts();
-  return ds.length ? ds[0] : null;
-}
+function allDiscounts() { return (typeof MY_DISCOUNTS !== 'undefined' && Array.isArray(MY_DISCOUNTS)) ? MY_DISCOUNTS : []; }
+function activeDiscount() { const ds = allDiscounts(); return ds.length ? ds[0] : null; }
 function fmtNum(n) { n = parseFloat(n) || 0; return (n % 1 === 0) ? String(n) : String(Math.round(n * 100) / 100); }
 function discLabel(d) { return d.type === 'percent' ? (fmtNum(d.amount) + '%') : fmtPrice(parseFloat(d.amount)); }
 function discValue(type, amount, total) {
