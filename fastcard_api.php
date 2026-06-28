@@ -1,7 +1,7 @@
 <?php
 // fastcard_api.php
 
-// استخدام function_exists الصحيحة
+// استخدام function_exists الصحيحة في PHP لضمان جلب الإعدادات
 if (!function_exists('setting')) {
     function setting($key, $default = '') {
         try {
@@ -69,6 +69,7 @@ function _map_product($p, $profitPercent) {
     $pname = isset($p['name']) ? (string)$p['name'] : '';
     $pname_lower = mb_strtolower($pname, 'UTF-8');
 
+    // فحص كلمات الأقسام التي تعتمد على سعر صرف شام كاش المخصص
     $is_sham_or_balance = (
         strpos($pname_lower, 'رصيد') !== false ||
         strpos($pname_lower, 'شام') !== false ||
@@ -81,6 +82,7 @@ function _map_product($p, $profitPercent) {
         strpos($pname_lower, 'سوشيال') !== false
     );
 
+    // اختيار سعر الصرف بناءً على نتيجة الفحص
     $current_rate = $is_sham_or_balance ? $usd_rate_sham : $usd_rate_general;
 
     $costUsd = isset($p['price']) ? (float)$p['price'] : 0.0;
@@ -131,7 +133,7 @@ function place_fastcard_order($productId, $qty, $playerId) {
         "Accept: application/json"
     ]);
     
-    // تم تنظيف السطر تماماً هنا ليعمل بشكل سليم
+    // إعداد وقت الانتظار بشكل صحيح وآمن
     curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 
     $response = curl_exec($ch);
