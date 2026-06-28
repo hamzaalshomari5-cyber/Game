@@ -34,6 +34,7 @@ function toggleCurrency() {
   document.cookie = 'currency=' + cur + ';path=/;max-age=31536000';
   location.reload();
 }
+
 // تنسيق سعر
 function fmtPrice(syp) {
   if (typeof CUR !== 'undefined' && CUR === 'usd')
@@ -73,11 +74,11 @@ function openBuy(card) {
   qMax = parseInt(card.dataset.qmax) || 0;
   const pType = card.dataset.type || '';
   
-  // قراءة اسم المنتج المكتوب داخل الكرت مباشرة لحل مشكلة الـ PHP
+  // قراءة اسم المنتج المكتوب داخل الكرت مباشرة لحل مشكلة الشاشة البيضاء في الـ PHP
   const pNameEl = card.querySelector('.p-name');
   const pName = pNameEl ? pNameEl.textContent.toLowerCase() : (card.dataset.name || '').toLowerCase();
   
-  // فحص ذكي من خلال اسم المنتج والـ Type
+  // فحص ذكي من خلال اسم المنتج ونوعه
   const isBalanceOrSocial = pType === 'amount' || 
                             pName.includes('رصيد') || 
                             pName.includes('متابعين') || 
@@ -148,7 +149,9 @@ function openBuy(card) {
   updateTotal();
   document.getElementById('buyModal').classList.add('show');
 }
+
 function closeBuy() { document.getElementById('buyModal').classList.remove('show'); }
+
 function qtyStep(d) {
   const i = document.getElementById('mQty');
   let v = (parseInt(i.value) || qMin) + d;
@@ -158,6 +161,7 @@ function qtyStep(d) {
   i.classList.remove('invalid');
   updateTotal();
 }
+
 function onQtyType() {
   const i = document.getElementById('mQty');
   const v = parseInt(i.value);
@@ -165,6 +169,7 @@ function onQtyType() {
   i.classList.toggle('invalid', invalid);
   updateTotal();
 }
+
 function clampQty() {
   const i = document.getElementById('mQty');
   let v = parseInt(i.value);
@@ -174,12 +179,14 @@ function clampQty() {
   i.classList.remove('invalid');
   updateTotal();
 }
+
 function onQtySelect() {
   const sel = document.getElementById('mQtySelect');
   const v = parseFloat(sel.value) || qMin;
   document.getElementById('mQty').value = v;
   updateTotal();
 }
+
 function getQty() {
   const selRow = document.getElementById('mQtySelectRow');
   if (selRow && selRow.style.display !== 'none') {
@@ -192,15 +199,18 @@ function getQty() {
   if (String(v) !== input.value) input.value = v;
   return v;
 }
+
 function allDiscounts() { return (typeof MY_DISCOUNTS !== 'undefined' && Array.isArray(MY_DISCOUNTS)) ? MY_DISCOUNTS : []; }
 function activeDiscount() { const ds = allDiscounts(); return ds.length ? ds[0] : null; }
 function fmtNum(n) { n = parseFloat(n) || 0; return (n % 1 === 0) ? String(n) : String(Math.round(n * 100) / 100); }
 function discLabel(d) { return d.type === 'percent' ? (fmtNum(d.amount) + '%') : fmtPrice(parseFloat(d.amount)); }
+
 function discValue(type, amount, total) {
   let v = (type === 'percent') ? total * (amount / 100) : amount;
   if (v > total) v = total;
   return Math.round(v);
 }
+
 function updateTotal() {
   const q = getQty();
   const base = Math.round(curPrice * q);
@@ -234,6 +244,7 @@ function updateTotal() {
     if (line) line.style.display = 'none';
   }
 }
+
 document.addEventListener('input', e => { if (e.target.id === 'mQty' || e.target.id === 'mPlayer') updateTotal(); });
 document.addEventListener('click', e => { if (e.target.id === 'buyModal') closeBuy(); });
 
@@ -266,7 +277,7 @@ async function verifyName() {
     } else if (d.soft) {
       softPass = true;
       vb.className = 'verify-box warn';
-      vb.textContent = '⚠️ ' + d.msg + ' — تأكد من الـ ID بنفسك then press buy';
+      vb.textContent = '⚠️ ' + d.msg + ' — تأكد من الـ ID بنفسك ثم اضغط شراء';
       btn.textContent = 'شراء';
     } else {
       vb.className = 'verify-box no';
