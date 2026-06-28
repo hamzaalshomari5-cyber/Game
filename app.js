@@ -74,11 +74,11 @@ function openBuy(card) {
   qMax = parseInt(card.dataset.qmax) || 0;
   const pType = card.dataset.type || '';
   
-  // قراءة اسم المنتج المكتوب داخل الكرت مباشرة لحل مشكلة الشاشة البيضاء في الـ PHP
+  // قراءة اسم المنتج من الكرت مباشرة لمنع مشاكل الـ PHP والشاشة البيضاء
   const pNameEl = card.querySelector('.p-name');
   const pName = pNameEl ? pNameEl.textContent.toLowerCase() : (card.dataset.name || '').toLowerCase();
   
-  // فحص ذكي من خلال اسم المنتج ونوعه
+  // فحص ذكي للأقسام لتمكين الكميات فقط في الرصيد والتواصل
   const isBalanceOrSocial = pType === 'amount' || 
                             pName.includes('رصيد') || 
                             pName.includes('متابعين') || 
@@ -100,7 +100,7 @@ function openBuy(card) {
   if (isBalanceOrSocial) {
     const fixedQty = (pType === 'specificPackage');
     if (fixedQty) {
-      const startVal = 1.92, step = 0.96, count = 30;
+      const startVal = 1.92, step = 0.96, count = 2502; // ممتدة لتصل إلى قيمة 2403 تماماً
       qtySelect.innerHTML = '';
       for (let i = 0; i < count; i++) {
         const v = Math.round((startVal + step * i) * 100) / 100;
@@ -122,7 +122,7 @@ function openBuy(card) {
       if (qtySelectRow) qtySelectRow.style.display = 'none';
     }
   } else {
-    // إخفاء حقل التحكم بالكمية تماماً وتثبيتها في الألعاب وباقي الأقسام
+    // إخفاء حقول الكمية نهائياً في الألعاب وتثبيتها على 1
     qty.value = qMin;
     if (qtyRow) qtyRow.style.display = 'none';
     if (qtySelectRow) qtySelectRow.style.display = 'none';
@@ -325,4 +325,56 @@ async function submitBuy() {
     msg.className = 'm-msg no';
   }
   btn.disabled = false;
+}
+
+/* ===== عجلة الحظ الكود الأصلي المدمج للـ Wheel ===== */
+async function spinWheel() {
+  const btn = document.getElementById('spinBtn');
+  const wheel = document.getElementById('wheelImg');
+  const msg = document.getElementById('wheelMsg');
+  if (!btn || !wheel || !msg) return;
+  btn.disabled = true;
+  msg.style.display = 'none';
+  try {
+    const res = await fetch('/wheel_spin.php', { method: 'POST' });
+    const d = await res.json();
+    if (d.login) { location.href = '/auth.php'; return; }
+    if (!d.ok) { msg.textContent = d.msg; msg.className = 'alert no'; msg.style.display = 'block'; btn.disabled = false; return; }
+    const degs = [30, 90, 150, 210, 270, 330];
+    const idx = d.slice_index !== undefined ? d.slice_index : 0;
+    const targetDeg = degs[idx] || 30;
+    const extraRot = 3600; 
+    const finalRot = extraRot + (360 - targetDeg);
+    wheel.style.transition = 'transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)';
+    wheel.style.transform = 'rotate(' + finalRot + 'deg)';
+    setTimeout(function () {
+      msg.textContent = d.msg;
+      msg.className = 'alert ' + (d.value > 0 ? 'ok' : '');
+      msg.style.display = 'block';
+      if (d.value > 0) {
+        const bal = document.querySelector('.bal-amount');
+        if (bal) { const cur = parseInt(bal.dataset.syp || '0') + d.value; bal.dataset.syp = cur; bal.textContent = cur.toLocaleString() + ' ل.س'; }
+      }
+      showWheelTimer(86400);
+    }, 5000);
+  } catch (e) {
+    msg.textContent = 'خطأ بالاتصال، حاول مجدداً'; msg.className = 'alert no'; msg.style.display = 'block';
+    btn.disabled = false;
+  }
+}
+
+function showWheelTimer(secs) {
+  const t = document.getElementById('wheelTimer');
+  const btn = document.getElementById('spinBtn');
+  if (!t) return;
+  t.style.display = 'block';
+  if (btn) btn.style.display = 'none';
+  function tick() {
+    if (secs <= 0) { location.reload(); return; }
+    const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
+    t.textContent = '⏳ الدوران التالي بعد: ' + h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    secs--;
+    setTimeout(tick, 1000);
+  }
+  tick();
 }
