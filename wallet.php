@@ -73,7 +73,7 @@ function verify_tx($txId, $method) {
     ]);
     $res = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    $close = curl_close($ch);
     $d = json_decode($res, true);
     if (!is_array($d) || empty($d['success'])) return null;
     $data = $d['data'] ?? [];
@@ -119,10 +119,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dest = $method === 'shamcash' ? shamcash_number() : SYRIATEL_NUMBER;
                 $msg = 'لم يتم العثور على التحويل — تأكد من رقم العملية وأن التحويل وصل إلى ' . $dest;
             } else {
-                // تم إزالة الضرب بـ 100 لتصحيح الخلل البرمجي من هنا
+                // ------ 🟢 تعديل الحسبة بدقة هنا 🟢 ------
                 if ($method === 'shamcash' && $currency === 'usd') {
+                    // إذا كان الشحن بالدولار، نضربه مباشرة بسعر الصرف الحالي بدون إضافة أصفار
                     $amount = round($amount * usd_rate());
+                } else {
+                    // إذا كان الشحن بالليرة السورية (سيرياتيل أو شام كاش سوري)، نضربه بـ 100 لإضافة الـ 00 للعملة القديمة
+                    $amount = $amount * 100;
                 }
+                // ----------------------------------------
+                
                 $bonus = 0; $couponObj = null; $couponMsg = null;
                 if ($couponCode !== '') {
                     [$couponObj, $couponMsg] = check_coupon($couponCode, $U['id']);
