@@ -7,7 +7,8 @@ $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['usd_rate'])) {
         set_setting('usd_rate', (float)$_POST['usd_rate']);
-        $msg = 'تم حفظ سعر صرف تسعير الألعاب ✅';
+        clear_products_cache(); // فوري: بلا هذا، الأسعار القديمة تضل ظاهرة لحد ساعة
+        $msg = 'تم حفظ سعر صرف تسعير الألعاب ✅ (الأسعار تحدّثت فوراً)';
     }
     if (isset($_POST['usd_rate_shamcash'])) {
         set_setting('usd_rate_shamcash', (float)$_POST['usd_rate_shamcash']);
@@ -15,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (isset($_POST['profit_percent'])) {
         set_setting('profit_percent', (float)$_POST['profit_percent']);
-        cache_set('fc_products', cache_get('fc_products') ?? [], 0); // إبطال الكاش
-        $msg = 'تم حفظ هامش الربح ✅';
+        clear_products_cache(); // إبطال الكاش (المفتاح القديم 'fc_products' كان خاطئ وما كان يعمل شي)
+        $msg = 'تم حفظ هامش الربح ✅ (الأسعار تحدّثت فوراً)';
     }
     if (isset($_POST['add_balance_user'], $_POST['add_balance_amount'])) {
         db()->prepare("UPDATE users SET balance = balance + ? WHERE id=?")
@@ -122,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     if (isset($_POST['sync_products'])) {
+        clear_products_cache(); // يصفّي كل الأقسام الفرعية، مش بس القسم الرئيسي
         store_products(true); fc_content(0, true);
         $msg = 'تمت مزامنة المنتجات من FastCard ✅';
     }

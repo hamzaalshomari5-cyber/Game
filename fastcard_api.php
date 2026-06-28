@@ -113,6 +113,15 @@ function store_product($id) {
     return null;
 }
 
+/** تصفية كامل كاش أسعار المنتجات (الأقسام الفرعية + قائمة كل المنتجات)
+ *  لازم تُستدعى فوراً عند تغيير سعر الصرف أو هامش الربح، وإلا الزبون
+ *  بيستمر يشوف الأسعار القديمة المخزّنة بالكاش لحد ساعة كاملة. */
+function clear_products_cache() {
+    try {
+        db()->exec("DELETE FROM cache WHERE key = 'fc_all_products' OR key LIKE 'fc_content_%'");
+    } catch (Exception $e) {}
+}
+
 /** إنشاء طلب — POST حسب التوثيق، idempotent عبر order_uuid */
 function fc_new_order($productId, $qty, $playerId, $uuid) {
     $params = ['qty' => $qty, 'order_uuid' => $uuid];
