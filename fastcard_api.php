@@ -130,8 +130,9 @@ function place_fastcard_order($productId, $qty, $playerId) {
         "Content-Type: application/json",
         "Accept: application/json"
     ]);
-    // تم إصلاح السطر هنا بوضع القيمة مباشرة لتجنب الخطأ الإملائي
-    curl_setopt($ch, CURLOPT_TIMEOUT, 20);[span_2](start_span)[span_2](end_span)
+    
+    // تم تنظيف السطر تماماً هنا ليعمل بشكل سليم
+    curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
