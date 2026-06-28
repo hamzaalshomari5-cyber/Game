@@ -100,10 +100,10 @@ function openBuy(card) {
   if (isBalanceOrSocial) {
     const fixedQty = (pType === 'specificPackage');
     if (fixedQty) {
-      const startVal = 1.92, step = 0.96, count = 2502; // ممتدة لتصل إلى قيمة 2403 تماماً
+      const startVal = 1.92, count = 1252; // حلقة التكرار للضرب التسلسلي لتصل لـ 2401.92
       qtySelect.innerHTML = '';
-      for (let i = 0; i < count; i++) {
-        const v = Math.round((startVal + step * i) * 100) / 100;
+      for (let i = 1; i <= count; i++) {
+        const v = Math.round((startVal * i) * 100) / 100;
         const opt = document.createElement('option');
         opt.value = v;
         opt.textContent = v;
