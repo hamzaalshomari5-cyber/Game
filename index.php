@@ -445,20 +445,6 @@ include __DIR__ . '/header.php'; ?>
 </div>
 
 <h2 class="section-title">الأقسام</h2>
-<?php $socialCats = fc_find_social_categories(); if ($socialCats['instagram'] || $socialCats['facebook']): ?>
-<div class="grid cats-grid" style="margin-bottom:18px">
-  <?php if ($socialCats['instagram']): $ig = $socialCats['instagram']; ?>
-    <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($ig['id']) ?>&name=<?= urlencode($ig['name']) ?>">
-      <div class="cat-icon">📷</div><div class="cat-name">📷 متابعين / لايكات انستغرام</div>
-    </a>
-  <?php endif; ?>
-  <?php if ($socialCats['facebook']): $fb = $socialCats['facebook']; ?>
-    <a class="card cat-card" href="/index.php?page=products&cat=<?= urlencode($fb['id']) ?>&name=<?= urlencode($fb['name']) ?>">
-      <div class="cat-icon">👍</div><div class="cat-name">👍 متابعين / لايكات فيسبوك</div>
-    </a>
-  <?php endif; ?>
-</div>
-<?php endif; ?>
 <?php if (!$root['categories'] && !$root['products']): ?>
   <p class="empty">لم يتم تحميل المنتجات بعد — تأكد من توكن FastCard في الإعدادات.</p>
 <?php endif; ?>
