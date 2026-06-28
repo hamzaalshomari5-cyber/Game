@@ -1,7 +1,16 @@
 <?php
 // fastcard_api.php
 
-// استخدام function_exists الصحيحة في PHP لضمان جلب الإعدادات
+// تأمين جلب ملفات النظام الأساسية وقاعدة البيانات إذا لم تكن مدمجة تلقائياً
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+} elseif (file_exists(__DIR__ . '/db.php')) {
+    require_once __DIR__ . '/db.php';
+} elseif (file_exists(__DIR__ . '/functions.php')) {
+    require_once __DIR__ . '/functions.php';
+}
+
+// دالة جلب الإعدادات من قاعدة البيانات
 if (!function_exists('setting')) {
     function setting($key, $default = '') {
         try {
@@ -26,8 +35,8 @@ function get_fastcard_products() {
 
     $api_url = "https://api.fastcard-provider.com/v1/products"; 
     
-    // جلب مفتاح الـ API تلقائياً من متغيرات البيئة في Railway
-    $api_key = getenv('FASTCARD_API_KEY') ?: "";
+    // جلب مفتاح الـ API تلقائياً وبأمان من متغيرات البيئة في Railway
+    $api_key = getenv('FASTCARD_API_KEY') ?: getenv('FASTCARD_TOKEN') ?: "";
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $api_url);
@@ -60,7 +69,7 @@ function get_fastcard_products() {
 }
 
 /**
- * دالة الحسبة والتصفية الذكية لفصل الأسعار تلقائياً
+ * دالة الحسبة والتصفية الذكية لفصل أسعار الألعاب عن باقات الرصيد وشام كاش
  */
 function _map_product($p, $profitPercent) {
     $usd_rate_general = (float)setting('usd_rate', 15000);
@@ -69,7 +78,7 @@ function _map_product($p, $profitPercent) {
     $pname = isset($p['name']) ? (string)$p['name'] : '';
     $pname_lower = mb_strtolower($pname, 'UTF-8');
 
-    // فحص كلمات الأقسام التي تعتمد على سعر صرف شام كاش المخصص
+    // فحص تصنيف المنتج لتحديد سعر الصرف الخاص به
     $is_sham_or_balance = (
         strpos($pname_lower, 'رصيد') !== false ||
         strpos($pname_lower, 'شام') !== false ||
@@ -82,7 +91,6 @@ function _map_product($p, $profitPercent) {
         strpos($pname_lower, 'سوشيال') !== false
     );
 
-    // اختيار سعر الصرف بناءً على نتيجة الفحص
     $current_rate = $is_sham_or_balance ? $usd_rate_sham : $usd_rate_general;
 
     $costUsd = isset($p['price']) ? (float)$p['price'] : 0.0;
@@ -111,10 +119,10 @@ function _map_product($p, $profitPercent) {
     ];
 }
 
-// دالة تنفيذ طلب شحن عبر الـ API
+// دالة تنفيذ طلب شحن عبر الـ API لـ FastCard
 function place_fastcard_order($productId, $qty, $playerId) {
     $api_url = "https://api.fastcard-provider.com/v1/orders";
-    $api_key = getenv('FASTCARD_API_KEY') ?: "";
+    $api_key = getenv('FASTCARD_API_KEY') ?: getenv('FASTCARD_TOKEN') ?: "";
 
     $post_data = [
         'product_id' => $productId,
@@ -133,7 +141,6 @@ function place_fastcard_order($productId, $qty, $playerId) {
         "Accept: application/json"
     ]);
     
-    // إعداد وقت الانتظار بشكل صحيح وآمن
     curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 
     $response = curl_exec($ch);
