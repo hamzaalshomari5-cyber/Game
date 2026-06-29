@@ -103,16 +103,20 @@ function openBuy(card) {
   } else {
     qMin = parseInt(card.dataset.qmin) || 1;
     qMax = parseInt(card.dataset.qmax) || 0;
-    // شريط "اختر الكمية" (+/-) يظهر فقط لمنتجات نوعها amount (متابعين/لايكات سوشيال ميديا، وباقات الرصيد المرنة)
-    // أي نوع منتج آخر (ألعاب بكل أنواعها مثل ببجي) → كمية ثابتة بلا شريط ظاهر
-    const allowQtyStepper = (pType === 'amount');
-    if (allowQtyStepper) {
+    // شريط "الكمية" (حقل رقمي عادي يكتب فيه الزبون الرقم مباشرة، متل فاست كارد)
+    // يظهر فقط لمنتجات نوعها amount (متابعين/لايكات سوشيال ميديا، وباقات الرصيد المرنة)
+    // أي نوع منتج آخر (ألعاب بكل أنواعها مثل ببجي) → كمية ثابتة بلا حقل ظاهر
+    const allowQtyField = (pType === 'amount');
+    if (allowQtyField) {
       qty.value = qMin; qty.min = qMin;
       if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
+      const hint = document.getElementById('mQtyHint');
+      if (hint) hint.textContent = 'يجب أن لا تقل الكمية عن ' + qMin.toLocaleString()
+        + (qMax > 0 ? ' ولا تزيد عن ' + qMax.toLocaleString() : '');
       if (qtyRow) qtyRow.style.display = '';
       if (qtySelectRow) qtySelectRow.style.display = 'none';
     } else {
-      // كمية ثابتة على الحد الأدنى المسموح من فاست كارد — بلا شريط ظاهر
+      // كمية ثابتة على الحد الأدنى المسموح من فاست كارد — بلا حقل ظاهر
       qty.value = qMin;
       if (qtyRow) qtyRow.style.display = 'none';
       if (qtySelectRow) qtySelectRow.style.display = 'none';
@@ -141,14 +145,6 @@ function openBuy(card) {
   document.getElementById('buyModal').classList.add('show');
 }
 function closeBuy() { document.getElementById('buyModal').classList.remove('show'); }
-function qtyStep(d) {
-  const i = document.getElementById('mQty');
-  let v = (parseInt(i.value) || qMin) + d;
-  if (v < qMin) v = qMin;
-  if (qMax > 0 && v > qMax) v = qMax;
-  i.value = v;
-  updateTotal();
-}
 function onQtySelect() {
   const sel = document.getElementById('mQtySelect');
   const v = parseFloat(sel.value) || qMin;
@@ -290,6 +286,13 @@ async function submitBuy() {
   }
   // منتجات ببجي/فري فاير: لازم تحقق من الاسم أول
   if (needVerify && !verified && !softPass) { verifyName(); return; }
+  // فحص الحد الأدنى/الأقصى للكمية (لمنتجات الحقل الرقمي مثل متابعين السوشيال ميديا)
+  const qtyRowEl = document.getElementById('mQtyRow');
+  if (qtyRowEl && qtyRowEl.style.display !== 'none') {
+    const q = getQty();
+    if (q < qMin) { msg.textContent = 'أقل كمية مسموحة: ' + qMin.toLocaleString(); msg.className = 'm-msg no'; return; }
+    if (qMax > 0 && q > qMax) { msg.textContent = 'أكبر كمية مسموحة: ' + qMax.toLocaleString(); msg.className = 'm-msg no'; return; }
+  }
   btn.disabled = true;
   msg.className = 'm-msg';
   msg.textContent = 'جارٍ إرسال الطلب...';

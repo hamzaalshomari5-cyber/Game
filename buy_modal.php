@@ -4,12 +4,9 @@
     <div class="m-price"><s class="old-price" id="mOldPrice" style="display:none"></s> <span id="mPrice"></span></div>
     <p class="muted" id="mDesc"></p>
     <div class="m-qty-row" id="mQtyRow" style="display:none">
-      <label>الكمية <small class="muted" id="mQtyHint"></small></label>
-      <div class="qty-row">
-        <button type="button" onclick="qtyStep(-1)">−</button>
-        <input type="number" id="mQty" inputmode="numeric" oninput="onQtyType()" onblur="clampQty()">
-        <button type="button" onclick="qtyStep(1)">+</button>
-      </div>
+      <label for="mQty">الكمية</label>
+      <input type="number" id="mQty" inputmode="numeric" value="1" oninput="updateTotal()">
+      <p class="muted small" id="mQtyHint"></p>
     </div>
     <div class="m-qty-row" id="mQtySelectRow" style="display:none">
       <label>اختر الكمية</label>
