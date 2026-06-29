@@ -66,7 +66,7 @@ function product_card($p, $favs, $ctx = '') {
          data-id="<?= e($p['id']) ?>" data-name="<?= e($p['name']) ?>"
          data-price="<?= e($p['price']) ?>" data-desc="<?= e($p['desc']) ?>"
          data-param="<?= e($label) ?>" data-qmin="<?= e($p['qty_min']) ?>" data-qmax="<?= e($p['qty_max']) ?>"
-         data-type="<?= e($p['type'] ?? '') ?>"
+         data-type="<?= e($p['type'] ?? '') ?>" data-category="<?= e($p['category'] ?? '') ?>"
          data-verify="<?= (needs_verify($p, $ctx) && !empty($p['params'])) ? '1' : '0' ?>"
          onclick="openBuy(this)">
       <button class="fav-btn <?= $isFav ? 'on' : '' ?>" onclick="toggleFav(event, '<?= e($p['id']) ?>', this)">❤</button>

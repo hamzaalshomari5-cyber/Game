@@ -103,10 +103,20 @@ function openBuy(card) {
   } else {
     qMin = parseInt(card.dataset.qmin) || 1;
     qMax = parseInt(card.dataset.qmax) || 0;
-    qty.value = qMin; qty.min = qMin;
-    if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
-    if (qtyRow) qtyRow.style.display = '';
-    if (qtySelectRow) qtySelectRow.style.display = 'none';
+    // شريط "اختر الكمية" (+/-) يظهر فقط بقسم التواصل الاجتماعي وقسم الرصيد — مخفي بأي قسم آخر (مثل ببجي موبايل)
+    const catName = card.dataset.category || '';
+    const allowQtyStepper = /تواصل|اجتماع|سوشيال|social|رصيد|شحن\s*رصيد/i.test(catName);
+    if (allowQtyStepper) {
+      qty.value = qMin; qty.min = qMin;
+      if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
+      if (qtyRow) qtyRow.style.display = '';
+      if (qtySelectRow) qtySelectRow.style.display = 'none';
+    } else {
+      // كمية ثابتة على الحد الأدنى المسموح من فاست كارد — بلا شريط ظاهر
+      qty.value = qMin;
+      if (qtyRow) qtyRow.style.display = 'none';
+      if (qtySelectRow) qtySelectRow.style.display = 'none';
+    }
   }
   // حقل المعرف حسب متطلبات المنتج من API
   needVerify = card.dataset.verify === '1';
