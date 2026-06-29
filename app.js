@@ -103,9 +103,9 @@ function openBuy(card) {
   } else {
     qMin = parseInt(card.dataset.qmin) || 1;
     qMax = parseInt(card.dataset.qmax) || 0;
-    // شريط "اختر الكمية" (+/-) يظهر فقط بقسم التواصل الاجتماعي وقسم الرصيد — مخفي بأي قسم آخر (مثل ببجي موبايل)
-    const catName = card.dataset.category || '';
-    const allowQtyStepper = /تواصل|اجتماع|سوشيال|social|رصيد|شحن\s*رصيد/i.test(catName);
+    // شريط "اختر الكمية" (+/-) يظهر فقط لمنتجات نوعها amount (متابعين/لايكات سوشيال ميديا، وباقات الرصيد المرنة)
+    // أي نوع منتج آخر (ألعاب بكل أنواعها مثل ببجي) → كمية ثابتة بلا شريط ظاهر
+    const allowQtyStepper = (pType === 'amount');
     if (allowQtyStepper) {
       qty.value = qMin; qty.min = qMin;
       if (qMax > 0) qty.max = qMax; else qty.removeAttribute('max');
