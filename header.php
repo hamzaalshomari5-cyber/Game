@@ -37,7 +37,6 @@ $U = current_user();
   <?php endif; ?>
   <nav class="sb-nav">
     <a href="/index.php">🏠 الرئيسية</a>
-    <a href="/index.php?page=social">📱 خدمات السوشيال ميديا</a>
     <a href="/index.php?page=search">🔍 بحث عن منتج</a>
     <a href="/assistant.php">🤖 المساعد الذكي</a>
     <?php if ($U): ?>
@@ -100,4 +99,5 @@ if ($U) {
 }
 ?>
 <script>const MY_DISCOUNTS = <?= json_encode($myDiscounts, JSON_UNESCAPED_UNICODE) ?>;</script>
+<script>const PROMO_DISCOUNT_PCT = <?= json_encode(promo_discount_pct()) ?>;</script>
 <main class="container">

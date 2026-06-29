@@ -173,7 +173,10 @@ function discValue(type, amount, total) {
 }
 function updateTotal() {
   const q = getQty();
-  const base = Math.round(curPrice * q);
+  const promoPct = (typeof PROMO_DISCOUNT_PCT !== 'undefined' ? parseFloat(PROMO_DISCOUNT_PCT) : 0) || 0;
+  // سعر الوحدة بعد خصم العرض العام (إن وجد) — نفس ما تشوفه ببطاقة المنتج
+  const unitAfterPromo = promoPct > 0 ? Math.max(1, Math.round(curPrice * (1 - promoPct / 100))) : curPrice;
+  const base = Math.round(unitAfterPromo * q); // الإجمالي بعد خصم العرض العام، قبل الخصم الشخصي
   const d = activeDiscount();
   const line  = document.getElementById('mDiscLine');
   const oldT  = document.getElementById('mOldTotal');
@@ -182,20 +185,32 @@ function updateTotal() {
     const disc  = discValue(d.type, parseFloat(d.amount), base);
     const final = Math.max(1, base - disc);
     document.getElementById('mTotal').textContent = fmtPrice(final);
-    if (oldT) { oldT.style.display = ''; oldT.textContent = fmtPrice(base); }
-    // سعر الوحدة: نعرض القديم مشطوب والجديد (للنسبة المئوية)
+    // السعر الأصلي المشطوب = سعر الوحدة الأساسي (قبل أي خصم) × الكمية
+    oldT && (oldT.style.display = '', oldT.textContent = fmtPrice(Math.round(curPrice * q)));
+    // سعر الوحدة: نعرض القديم مشطوب والجديد (يجمع خصم العرض + الخصم الشخصي للنسبة المئوية)
     if (d.type === 'percent') {
-      const unitNew = Math.max(1, Math.round(curPrice * (1 - parseFloat(d.amount) / 100)));
+      const unitNew = Math.max(1, Math.round(unitAfterPromo * (1 - parseFloat(d.amount) / 100)));
       document.getElementById('mPrice').textContent = fmtPrice(unitNew);
       if (oldP) { oldP.style.display = ''; oldP.textContent = fmtPrice(curPrice); }
     } else {
-      document.getElementById('mPrice').textContent = fmtPrice(curPrice);
-      if (oldP) oldP.style.display = 'none';
+      document.getElementById('mPrice').textContent = fmtPrice(unitAfterPromo);
+      if (oldP) { if (promoPct > 0) { oldP.style.display = ''; oldP.textContent = fmtPrice(curPrice); } else oldP.style.display = 'none'; }
     }
     if (line) {
       line.style.display = '';
       line.className = 'm-disc ok';
       line.textContent = '🎁 خصمك الدائم ' + discLabel(d) + ' — وفّرت ' + fmtPrice(disc);
+    }
+  } else if (promoPct > 0) {
+    // ما في خصم شخصي، بس في خصم عرض عام فعّال
+    document.getElementById('mTotal').textContent = fmtPrice(base);
+    document.getElementById('mPrice').textContent = fmtPrice(unitAfterPromo);
+    if (oldT) { oldT.style.display = ''; oldT.textContent = fmtPrice(Math.round(curPrice * q)); }
+    if (oldP) { oldP.style.display = ''; oldP.textContent = fmtPrice(curPrice); }
+    if (line) {
+      line.style.display = '';
+      line.className = 'm-disc ok';
+      line.textContent = '🎉 خصم العرض الحالي ' + fmtNum(promoPct) + '%';
     }
   } else {
     document.getElementById('mTotal').textContent = fmtPrice(base);
